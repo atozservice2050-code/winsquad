@@ -14,10 +14,11 @@ import { $, toast, normalizePhone, unlockAudio } from './util.js';
 
 let mode = 'login'; // 'login' | 'signup'
 
-/** Convert a normalized PK phone (e.g. 923001234567) to internal email. */
+/** Convert a normalized PK phone (e.g. 923001234567) to internal email.
+ *  Uses Gmail plus-addressing so each phone maps to a unique, valid email. */
 function phoneToEmail(phone) {
   const digits = phone.replace(/\D/g, '');
-  return `${digits}@winsquad.app`;
+  return `atozservice2050+${digits}@gmail.com`;
 }
 
 function showError(msg) {
