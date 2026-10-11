@@ -1,5 +1,9 @@
 /* ============================================================
-   Auth: phone -> SMS OTP -> verify.
+   Auth: phone number + password (no SMS OTP).
+   We derive a deterministic internal email from the phone number
+   (e.g. 923001234567@winsquad.app) and use Supabase email+password
+   auth under the hood. The real phone number is stored in the
+   profiles table. Email (optional, for recovery) is stored too.
    After sign-in, profiles row is checked: if it has no display
    name, the user is sent to first-time profile setup. The backend
    trigger creates referral_id (WS-######) and the 14-digit
@@ -8,7 +12,13 @@
 import { supabase, unwrapRow, friendlyError } from './supabase-client.js';
 import { $, toast, normalizePhone, unlockAudio } from './util.js';
 
-let pendingPhone = null;
+let mode = 'login'; // 'login' | 'signup'
+
+/** Convert a normalized PK phone (e.g. 923001234567) to internal email. */
+function phoneToEmail(phone) {
+  const digits = phone.replace(/\D/g, '');
+  return `${digits}@winsquad.app`;
+}
 
 function showError(msg) {
   const el = $('auth-error');
@@ -16,62 +26,67 @@ function showError(msg) {
   el.hidden = false;
 }
 
+function setMode(next) {
+  mode = next;
+  $('tab-login').classList.toggle('active', mode === 'login');
+  $('tab-signup').classList.toggle('active', mode === 'signup');
+  $('signup-email-wrap').hidden = mode !== 'signup';
+  $('btn-auth-go').textContent = mode === 'login' ? 'Login & play' : 'Create account';
+  $('auth-hint').textContent = mode === 'login'
+    ? 'Enter your mobile number and password.'
+    : 'Choose a password (min 6 characters).';
+  $('auth-error').hidden = true;
+}
+
 export function initAuth(onAuthed) {
-  $('btn-send-otp').addEventListener('click', async () => {
+  $('tab-login').addEventListener('click', () => setMode('login'));
+  $('tab-signup').addEventListener('click', () => setMode('signup'));
+
+  $('btn-auth-go').addEventListener('click', async () => {
     unlockAudio();
     const phone = normalizePhone($('phone-input').value);
     if (!phone) { showError('Enter a valid Pakistani mobile number (e.g. 0300 1234567).'); return; }
-    $('auth-error').hidden = true;
-    $('btn-send-otp').disabled = true;
-    try {
-      const { error } = await supabase.auth.signInWithOtp({ phone });
-      if (error) throw error;
-      pendingPhone = phone;
-      $('otp-sent-to').textContent = 'Code sent to ' + phone;
-      $('auth-step-phone').hidden = true;
-      $('auth-step-otp').hidden = false;
-      $('otp-input').focus();
-      toast('Code sent by SMS');
-    } catch (e) {
-      showError(friendlyError(e, 'Could not send the code. Try again.'));
-    } finally {
-      $('btn-send-otp').disabled = false;
-    }
-  });
+    const password = $('password-input').value;
+    if (!password || password.length < 6) { showError('Password must be at least 6 characters.'); return; }
 
-  $('btn-verify-otp').addEventListener('click', async () => {
-    const token = $('otp-input').value.trim();
-    if (token.length !== 6 || !/^\d{6}$/.test(token)) {
-      showError('Enter the 6-digit code from the SMS.');
-      return;
-    }
     $('auth-error').hidden = true;
-    $('btn-verify-otp').disabled = true;
+    $('btn-auth-go').disabled = true;
     try {
-      const { error } = await supabase.auth.verifyOtp({
-        phone: pendingPhone, token, type: 'sms',
-      });
-      if (error) throw error;
+      const email = phoneToEmail(phone);
+      if (mode === 'signup') {
+        const recoveryEmail = $('email-input').value.trim();
+        const { error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: { phone, recovery_email: recoveryEmail || null },
+          },
+        });
+        if (error) throw error;
+        // Ensure profile row has the real phone number.
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          await supabase.from('profiles').upsert(
+            { id: user.id, phone },
+            { onConflict: 'id' }
+          );
+        }
+        toast('Account created — welcome!');
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+      }
       onAuthed();
     } catch (e) {
-      showError(friendlyError(e, 'Verification failed. Check the code and try again.'));
+      showError(friendlyError(e, mode === 'signup' ? 'Could not create account. Try again.' : 'Login failed. Check your number and password.'));
     } finally {
-      $('btn-verify-otp').disabled = false;
+      $('btn-auth-go').disabled = false;
     }
   });
 
-  $('btn-resend-otp').addEventListener('click', async () => {
-    if (!pendingPhone) return;
-    try {
-      const { error } = await supabase.auth.signInWithOtp({ phone: pendingPhone });
-      if (error) throw error;
-      toast('Code resent');
-    } catch (e) { showError(friendlyError(e)); }
-  });
-
-  $('btn-back-phone').addEventListener('click', () => {
-    $('auth-step-otp').hidden = true;
-    $('auth-step-phone').hidden = false;
+  // Enter key submits.
+  $('password-input').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') $('btn-auth-go').click();
   });
 }
 

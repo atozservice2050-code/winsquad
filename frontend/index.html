@@ -59,19 +59,20 @@
           <p class="tagline">Play together. Win together.</p>
 
           <div id="auth-step-phone">
+            <div class="auth-tabs">
+              <button id="tab-login" class="auth-tab active" type="button">Login</button>
+              <button id="tab-signup" class="auth-tab" type="button">Sign up</button>
+            </div>
             <label class="field-label" for="phone-input">Mobile number</label>
             <input id="phone-input" type="tel" inputmode="tel" placeholder="03XX XXXXXXX" autocomplete="tel" />
-            <p class="hint">We'll send you a 6-digit code by SMS.</p>
-            <button id="btn-send-otp" class="btn-red">Send code</button>
-          </div>
-
-          <div id="auth-step-otp" hidden>
-            <label class="field-label" for="otp-input">Enter the 6-digit code</label>
-            <input id="otp-input" type="text" inputmode="numeric" maxlength="6" placeholder="••••••" autocomplete="one-time-code" />
-            <p class="hint" id="otp-sent-to"></p>
-            <button id="btn-verify-otp" class="btn-red">Verify &amp; play</button>
-            <button id="btn-resend-otp" class="btn-ghost">Resend code</button>
-            <button id="btn-back-phone" class="btn-ghost">← Change number</button>
+            <label class="field-label" for="password-input">Password</label>
+            <input id="password-input" type="password" placeholder="Your password" autocomplete="current-password" />
+            <div id="signup-email-wrap" hidden>
+              <label class="field-label" for="email-input">Email <span class="muted">(for recovery)</span></label>
+              <input id="email-input" type="email" placeholder="you@example.com" autocomplete="email" />
+            </div>
+            <p class="hint" id="auth-hint">Enter your mobile number and password.</p>
+            <button id="btn-auth-go" class="btn-red">Login &amp; play</button>
           </div>
 
           <p id="auth-error" class="error" hidden></p>

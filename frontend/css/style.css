@@ -123,6 +123,26 @@ h1.gold, h2.gold, .gold { color: var(--gold); }
   box-shadow: 0 0 32px rgba(212, 175, 55, 0.18);
 }
 
+.auth-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.auth-tab {
+  flex: 1;
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid var(--gold);
+  background: transparent;
+  color: var(--gold);
+  font-weight: 700;
+  cursor: pointer;
+}
+.auth-tab.active {
+  background: var(--gold);
+  color: #0b3d2c;
+}
+
 .card {
   background: linear-gradient(180deg, #0e4f38 0%, #0b3d2c 100%);
   border: 1px solid var(--card-border);
