@@ -6,6 +6,7 @@ Deploy the `frontend/` folder directly to **Cloudflare Pages**.
 ```
 frontend/
 ├── index.html          # all screens (SPA, JS view router)
+├── admin.html          # ADMIN PORTAL (owner only — dashboard, users, transactions, rounds, rewards)
 ├── css/style.css       # green-gold premium casino theme
 ├── js/
 │   ├── env.js          # ← GENERATED at build time (gitignored, never committed)
@@ -21,6 +22,11 @@ frontend/
 │   └── profile.js      # IDs, copy buttons, logout
 └── .gitignore          # ignores js/env.js
 ```
+
+**Admin portal** (`admin.html`): owner-only dashboard at `/admin.html`. Requires the
+`supabase/migrations/001_admin_policies.sql` migration to be run first (adds admin
+RLS policies + withdraw approval RPCs). Sign in with your admin phone number;
+`is_admin()` is checked on load and non-admins are denied.
 
 Supabase JS v2 is loaded via CDN ESM import (`cdn.jsdelivr.net/npm/@supabase/supabase-js@2`).
 
