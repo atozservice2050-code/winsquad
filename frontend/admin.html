@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#062a1e" />
+  <title>WinSquad Admin Portal</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <script src="js/env.js"></script>
+  <style>
+    /* ---------- admin-specific styles (green-gold theme) ---------- */
+    .admin-header {
+      position: sticky; top: 0; z-index: 50;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 14px;
+      background: rgba(4, 29, 20, 0.95);
+      backdrop-filter: blur(6px);
+      border-bottom: 2px solid var(--gold);
+    }
+    .admin-title { color: var(--gold); font-weight: 900; font-size: 18px; letter-spacing: 0.5px; }
+    .admin-badge {
+      font-size: 10px; font-weight: 800; letter-spacing: 1px;
+      color: #041d14; background: var(--gold);
+      padding: 3px 8px; border-radius: 999px; margin-left: 8px;
+      vertical-align: middle;
+    }
+    .btn-logout {
+      background: transparent; color: var(--muted);
+      border: 1px solid var(--card-border); border-radius: 8px;
+      padding: 6px 12px; font-size: 12px; cursor: pointer;
+    }
+    .admin-tabs {
+      display: flex; gap: 6px; padding: 10px 14px 0;
+      overflow-x: auto; -webkit-overflow-scrolling: touch;
+    }
+    .admin-tab {
+      flex: 1 0 auto; text-align: center;
+      padding: 10px 14px; font-size: 13px; font-weight: 700;
+      color: var(--muted); background: transparent;
+      border: 1px solid var(--card-border); border-bottom: none;
+      border-radius: 10px 10px 0 0; cursor: pointer; white-space: nowrap;
+    }
+    .admin-tab.active { color: var(--gold-light); background: var(--card); border-color: var(--gold); }
+    .admin-view { padding: 14px; animation: fadeIn 0.25s ease; }
+
+    .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+    .stat-card {
+      background: var(--card); border: 1px solid var(--card-border);
+      border-radius: var(--radius); padding: 14px 12px;
+    }
+    .stat-card .stat-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+    .stat-card .stat-value { font-size: 22px; font-weight: 900; color: var(--text); font-variant-numeric: tabular-nums; }
+    .stat-card .stat-value.gold { color: var(--gold-light); }
+    .stat-card .stat-value.green { color: var(--win-green); }
+    .stat-card .stat-value.red { color: #ff6b6b; }
+    .stat-card .stat-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .stat-card.revenue { border-color: var(--gold); box-shadow: 0 0 16px rgba(212,175,55,0.2); }
+
+    .section-title {
+      color: var(--gold); font-size: 15px; font-weight: 800;
+      margin: 18px 0 10px; padding-bottom: 6px;
+      border-bottom: 1px solid var(--card-border);
+    }
+    .search-row { display: flex; gap: 8px; margin-bottom: 10px; }
+    .search-row input, .search-row select {
+      flex: 1; background: #00000055; color: var(--text);
+      border: 1px solid var(--card-border); border-radius: 8px;
+      padding: 10px 12px; font-size: 14px;
+    }
+    .search-row input::placeholder { color: var(--muted); }
+
+    .data-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .data-table th {
+      text-align: left; padding: 8px 6px; color: var(--gold);
+      font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px;
+      border-bottom: 1px solid var(--gold); white-space: nowrap;
+    }
+    .data-table td {
+      padding: 9px 6px; border-bottom: 1px solid #ffffff10;
+      vertical-align: top; word-break: break-word;
+    }
+    .data-table tr:last-child td { border-bottom: none; }
+    .table-wrap { overflow-x: auto; background: var(--card); border: 1px solid var(--card-border); border-radius: var(--radius); padding: 4px 8px; margin-bottom: 14px; }
+
+    .pill {
+      display: inline-block; font-size: 10px; font-weight: 800;
+      padding: 3px 8px; border-radius: 999px; letter-spacing: 0.3px;
+    }
+    .pill.pending { color: #ffd94d; background: #ffd94d18; border: 1px solid #ffd94d; }
+    .pill.completed { color: var(--win-green); background: #2ee06f14; border: 1px solid var(--win-green); }
+    .pill.rejected { color: #ff8a8a; background: #ff8a8a12; border: 1px solid #ff8a8a; }
+    .pill.open { color: #6ec6ff; background: #6ec6ff14; border: 1px solid #6ec6ff; }
+    .pill.closed { color: var(--muted); background: #ffffff08; border: 1px solid var(--muted); }
+
+    .btn-approve, .btn-reject {
+      border: none; border-radius: 8px; padding: 7px 12px;
+      font-size: 12px; font-weight: 800; cursor: pointer; margin: 2px;
+    }
+    .btn-approve { background: var(--win-green); color: #041d14; }
+    .btn-reject { background: transparent; color: #ff8a8a; border: 1px solid #ff8a8a; }
+    .btn-approve:disabled, .btn-reject:disabled { opacity: 0.4; cursor: default; }
+
+    .btn-red { width: 100%; margin-top: 4px; }
+    .btn-ghost {
+      background: transparent; color: var(--muted); border: 1px solid var(--card-border);
+      border-radius: 8px; padding: 10px; font-size: 14px; cursor: pointer; width: 100%; margin-top: 8px;
+    }
+    .field-label { display: block; font-size: 12px; color: var(--muted); margin: 12px 0 6px; }
+    input[type="tel"], input[type="text"] {
+      width: 100%; background: #00000055; color: var(--text);
+      border: 1px solid var(--card-border); border-radius: 8px;
+      padding: 12px; font-size: 16px;
+    }
+    input:focus { outline: none; border-color: var(--gold); }
+    .error { color: #ff8a8a; font-size: 13px; margin-top: 10px; }
+    .hint { color: var(--muted); font-size: 12px; line-height: 1.5; }
+    .mono { font-family: ui-monospace, monospace; font-size: 11px; color: var(--gold-light); }
+    .denied-card { text-align: center; padding: 40px 20px; }
+    .denied-card .big { font-size: 48px; margin-bottom: 12px; }
+    .loading { text-align: center; color: var(--muted); padding: 30px; font-size: 14px; }
+    .refresh-row { display: flex; justify-content: flex-end; margin-bottom: 8px; }
+    .btn-refresh {
+      background: transparent; color: var(--gold); border: 1px solid var(--gold);
+      border-radius: 8px; padding: 6px 14px; font-size: 12px; font-weight: 700; cursor: pointer;
+    }
+    .fee-note {
+      background: #d4af3712; border: 1px dashed var(--gold-dim);
+      border-radius: 8px; padding: 10px 12px; font-size: 11px;
+      color: var(--gold-light); margin-bottom: 12px; line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="desktop-notice">
+    <div class="desktop-card">
+      <div class="logo">♛ WinSquad</div>
+      <p class="tagline">Admin Portal</p>
+      <p class="desktop-msg">📱 The admin portal is <strong>phone-only</strong>.<br />
+      Please open this page on your mobile phone.</p>
+    </div>
+  </div>
+
+  <div id="setup-error" hidden>
+    <div class="setup-card">
+      <div class="logo">♛ WinSquad</div>
+      <h2>⚙️ Setup needed</h2>
+      <p>Copy <code>js/env.example.js</code> → <code>js/env.js</code> and fill in your Supabase credentials.</p>
+    </div>
+  </div>
+
+  <div id="app" hidden>
+    <!-- ===== AUTH ===== -->
+    <section id="admin-auth" hidden>
+      <div style="padding:24px 16px; max-width:430px; margin:0 auto;">
+        <div class="auth-card">
+          <div class="logo big">♛</div>
+          <h1 class="gold">WinSquad <span class="admin-badge">ADMIN</span></h1>
+          <p class="tagline">Owner access only. Sign in with your admin phone number.</p>
+          <div id="auth-step-phone">
+            <label class="field-label" for="phone-input">Admin mobile number</label>
+            <input id="phone-input" type="tel" inputmode="tel" placeholder="03XX XXXXXXX" autocomplete="tel" />
+            <button id="btn-send-otp" class="btn-red">Send code</button>
+          </div>
+          <div id="auth-step-otp" hidden>
+            <label class="field-label" for="otp-input">Enter the 6-digit code</label>
+            <input id="otp-input" type="text" inputmode="numeric" maxlength="6" placeholder="••••••" autocomplete="one-time-code" />
+            <button id="btn-verify-otp" class="btn-red">Verify</button>
+            <button id="btn-back-phone" class="btn-ghost">← Change number</button>
+          </div>
+          <p id="auth-error" class="error" hidden></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== ACCESS DENIED ===== -->
+    <section id="admin-denied" hidden>
+      <div style="padding:24px 16px; max-width:430px; margin:0 auto;">
+        <div class="auth-card denied-card">
+          <div class="big">🚫</div>
+          <h2 class="gold">Access denied</h2>
+          <p class="hint">This phone number is not registered as an admin.<br />Contact the owner to get access.</p>
+          <button id="btn-denied-logout" class="btn-ghost">Sign out</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== MAIN PORTAL ===== -->
+    <section id="admin-main" hidden>
+      <header class="admin-header">
+        <div class="admin-title">♛ WinSquad <span class="admin-badge">ADMIN</span></div>
+        <button id="btn-logout" class="btn-logout">Sign out</button>
+      </header>
+
+      <nav class="admin-tabs">
+        <button class="admin-tab active" data-tab="dashboard">📊 Dashboard</button>
+        <button class="admin-tab" data-tab="users">👥 Users</button>
+        <button class="admin-tab" data-tab="transactions">💸 Transactions</button>
+        <button class="admin-tab" data-tab="rounds">🎰 Rounds</button>
+        <button class="admin-tab" data-tab="rewards">🎁 Rewards</button>
+      </nav>
+
+      <!-- DASHBOARD -->
+      <div id="tab-dashboard" class="admin-view">
+        <div class="refresh-row"><button class="btn-refresh" data-refresh="dashboard">↻ Refresh</button></div>
+        <div id="dash-loading" class="loading">Loading stats…</div>
+        <div id="dash-content" hidden>
+          <div class="fee-note">🔒 <strong>Admin-only data.</strong> Revenue figures below include the hidden 10% company fee. Never expose these to players.</div>
+          <div class="stat-grid">
+            <div class="stat-card"><div class="stat-label">Total users</div><div class="stat-value" id="st-users">–</div></div>
+            <div class="stat-card"><div class="stat-label">Wallet balances</div><div class="stat-value gold">Rs <span id="st-wallets">–</span></div></div>
+            <div class="stat-card revenue"><div class="stat-label">💰 Total revenue (fees)</div><div class="stat-value gold">Rs <span id="st-revenue">–</span></div><div class="stat-sub">hidden 10% cut</div></div>
+            <div class="stat-card"><div class="stat-label">Rounds played</div><div class="stat-value" id="st-rounds">–</div></div>
+            <div class="stat-card"><div class="stat-label">Pending deposits</div><div class="stat-value red" id="st-dep-count">–</div><div class="stat-sub">Rs <span id="st-dep-sum">–</span></div></div>
+            <div class="stat-card"><div class="stat-label">Pending withdrawals</div><div class="stat-value red" id="st-wd-count">–</div><div class="stat-sub">Rs <span id="st-wd-sum">–</span></div></div>
+            <div class="stat-card"><div class="stat-label">Completed deposits</div><div class="stat-value green">Rs <span id="st-dep-done">–</span></div></div>
+            <div class="stat-card"><div class="stat-label">Completed withdrawals</div><div class="stat-value">Rs <span id="st-wd-done">–</span></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- USERS -->
+      <div id="tab-users" class="admin-view" hidden>
+        <div class="search-row">
+          <input id="user-search" type="text" placeholder="🔍 Search phone, name, WS-ID…" />
+          <button class="btn-refresh" id="btn-user-search">Search</button>
+        </div>
+        <div id="users-loading" class="loading">Loading users…</div>
+        <div id="users-content" class="table-wrap" hidden>
+          <table class="data-table">
+            <thead><tr><th>Name</th><th>Phone</th><th>IDs</th><th>Balance</th><th>Joined</th></tr></thead>
+            <tbody id="users-tbody"></tbody>
+          </table>
+        </div>
+        <p class="hint center" id="users-more" hidden></p>
+      </div>
+
+      <!-- TRANSACTIONS -->
+      <div id="tab-transactions" class="admin-view" hidden>
+        <div class="search-row">
+          <select id="txn-type-filter">
+            <option value="">All types</option>
+            <option value="deposit">Deposits</option>
+            <option value="withdraw">Withdrawals</option>
+            <option value="transfer_in">Transfers in</option>
+            <option value="transfer_out">Transfers out</option>
+            <option value="stake">Stakes</option>
+            <option value="payout">Payouts</option>
+            <option value="bonus">Bonuses</option>
+          </select>
+          <select id="txn-status-filter">
+            <option value="">All statuses</option>
+            <option value="pending" selected>Pending</option>
+            <option value="completed">Completed</option>
+            <option value="rejected">Rejected</option>
+          </select>
+        </div>
+        <div class="refresh-row"><button class="btn-refresh" data-refresh="transactions">↻ Refresh</button></div>
+        <div id="txn-loading" class="loading">Loading transactions…</div>
+        <div id="txn-content" class="table-wrap" hidden>
+          <table class="data-table">
+            <thead><tr><th>User</th><th>Type</th><th>Amount</th><th>Detail</th><th>Status</th><th>Action</th></tr></thead>
+            <tbody id="txn-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ROUNDS -->
+      <div id="tab-rounds" class="admin-view" hidden>
+        <div class="fee-note">🔒 Fee column is <strong>admin-only</strong> — never shown in the player app.</div>
+        <div class="refresh-row"><button class="btn-refresh" data-refresh="rounds">↻ Refresh</button></div>
+        <div id="rounds-loading" class="loading">Loading rounds…</div>
+        <div id="rounds-content" class="table-wrap" hidden>
+          <table class="data-table">
+            <thead><tr><th>#</th><th>Status</th><th>Players</th><th>Total bids</th><th>Fee (10%)</th><th>Ended</th></tr></thead>
+            <tbody id="rounds-tbody"></tbody>
+          </table>
+        </div>
+        <h3 class="section-title">Private tables</h3>
+        <div id="ptables-content" class="table-wrap">
+          <table class="data-table">
+            <thead><tr><th>Code</th><th>Status</th><th>Round</th><th>Fee (10%)</th><th>Created</th></tr></thead>
+            <tbody id="ptables-tbody"><tr><td colspan="5" class="muted">Loading…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- REWARDS -->
+      <div id="tab-rewards" class="admin-view" hidden>
+        <div class="refresh-row"><button class="btn-refresh" data-refresh="rewards">↻ Refresh</button></div>
+        <div id="rewards-loading" class="loading">Loading rewards…</div>
+        <div id="rewards-content" hidden>
+          <div class="stat-grid">
+            <div class="stat-card"><div class="stat-label">Referral bonuses</div><div class="stat-value green">Rs <span id="rw-ref-sum">–</span></div><div class="stat-sub"><span id="rw-ref-count">–</span> grants</div></div>
+            <div class="stat-card"><div class="stat-label">Streak rewards</div><div class="stat-value gold">Rs <span id="rw-streak-sum">–</span></div><div class="stat-sub"><span id="rw-streak-count">–</span> claims</div></div>
+            <div class="stat-card"><div class="stat-label">Free bids given</div><div class="stat-value" id="rw-free-count">–</div><div class="stat-sub">Rs 10 each</div></div>
+          </div>
+          <h3 class="section-title">Recent rewards</h3>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead><tr><th>User</th><th>Type</th><th>Amount</th><th>When</th></tr></thead>
+              <tbody id="rewards-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+<script type="module">
+import { ENV_OK, ENV_ERROR, supabase, unwrapRow, friendlyError } from './js/supabase-client.js';
+
+/* ================= helpers ================= */
+const $ = (id) => document.getElementById(id);
+const fmtRs = (n) => Number(n || 0).toLocaleString('en-PK', { maximumFractionDigits: 2 });
+const fmtDate = (iso) => {
+  if (!iso) return '–';
+  const d = new Date(iso);
+  return d.toLocaleString('en-PK', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: true });
+};
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+function toast(msg, isErr = false) {
+  const el = document.createElement('div');
+  el.textContent = msg;
+  el.style.cssText = `position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:${isErr ? '#8f1420' : '#0d4a34'};color:#f5f0e1;border:1px solid #d4af37;border-radius:10px;padding:10px 18px;font-size:13px;z-index:9999;max-width:90vw;`;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 3200);
+}
+
+let pendingPhone = null;
+const profileCache = new Map(); // user_id -> {display_name, phone}
+
+/** Batch-load display names/phones for a set of user ids (admin RLS allows). */
+async function hydrateProfiles(ids) {
+  const missing = [...new Set(ids)].filter(id => id && !profileCache.has(id));
+  if (missing.length) {
+    const { data } = await supabase.from('profiles').select('id, display_name, phone').in('id', missing);
+    (data || []).forEach(p => profileCache.set(p.id, p));
+  }
+}
+const pname = (id) => esc(profileCache.get(id)?.display_name || '…');
+const pphone = (id) => esc(profileCache.get(id)?.phone || '');
+
+/* ================= auth ================= */
+function showAuthError(msg) {
+  $('auth-error').textContent = msg;
+  $('auth-error').hidden = false;
+}
+
+async function checkAdmin() {
+  const { data, error } = await supabase.rpc('is_admin');
+  if (error) throw error;
+  return unwrapRow(data) === true || data === true;
+}
+
+function initAuthUI() {
+  $('btn-send-otp').addEventListener('click', async () => {
+    const raw = $('phone-input').value.replace(/\D/g, '');
+    let phone = null;
+    if (/^03\d{9}$/.test(raw)) phone = '+92' + raw.slice(1);
+    else if (/^923\d{9}$/.test(raw)) phone = '+' + raw;
+    if (!phone) { showAuthError('Enter a valid Pakistani mobile number (e.g. 0300 1234567).'); return; }
+    $('auth-error').hidden = true;
+    $('btn-send-otp').disabled = true;
+    try {
+      const { error } = await supabase.auth.signInWithOtp({ phone });
+      if (error) throw error;
+      pendingPhone = phone;
+      $('auth-step-phone').hidden = true;
+      $('auth-step-otp').hidden = false;
+      toast('Code sent by SMS');
+    } catch (e) { showAuthError(friendlyError(e)); }
+    finally { $('btn-send-otp').disabled = false; }
+  });
+
+  $('btn-verify-otp').addEventListener('click', async () => {
+    const token = $('otp-input').value.trim();
+    if (!/^\d{6}$/.test(token)) { showAuthError('Enter the 6-digit code.'); return; }
+    $('auth-error').hidden = true;
+    $('btn-verify-otp').disabled = true;
+    try {
+      const { error } = await supabase.auth.verifyOtp({ phone: pendingPhone, token, type: 'sms' });
+      if (error) throw error;
+      await enterPortal();
+    } catch (e) { showAuthError(friendlyError(e)); }
+    finally { $('btn-verify-otp').disabled = false; }
+  });
+
+  $('btn-back-phone').addEventListener('click', () => {
+    $('auth-step-otp').hidden = true;
+    $('auth-step-phone').hidden = false;
+  });
+}
+
+async function enterPortal() {
+  $('admin-auth').hidden = true;
+  $('admin-denied').hidden = true;
+  try {
+    const ok = await checkAdmin();
+    if (!ok) {
+      $('admin-denied').hidden = false;
+      return;
+    }
+    $('admin-main').hidden = false;
+    await loadDashboard();
+  } catch (e) {
+    toast(friendlyError(e, 'Could not verify admin access.'), true);
+    $('admin-auth').hidden = false;
+  }
+}
+
+/* ================= tabs ================= */
+const TAB_LOADERS = {};
+function initTabs() {
+  document.querySelectorAll('.admin-tab').forEach(t => {
+    t.addEventListener('click', async () => {
+      document.querySelectorAll('.admin-tab').forEach(x => x.classList.remove('active'));
+      t.classList.add('active');
+      const name = t.dataset.tab;
+      ['dashboard', 'users', 'transactions', 'rounds', 'rewards'].forEach(n => {
+        $('tab-' + n).hidden = n !== name;
+      });
+      if (TAB_LOADERS[name]) await TAB_LOADERS[name]();
+    });
+  });
+  document.querySelectorAll('[data-refresh]').forEach(b => {
+    b.addEventListener('click', async () => {
+      const fn = TAB_LOADERS[b.dataset.refresh];
+      if (fn) await fn();
+    });
+  });
+  $('btn-logout').addEventListener('click', async () => {
+    await supabase.auth.signOut();
+    location.reload();
+  });
+  $('btn-denied-logout').addEventListener('click', async () => {
+    await supabase.auth.signOut();
+    location.reload();
+  });
+  $('btn-user-search').addEventListener('click', () => loadUsers());
+  $('user-search').addEventListener('keydown', (e) => { if (e.key === 'Enter') loadUsers(); });
+  $('txn-type-filter').addEventListener('change', () => loadTransactions());
+  $('txn-status-filter').addEventListener('change', () => loadTransactions());
+}
+
+/* ================= dashboard ================= */
+async function loadDashboard() {
+  $('dash-loading').hidden = false;
+  $('dash-content').hidden = true;
+  try {
+    const [
+      usersRes, walletsRes, roundsRes, ptablesRes, txnRes,
+    ] = await Promise.all([
+      supabase.from('profiles').select('id', { count: 'exact', head: true }),
+      supabase.from('wallets').select('balance'),
+      supabase.from('rounds').select('id, fee_amount'),
+      supabase.from('private_tables').select('fee_amount'),
+      supabase.from('transactions').select('type, status, amount'),
+    ]);
+    if (usersRes.error) throw usersRes.error;
+    if (walletsRes.error) throw walletsRes.error;
+
+    $('st-users').textContent = (usersRes.count ?? 0).toLocaleString();
+
+    const walletSum = (walletsRes.data || []).reduce((s, w) => s + Number(w.balance || 0), 0);
+    $('st-wallets').textContent = fmtRs(walletSum);
+
+    const feePublic = (roundsRes.data || []).reduce((s, r) => s + Number(r.fee_amount || 0), 0);
+    const feePrivate = (ptablesRes.data || []).reduce((s, t) => s + Number(t.fee_amount || 0), 0);
+    $('st-revenue').textContent = fmtRs(feePublic + feePrivate);
+    $('st-rounds').textContent = ((roundsRes.data || []).length).toLocaleString();
+
+    const txns = txnRes.data || [];
+    const sum = (t, s) => txns.filter(x => x.type === t && x.status === s).reduce((a, x) => a + Number(x.amount || 0), 0);
+    const cnt = (t, s) => txns.filter(x => x.type === t && x.status === s).length;
+    $('st-dep-count').textContent = cnt('deposit', 'pending');
+    $('st-dep-sum').textContent = fmtRs(sum('deposit', 'pending'));
+    $('st-wd-count').textContent = cnt('withdraw', 'pending');
+    $('st-wd-sum').textContent = fmtRs(sum('withdraw', 'pending'));
+    $('st-dep-done').textContent = fmtRs(sum('deposit', 'completed'));
+    $('st-wd-done').textContent = fmtRs(sum('withdraw', 'completed'));
+
+    $('dash-loading').hidden = true;
+    $('dash-content').hidden = false;
+  } catch (e) {
+    $('dash-loading').textContent = 'Failed to load: ' + friendlyError(e);
+  }
+}
+TAB_LOADERS.dashboard = loadDashboard;
+
+/* ================= users ================= */
+async function loadUsers() {
+  $('users-loading').hidden = false;
+  $('users-content').hidden = true;
+  try {
+    const q = $('user-search').value.trim();
+    let query = supabase.from('profiles')
+      .select('id, phone, display_name, referral_id, transfer_id, created_at')
+      .order('created_at', { ascending: false })
+      .limit(50);
+    const { data: profiles, error } = await query;
+    if (error) throw error;
+
+    let rows = profiles || [];
+    if (q) {
+      const needle = q.toLowerCase();
+      rows = rows.filter(p =>
+        (p.phone || '').includes(needle) ||
+        (p.display_name || '').toLowerCase().includes(needle) ||
+        (p.referral_id || '').toLowerCase().includes(needle) ||
+        (p.transfer_id || '').includes(needle)
+      );
+    }
+
+    const ids = rows.map(r => r.id);
+    let balances = {};
+    if (ids.length) {
+      const { data: w } = await supabase.from('wallets').select('user_id, balance').in('user_id', ids);
+      (w || []).forEach(x => { balances[x.user_id] = x.balance; });
+    }
+
+    $('users-tbody').innerHTML = rows.map(p => `
+      <tr>
+        <td><strong>${esc(p.display_name)}</strong></td>
+        <td class="mono">${esc(p.phone || '–')}</td>
+        <td><span class="mono">${esc(p.referral_id || '')}</span><br /><span class="muted mono">${esc(p.transfer_id || '')}</span></td>
+        <td class="green"><strong>Rs ${fmtRs(balances[p.id])}</strong></td>
+        <td class="muted">${fmtDate(p.created_at)}</td>
+      </tr>`).join('') || '<tr><td colspan="5" class="muted center">No users found.</td></tr>';
+
+    $('users-loading').hidden = true;
+    $('users-content').hidden = false;
+  } catch (e) {
+    $('users-loading').textContent = 'Failed to load: ' + friendlyError(e);
+  }
+}
+TAB_LOADERS.users = loadUsers;
+
+/* ================= transactions ================= */
+async function loadTransactions() {
+  $('txn-loading').hidden = false;
+  $('txn-content').hidden = true;
+  try {
+    const typeF = $('txn-type-filter').value;
+    const statusF = $('txn-status-filter').value;
+    let query = supabase.from('transactions')
+      .select('id, user_id, type, amount, status, method, external_txn_id, note, created_at')
+      .order('created_at', { ascending: false })
+      .limit(100);
+    if (typeF) query = query.eq('type', typeF);
+    if (statusF) query = query.eq('status', statusF);
+    const { data, error } = await query;
+    if (error) throw error;
+
+    const txns = data || [];
+    await hydrateProfiles(txns.map(t => t.user_id));
+
+    $('txn-tbody').innerHTML = txns.map(t => {
+      const canAct = t.status === 'pending' && (t.type === 'deposit' || t.type === 'withdraw');
+      const detail = t.type === 'deposit'
+        ? `${esc(t.method || '')} · <span class="mono">${esc(t.external_txn_id || '')}</span>`
+        : esc(t.note || t.method || '–');
+      return `
+      <tr data-txn="${t.id}" data-type="${t.type}">
+        <td><strong>${pname(t.user_id)}</strong><br /><span class="muted mono">${pphone(t.user_id)}</span></td>
+        <td><span class="pill ${t.type === 'deposit' ? 'completed' : t.type === 'withdraw' ? 'pending' : ''}">${esc(t.type)}</span></td>
+        <td><strong>Rs ${fmtRs(t.amount)}</strong></td>
+        <td class="muted">${detail}</td>
+        <td><span class="pill ${t.status}">${esc(t.status)}</span><br /><span class="muted">${fmtDate(t.created_at)}</span></td>
+        <td>${canAct ? `
+          <button class="btn-approve" data-act="approve">Approve</button>
+          <button class="btn-reject" data-act="reject">Reject</button>` : '<span class="muted">–</span>'}
+        </td>
+      </tr>`;
+    }).join('') || '<tr><td colspan="6" class="muted center">No transactions found.</td></tr>';
+
+    $('txn-tbody').querySelectorAll('button[data-act]').forEach(btn => {
+      btn.addEventListener('click', () => handleTxnAction(btn));
+    });
+
+    $('txn-loading').hidden = true;
+    $('txn-content').hidden = false;
+  } catch (e) {
+    $('txn-loading').textContent = 'Failed to load: ' + friendlyError(e);
+  }
+}
+
+async function handleTxnAction(btn) {
+  const tr = btn.closest('tr');
+  const txnId = tr.dataset.txn;
+  const type = tr.dataset.type;
+  const act = btn.dataset.act;
+  const fn = type === 'deposit'
+    ? (act === 'approve' ? 'approve_deposit' : 'reject_deposit')
+    : (act === 'approve' ? 'approve_withdraw' : 'reject_withdraw');
+  if (!confirm(`${act === 'approve' ? 'Approve' : 'Reject'} this ${type} of Rs ${tr.querySelector('td:nth-child(3)').textContent.trim()}?`)) return;
+  btn.disabled = true;
+  try {
+    const { data, error } = await supabase.rpc(fn, { p_txn_id: txnId });
+    if (error) throw error;
+    const row = unwrapRow(data);
+    if (row && row.ok === false) throw new Error(row.error || 'Action failed');
+    toast(`${act === 'approve' ? 'Approved' : 'Rejected'} ✓`);
+    await loadTransactions();
+    await loadDashboard();
+  } catch (e) {
+    toast(friendlyError(e, 'Action failed.'), true);
+    btn.disabled = false;
+  }
+}
+TAB_LOADERS.transactions = loadTransactions;
+
+/* ================= rounds ================= */
+async function loadRounds() {
+  $('rounds-loading').hidden = false;
+  $('rounds-content').hidden = true;
+  try {
+    const { data: rounds, error } = await supabase.from('rounds')
+      .select('id, round_no, status, player_count, total_bids, fee_amount, ends_at')
+      .order('round_no', { ascending: false })
+      .limit(50);
+    if (error) throw error;
+
+    $('rounds-tbody').innerHTML = (rounds || []).map(r => `
+      <tr>
+        <td><strong>#${r.round_no}</strong></td>
+        <td><span class="pill ${r.status}">${esc(r.status)}</span></td>
+        <td>${r.player_count ?? 0}</td>
+        <td>Rs ${fmtRs(r.total_bids)}</td>
+        <td class="gold-text"><strong>Rs ${fmtRs(r.fee_amount)}</strong></td>
+        <td class="muted">${fmtDate(r.ends_at)}</td>
+      </tr>`).join('') || '<tr><td colspan="6" class="muted center">No rounds yet.</td></tr>';
+
+    const { data: pt } = await supabase.from('private_tables')
+      .select('code, status, current_round_no, fee_amount, created_at')
+      .order('created_at', { ascending: false })
+      .limit(30);
+    $('ptables-tbody').innerHTML = (pt || []).map(t => `
+      <tr>
+        <td class="mono"><strong>${esc(t.code)}</strong></td>
+        <td><span class="pill ${t.status}">${esc(t.status)}</span></td>
+        <td>${t.current_round_no}</td>
+        <td class="gold-text"><strong>Rs ${fmtRs(t.fee_amount)}</strong></td>
+        <td class="muted">${fmtDate(t.created_at)}</td>
+      </tr>`).join('') || '<tr><td colspan="5" class="muted center">No private tables yet.</td></tr>';
+
+    $('rounds-loading').hidden = true;
+    $('rounds-content').hidden = false;
+  } catch (e) {
+    $('rounds-loading').textContent = 'Failed to load: ' + friendlyError(e);
+  }
+}
+TAB_LOADERS.rounds = loadRounds;
+
+/* ================= rewards ================= */
+async function loadRewards() {
+  $('rewards-loading').hidden = false;
+  $('rewards-content').hidden = true;
+  try {
+    const { data, error } = await supabase.from('rewards')
+      .select('id, user_id, type, amount, granted_at')
+      .order('granted_at', { ascending: false })
+      .limit(100);
+    if (error) throw error;
+
+    const rows = data || [];
+    const ref = rows.filter(r => r.type === 'referral');
+    const streak = rows.filter(r => r.type === 'streak');
+    const free = rows.filter(r => r.type === 'free_bid');
+
+    $('rw-ref-sum').textContent = fmtRs(ref.reduce((s, r) => s + Number(r.amount || 0), 0));
+    $('rw-ref-count').textContent = ref.length;
+    $('rw-streak-sum').textContent = fmtRs(streak.reduce((s, r) => s + Number(r.amount || 0), 0));
+    $('rw-streak-count').textContent = streak.length;
+    $('rw-free-count').textContent = free.length;
+
+    await hydrateProfiles(rows.map(r => r.user_id));
+    $('rewards-tbody').innerHTML = rows.slice(0, 50).map(r => `
+      <tr>
+        <td><strong>${pname(r.user_id)}</strong></td>
+        <td><span class="pill ${r.type === 'referral' ? 'completed' : r.type === 'streak' ? 'pending' : ''}">${esc(r.type)}</span></td>
+        <td class="green"><strong>Rs ${fmtRs(r.amount)}</strong></td>
+        <td class="muted">${fmtDate(r.granted_at)}</td>
+      </tr>`).join('') || '<tr><td colspan="4" class="muted center">No rewards yet.</td></tr>';
+
+    $('rewards-loading').hidden = true;
+    $('rewards-content').hidden = false;
+  } catch (e) {
+    $('rewards-loading').textContent = 'Failed to load: ' + friendlyError(e);
+  }
+}
+TAB_LOADERS.rewards = loadRewards;
+
+/* ================= boot ================= */
+async function boot() {
+  if (!ENV_OK) {
+    console.error(ENV_ERROR);
+    $('setup-error').hidden = false;
+    return;
+  }
+  initAuthUI();
+  initTabs();
+  $('app').hidden = false;
+
+  let session = null;
+  try {
+    const { data } = await supabase.auth.getSession();
+    session = data.session;
+  } catch (e) { console.warn('getSession failed', e); }
+
+  if (session?.user) {
+    await enterPortal();
+  } else {
+    $('admin-auth').hidden = false;
+  }
+
+  supabase.auth.onAuthStateChange((event) => {
+    if (event === 'SIGNED_OUT') location.reload();
+  });
+}
+
+boot();
+</script>
+</body>
+</html>
