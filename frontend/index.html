@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#062a1e" />
+  <title>WinSquad — Play together. Win together.</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <!-- Runtime config. On Cloudflare Pages this file is GENERATED at build time
+       from Pages environment variables (see README.md). Never commit real keys. -->
+  <script src="js/env.js"></script>
+</head>
+<body>
+
+  <!-- Shown on non-phone screens: WinSquad is phone-only -->
+  <div id="desktop-notice">
+    <div class="desktop-card">
+      <div class="logo">♛ WinSquad</div>
+      <p class="tagline">Play together. Win together.</p>
+      <p class="desktop-msg">📱 WinSquad is a <strong>phone-only</strong> experience.<br />
+      Please open this page on your mobile phone to play.</p>
+    </div>
+  </div>
+
+  <!-- Shown when js/env.js is missing real Supabase credentials -->
+  <div id="setup-error" hidden>
+    <div class="setup-card">
+      <div class="logo">♛ WinSquad</div>
+      <h2>⚙️ Setup needed</h2>
+      <p>The app is not connected to its backend yet.</p>
+      <ol>
+        <li>Copy <code>js/env.example.js</code> → <code>js/env.js</code></li>
+        <li>Fill in <code>SUPABASE_URL</code> and <code>SUPABASE_ANON_KEY</code></li>
+        <li>Reload this page</li>
+      </ol>
+      <p class="muted">On Cloudflare Pages, <code>js/env.js</code> is generated automatically at build time from Pages environment variables. See <code>frontend/README.md</code>.</p>
+    </div>
+  </div>
+
+  <div id="app" hidden>
+    <!-- ===== Top bar: activity signal (left) + round clock (right) ===== -->
+    <header id="topbar">
+      <div id="activity-pill" class="activity normal" title="Arena activity level">
+        <span class="dot"></span><span id="activity-label">NORMAL</span>
+      </div>
+      <div class="brand-mini">♛ WinSquad</div>
+      <div id="round-clock" class="clock" title="Time left in this round">
+        <span class="clock-icon">⏱</span><span id="clock-time">--:--</span>
+      </div>
+    </header>
+
+    <main id="views">
+
+      <!-- ============ AUTH ============ -->
+      <section id="view-auth" class="view" hidden>
+        <div class="auth-card">
+          <div class="logo big">♛</div>
+          <h1 class="gold">WinSquad</h1>
+          <p class="tagline">Play together. Win together.</p>
+
+          <div id="auth-step-phone">
+            <label class="field-label" for="phone-input">Mobile number</label>
+            <input id="phone-input" type="tel" inputmode="tel" placeholder="03XX XXXXXXX" autocomplete="tel" />
+            <p class="hint">We'll send you a 6-digit code by SMS.</p>
+            <button id="btn-send-otp" class="btn-red">Send code</button>
+          </div>
+
+          <div id="auth-step-otp" hidden>
+            <label class="field-label" for="otp-input">Enter the 6-digit code</label>
+            <input id="otp-input" type="text" inputmode="numeric" maxlength="6" placeholder="••••••" autocomplete="one-time-code" />
+            <p class="hint" id="otp-sent-to"></p>
+            <button id="btn-verify-otp" class="btn-red">Verify &amp; play</button>
+            <button id="btn-resend-otp" class="btn-ghost">Resend code</button>
+            <button id="btn-back-phone" class="btn-ghost">← Change number</button>
+          </div>
+
+          <p id="auth-error" class="error" hidden></p>
+        </div>
+      </section>
+
+      <!-- ============ PROFILE SETUP (first login) ============ -->
+      <section id="view-setup" class="view" hidden>
+        <div class="auth-card">
+          <div class="logo big">♛</div>
+          <h2 class="gold">Welcome to the squad!</h2>
+          <p class="hint">Pick a display name. Other players will see this on the leaderboard.</p>
+          <label class="field-label" for="setup-name">Display name</label>
+          <input id="setup-name" type="text" maxlength="20" placeholder="e.g. LuckyAli" />
+          <label class="field-label" for="setup-referral">Referral code <span class="muted">(optional)</span></label>
+          <input id="setup-referral" type="text" maxlength="12" placeholder="WS-123456" />
+          <p class="hint">Join with a friend's code and you <strong>both</strong> get <strong>Rs 100</strong> bonus.</p>
+          <button id="btn-setup-save" class="btn-red">Start playing</button>
+          <p id="setup-error-msg" class="error" hidden></p>
+        </div>
+      </section>
+
+      <!-- ============ ARENA (Squad Stakes) ============ -->
+      <section id="view-arena" class="view" hidden>
+        <!-- lightning streak bars -->
+        <div class="streak-bar left"><div id="streak-fill-left" class="streak-fill"></div></div>
+        <div class="streak-bar right"><div id="streak-fill-right" class="streak-fill"></div></div>
+
+        <div class="arena-wrap">
+          <!-- live pot ticker (user-safe total, fee never shown) -->
+          <div class="pot-card">
+            <div class="pot-label">🔥 LIVE ROUND <span id="round-no">#–</span></div>
+            <div class="pot-total">Rs <span id="pot-total">0</span></div>
+            <div class="pot-sub"><span id="pot-players">0</span> players in this round</div>
+          </div>
+
+          <!-- cinematic game visual -->
+          <div class="arena-visual">
+            <div class="aura"></div>
+            <div class="arena-emoji">🎰</div>
+            <div class="arena-text">SQUAD STAKES</div>
+            <div class="arena-sub">Top 2 stakes lose — everyone else wins</div>
+          </div>
+
+          <!-- your bid card -->
+          <div class="card gold-frame">
+            <div class="card-title">🎯 Your bid</div>
+            <div class="bid-tabs" role="tablist">
+              <button class="bid-tab active" data-amount="10">Rs 10</button>
+              <button class="bid-tab" data-amount="50">Rs 50</button>
+              <button class="bid-tab" data-amount="100">Rs 100</button>
+              <button class="bid-tab" data-amount="custom">Custom</button>
+            </div>
+            <div id="custom-bid-row" hidden>
+              <input id="custom-bid-input" type="number" inputmode="numeric" min="10" placeholder="Enter amount (min Rs 10)" />
+            </div>
+            <div class="bid-stats">
+              <div class="stat">
+                <span class="stat-label">Approx. win rate <span class="info" title="Smaller bids win more often: the 2 biggest stakes lose each round. Estimated live from total bids vs your stake.">ⓘ</span></span>
+                <span class="stat-value" id="win-rate">–%</span>
+              </div>
+              <div class="stat">
+                <span class="stat-label">Live profit share <span class="info" title="Your stake as a % of the total prize pool. Updates live as bids come in.">ⓘ</span></span>
+                <span class="stat-value green" id="profit-share">–%</span>
+              </div>
+              <div class="stat">
+                <span class="stat-label">Your bid this round</span>
+                <span class="stat-value gold-text" id="my-bid">—</span>
+              </div>
+            </div>
+            <button id="btn-place-bid" class="btn-red big">⚡ Place bid</button>
+            <button id="btn-free-bid" class="btn-gold">🎁 Free Rs 10 bid <span id="free-bid-note">(1/day)</span></button>
+          </div>
+
+          <!-- top 10 winners -->
+          <div class="card">
+            <div class="card-title">🏆 Top winners <span class="muted" id="winners-round-label"></span></div>
+            <div id="winners-list" class="winners-list">
+              <p class="muted center">Winners appear when the round ends…</p>
+            </div>
+          </div>
+
+          <p class="rules-tiny">Top 2 highest bids lose each round. All other players split the prize proportionally to their stake. Rounds run every 30 seconds.</p>
+        </div>
+      </section>
+
+      <!-- ============ PRIVATE TABLES ============ -->
+      <section id="view-private" class="view" hidden>
+        <div id="private-lobby">
+          <div class="card gold-frame">
+            <div class="card-title">🔒 Private table</div>
+            <p class="hint">4 players · invite code · only the <strong>highest</strong> bidder loses · min bid Rs 500</p>
+            <button id="btn-create-table" class="btn-red">Create table</button>
+            <div class="divider"><span>or</span></div>
+            <label class="field-label" for="join-code-input">Invite code</label>
+            <div class="row">
+              <input id="join-code-input" type="text" maxlength="12" placeholder="e.g. AB12CD" style="text-transform:uppercase" />
+              <button id="btn-join-table" class="btn-gold">Join</button>
+            </div>
+          </div>
+          <div id="invite-code-card" class="card" hidden>
+            <div class="card-title">🎟 Your invite code</div>
+            <div class="invite-code" id="invite-code">------</div>
+            <button id="btn-copy-code" class="btn-ghost">📋 Copy code</button>
+            <p class="hint">Share it with 3 friends. The table clock starts when the first player bids.</p>
+          </div>
+          <p id="private-error" class="error" hidden></p>
+        </div>
+
+        <div id="private-table" hidden>
+          <div class="card gold-frame">
+            <div class="card-title">🔒 Private table <span class="muted" id="private-code-label"></span></div>
+            <div id="private-clock" class="clock big">Waiting for first bid…</div>
+            <div id="private-seats" class="seats"></div>
+            <div id="private-total" class="pot-total small">Total reveals after all 4 players bid</div>
+            <div class="bid-tabs" role="tablist">
+              <button class="pbid-tab" data-amount="500">Rs 500</button>
+              <button class="pbid-tab active" data-amount="800">Rs 800</button>
+              <button class="pbid-tab" data-amount="1000">Rs 1000</button>
+              <button class="pbid-tab" data-amount="custom">Custom</button>
+            </div>
+            <div id="private-custom-row" hidden>
+              <input id="private-custom-input" type="number" inputmode="numeric" min="500" placeholder="Min Rs 500" />
+            </div>
+            <button id="btn-private-bid" class="btn-red big">⚡ Place private bid</button>
+            <button id="btn-leave-table" class="btn-ghost">Leave table</button>
+          </div>
+          <div id="private-results" class="card" hidden>
+            <div class="card-title">🏆 Round results</div>
+            <div id="private-results-list" class="winners-list"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ WALLET ============ -->
+      <section id="view-wallet" class="view" hidden>
+        <div class="balance-card">
+          <div class="balance-label">💰 Wallet balance</div>
+          <div class="balance-amount">Rs <span id="wallet-balance">0</span></div>
+        </div>
+
+        <div class="wallet-actions">
+          <button class="wallet-action" data-form="deposit-form">⬇ Deposit</button>
+          <button class="wallet-action" data-form="withdraw-form">⬆ Withdraw</button>
+          <button class="wallet-action" data-form="transfer-form">🔁 Transfer</button>
+        </div>
+
+        <div id="deposit-form" class="card wallet-form" hidden>
+          <div class="card-title">⬇ Deposit funds</div>
+          <label class="field-label">Method</label>
+          <select id="deposit-method">
+            <option value="easypaisa">Easypaisa</option>
+            <option value="jazzcash">JazzCash</option>
+            <option value="bank">Bank transfer</option>
+          </select>
+          <label class="field-label">Amount (Rs)</label>
+          <input id="deposit-amount" type="number" inputmode="numeric" min="10" placeholder="e.g. 1000" />
+          <label class="field-label">Transaction / TID number</label>
+          <input id="deposit-txn" type="text" placeholder="Paste the transaction ID from your app" />
+          <p class="hint">Send money to our official account first, then submit the transaction ID here. Deposits are approved manually and show as <strong>pending</strong> until confirmed.</p>
+          <button id="btn-deposit-submit" class="btn-red">Submit deposit</button>
+        </div>
+
+        <div id="withdraw-form" class="card wallet-form" hidden>
+          <div class="card-title">⬆ Withdraw funds</div>
+          <label class="field-label">Amount (Rs)</label>
+          <input id="withdraw-amount" type="number" inputmode="numeric" min="100" placeholder="Min Rs 100" />
+          <label class="field-label">Receive via</label>
+          <select id="withdraw-method">
+            <option value="easypaisa">Easypaisa</option>
+            <option value="jazzcash">JazzCash</option>
+            <option value="bank">Bank transfer</option>
+          </select>
+          <label class="field-label">Your account number</label>
+          <input id="withdraw-account" type="text" placeholder="Your Easypaisa / JazzCash / IBAN" />
+          <p class="hint">Withdrawals are processed manually and may take some time.</p>
+          <button id="btn-withdraw-submit" class="btn-red">Request withdrawal</button>
+        </div>
+
+        <div id="transfer-form" class="card wallet-form" hidden>
+          <div class="card-title">🔁 Transfer to a player</div>
+          <label class="field-label">Recipient's 14-digit transfer ID</label>
+          <input id="transfer-to" type="text" inputmode="numeric" maxlength="14" placeholder="14 digits, numbers only" />
+          <label class="field-label">Amount (Rs)</label>
+          <input id="transfer-amount" type="number" inputmode="numeric" min="10" placeholder="Max 50% of balance" />
+          <p class="hint">Limits: max <strong>50%</strong> of your balance per transfer · <strong>once per week</strong>. Find your own transfer ID in Profile.</p>
+          <button id="btn-transfer-submit" class="btn-red">Send transfer</button>
+        </div>
+
+        <div class="card">
+          <div class="card-title">🧾 Transaction history</div>
+          <div id="txn-list" class="txn-list"><p class="muted center">Loading…</p></div>
+        </div>
+        <p id="wallet-error" class="error" hidden></p>
+      </section>
+
+      <!-- ============ REWARDS ============ -->
+      <section id="view-rewards" class="view" hidden>
+        <div class="card gold-frame">
+          <div class="card-title">🤝 Referral bonus</div>
+          <p class="hint">Invite a friend with your code — you <strong>both</strong> get <strong>Rs 100</strong>.</p>
+          <div class="invite-code" id="referral-code">WS-••••••</div>
+          <button id="btn-copy-referral" class="btn-ghost">📋 Copy referral code</button>
+          <div class="divider"><span>have a code?</span></div>
+          <div class="row">
+            <input id="apply-referral-input" type="text" maxlength="12" placeholder="WS-123456" />
+            <button id="btn-apply-referral" class="btn-gold">Apply</button>
+          </div>
+        </div>
+
+        <div class="card gold-frame">
+          <div class="card-title">🔥 Daily streak</div>
+          <p class="hint">Claim every day in a row. Reward grows <strong>Rs 10 → Rs 70</strong> by day 7.</p>
+          <div class="streak-days" id="streak-days"></div>
+          <button id="btn-claim-streak" class="btn-red">Claim today's reward</button>
+          <p class="hint" id="streak-status"></p>
+        </div>
+
+        <div class="card">
+          <div class="card-title">🎁 Free daily bid</div>
+          <p class="hint">One <strong>Rs 10</strong> public bid free every calendar day.</p>
+          <div id="free-bid-status" class="free-status">Checking…</div>
+        </div>
+        <p id="rewards-error" class="error" hidden></p>
+      </section>
+
+      <!-- ============ PROFILE ============ -->
+      <section id="view-profile" class="view" hidden>
+        <div class="card gold-frame">
+          <div class="card-title">👤 Profile</div>
+          <div class="profile-row"><span>Display name</span><strong id="profile-name">–</strong></div>
+          <div class="profile-row"><span>Phone</span><strong id="profile-phone">–</strong></div>
+          <div class="profile-row"><span>Referral ID</span><strong id="profile-referral">–</strong>
+            <button class="btn-ghost small" data-copy="profile-referral">📋</button></div>
+          <div class="profile-row"><span>Transfer ID</span><strong id="profile-transfer">–</strong>
+            <button class="btn-ghost small" data-copy="profile-transfer">📋</button></div>
+          <p class="hint">Your <strong>transfer ID</strong> (14 digits) is what other players use to send you funds. Your <strong>referral ID</strong> is for invites.</p>
+          <button id="btn-logout" class="btn-ghost">🚪 Log out</button>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- ===== Bottom tab bar ===== -->
+    <nav id="tabbar" hidden>
+      <button class="tab active" data-view="arena">🎰<span>Arena</span></button>
+      <button class="tab" data-view="private">🔒<span>Private</span></button>
+      <button class="tab" data-view="wallet">💰<span>Wallet</span></button>
+      <button class="tab" data-view="rewards">🎁<span>Rewards</span></button>
+      <button class="tab" data-view="profile">👤<span>Profile</span></button>
+    </nav>
+  </div>
+
+  <!-- toast + result modal live outside #app so they work in any state -->
+  <div id="toast" hidden></div>
+  <div id="result-modal" hidden>
+    <div class="result-card">
+      <div id="result-emoji" class="result-emoji">🎉</div>
+      <h2 id="result-title" class="gold">Congratulations!</h2>
+      <div id="result-amount" class="result-amount">Rs 0</div>
+      <p id="result-sub" class="hint"></p>
+      <button id="btn-result-close" class="btn-red">Continue</button>
+    </div>
+  </div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

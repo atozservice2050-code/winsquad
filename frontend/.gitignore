@@ -1,0 +1,6 @@
+# Local Supabase credentials — generated at build time on Cloudflare Pages
+js/env.js
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
