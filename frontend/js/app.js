@@ -99,7 +99,7 @@ async function boot() {
   }
 
   initAuth(async () => {
-    // Called after successful OTP verification.
+    // Called after successful login.
     try {
       const { user, profile } = await loadProfile();
       if (!profile || !profile.display_name) {
@@ -110,10 +110,32 @@ async function boot() {
         enterApp({ ...profile, id: user.id }, user.phone);
       }
     } catch (e) {
-      console.warn('post-auth profile load failed', e);
-      const msg = e?.message || e?.error_description || JSON.stringify(e)?.slice(0, 200) || 'unknown';
-      toast('Profile error: ' + msg, true);
-      setTimeout(() => location.reload(), 3000);
+      console.warn('post-auth profile load failed, entering with minimal profile', e);
+      // Don't block the user - enter app with minimal data, profile will load in background
+      try {
+        const { data } = await supabase.auth.getUser();
+        const user = data?.user;
+        if (user) {
+          // Enter with minimal profile - screens will load their own data
+          enterApp({ id: user.id, display_name: 'Player' }, user.phone || '');
+          toast('Profile loading in background...', false);
+          // Retry profile load in background
+          setTimeout(async () => {
+            try {
+              const { profile } = await loadProfile();
+              if (profile?.display_name) {
+                location.reload(); // Reload with full profile
+              }
+            } catch (_) {}
+          }, 3000);
+        } else {
+          throw e;
+        }
+      } catch (e2) {
+        const msg = e?.message || 'unknown';
+        toast('Profile error: ' + msg, true);
+        setTimeout(() => location.reload(), 3000);
+      }
     }
   });
 
