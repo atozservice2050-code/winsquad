@@ -166,6 +166,11 @@ async function loadStats(roundId) {
     const { data } = await supabase.from('round_stats').select('*').eq('round_id', roundId).maybeSingle();
     stats = unwrapRow(data) || stats;
     renderStats();
+    // Update bots based on real player count
+    const playerCount = Number(stats?.player_count || 0);
+    if (playerCount !== realPlayerCount) {
+      updateRealPlayerCount(playerCount);
+    }
   } catch (e) { console.warn('round_stats read failed', e); }
 }
 
@@ -201,14 +206,17 @@ const SEAT_EMOJIS = ['🦁', '🐯', '🦊', '🐼', '🐨', '🦄', '🐸', '�
 const SEAT_NAMES = ['Ali', 'Sara', 'Usman', 'Fatima', 'Bilal', 'Ayesha', 'Omar', 'Zara', 'Hassan', 'Maryam'];
 let chartTimer = null;
 let botBids = []; // visual-only, never sent to backend
+let realPlayerCount = 0; // track real players in current round
 
 function simulateBotBids() {
-  // 10 bots ALWAYS, amounts 10-500
-  // If real player bid, bots bid LOWER than player's bid
+  // Bots DECREASE as real players join
+  // 0 real → 10 bots, 1 real → 9 bots, ..., 10+ real → 0 bots
+  const targetBots = Math.max(0, 10 - realPlayerCount);
   botBids = [];
   const playerBid = myBidRow ? Number(myBidRow.amount || 0) : 0;
 
-  for (let i = 0; i < 10; i++) {
+  const usedNames = new Set();
+  for (let i = 0; i < targetBots; i++) {
     let amount;
     if (playerBid > 10) {
       // Bots bid lower than player (10 to playerBid-1, max 500)
@@ -224,12 +232,24 @@ function simulateBotBids() {
       const valid = presets.filter(p => p <= (playerBid > 10 ? Math.min(playerBid - 1, 500) : 500));
       if (valid.length > 0) amount = valid[Math.floor(Math.random() * valid.length)];
     }
+    let name;
+    do {
+      name = SEAT_NAMES[Math.floor(Math.random() * SEAT_NAMES.length)];
+    } while (usedNames.has(name));
+    usedNames.add(name);
     botBids.push({
       emoji: SEAT_EMOJIS[Math.floor(Math.random() * SEAT_EMOJIS.length)],
-      name: SEAT_NAMES[Math.floor(Math.random() * SEAT_NAMES.length)],
+      name: name,
       amount: amount,
     });
   }
+}
+
+// Update real player count from round stats
+function updateRealPlayerCount(count) {
+  realPlayerCount = count || 0;
+  simulateBotBids(); // re-generate bots based on new count
+  renderPlayers();
 }
 
 function renderPlayers() {
