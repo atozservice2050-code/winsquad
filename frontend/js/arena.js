@@ -119,22 +119,44 @@ function renderStats() {
   renderChart();
 }
 
-/* 4 player seats + live bar chart (visual only — real bids drive the pot) */
+/* 4 player seats + live bar chart
+   BOT SIMULATION (display-only): Bots make the game look lively.
+   CRITICAL: Bots NEVER touch the database or payout logic.
+   Real bids/payouts use ONLY actual user data via Supabase. */
 const SEAT_EMOJIS = ['🦁', '🐯', '🦊', '🐼', '🐨', '🦄', '🐸', '🐵'];
 const SEAT_NAMES = ['Ali', 'Sara', 'Usman', 'Fatima', 'Bilal', 'Ayesha', 'Omar', 'Zara', 'Hassan', 'Maryam'];
 let chartTimer = null;
+let botBids = []; // visual-only, never sent to backend
+
+function simulateBotBids() {
+  // Generate 3-6 fake bot bids for visual liveliness
+  botBids = [];
+  const count = 3 + Math.floor(Math.random() * 4);
+  const amounts = [10, 50, 100];
+  for (let i = 0; i < count; i++) {
+    botBids.push({
+      emoji: SEAT_EMOJIS[Math.floor(Math.random() * SEAT_EMOJIS.length)],
+      name: SEAT_NAMES[Math.floor(Math.random() * SEAT_NAMES.length)],
+      amount: amounts[Math.floor(Math.random() * amounts.length)],
+    });
+  }
+}
 
 function renderPlayers() {
   const row = $('players-row');
   if (!row) return;
   row.innerHTML = '';
-  // Seat 1: you (if you bid this round)
   const seats = [];
+  // Seat 1: you (if you bid this round) — REAL user
   if (myBidRow) {
-    seats.push({ emoji: '😎', name: 'You', bid: Number(myBidRow.amount || 0), you: true });
+    seats.push({ emoji: '😎', name: 'You', bid: Number(myBidRow.amount || 0), you: true, bot: false });
   }
-  // Fill remaining seats with lively placeholders
+  // Fill with BOT seats (visual only)
   const used = new Set();
+  botBids.forEach(b => {
+    if (seats.length >= 4) return;
+    seats.push({ emoji: b.emoji, name: b.name, bid: b.amount, you: false, bot: true });
+  });
   while (seats.length < 4) {
     const i = Math.floor(Math.random() * SEAT_NAMES.length);
     if (used.has(i)) continue;
@@ -142,8 +164,8 @@ function renderPlayers() {
     seats.push({
       emoji: SEAT_EMOJIS[Math.floor(Math.random() * SEAT_EMOJIS.length)],
       name: SEAT_NAMES[i],
-      bid: null, // not yet bid (visual placeholder)
-      you: false,
+      bid: null, // waiting (visual placeholder)
+      you: false, bot: true,
     });
   }
   seats.forEach(s => {
@@ -169,12 +191,15 @@ function renderChart(animate) {
       chart.appendChild(col);
     }
   }
-  const total = Number(stats?.total_bids ?? round?.total_bids ?? 0);
+  const realTotal = Number(stats?.total_bids ?? round?.total_bids ?? 0);
+  // Visual pot = real + bot (bots make it look lively; payouts use REAL only)
+  const botTotal = botBids.reduce((s, b) => s + (b.amount || 0), 0);
+  const total = realTotal + botTotal;
   const base = Math.max(total / N, 5);
   Array.from(chart.children).forEach((col, i) => {
     const bar = col.querySelector('.bar');
     const label = col.querySelector('.bar-label');
-    // Random walk around the base — feels live, scales with real pot
+    // Random walk around the base — feels live, scales with visual pot
     const jitter = 0.5 + Math.random();
     const h = Math.min(100, Math.max(6, (base * jitter) / Math.max(base, 1) * 55 + Math.random() * 20));
     bar.style.height = h.toFixed(0) + '%';
@@ -185,7 +210,14 @@ function renderChart(animate) {
 
 function startChartLive() {
   clearInterval(chartTimer);
-  chartTimer = setInterval(() => renderChart(true), 2500);
+  simulateBotBids(); // initial bots
+  renderPlayers();
+  renderChart();
+  chartTimer = setInterval(() => {
+    simulateBotBids(); // refresh bots every cycle
+    renderPlayers();
+    renderChart(true);
+  }, 5000);
 }
 
 function startCountdown() {
