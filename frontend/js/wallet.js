@@ -179,6 +179,20 @@ async function submitTransfer() {
     toast('Limit: max 50% of balance (Rs ' + fmtRs(maxAllowed) + ').', true);
     return;
   }
+  // Once per day: check if user already transferred today
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    const { data: todayTransfers } = await supabase.from('transactions')
+      .select('id')
+      .eq('user_id', userId)
+      .in('type', ['transfer_out', 'transfer'])
+      .gte('created_at', today + 'T00:00:00');
+    if (todayTransfers && todayTransfers.length > 0) {
+      toast('Only 1 transfer per day allowed. Try tomorrow! 📅', true);
+      $('btn-transfer-submit').disabled = false;
+      return;
+    }
+  } catch (e) { console.warn('transfer limit check failed', e); }
   $('btn-transfer-submit').disabled = true;
   try {
     const { data, error } = await supabase.rpc('transfer_funds', {
