@@ -72,13 +72,40 @@ function renderActivity() {
 
 /* ---------------- round loading ---------------- */
 /* Roulette wheel control */
+function buildRouletteNumbers() {
+  const container = $('roulette-numbers');
+  if (!container || container.children.length > 0) return;
+  // European roulette: 0 (green), 1-36 (red/black alternating)
+  const reds = [1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36];
+  const numbers = [0];
+  for (let i = 1; i <= 36; i++) numbers.push(i);
+
+  numbers.forEach((num, idx) => {
+    const angle = (idx / numbers.length) * 360;
+    const pocket = document.createElement('div');
+    pocket.className = 'roulette-pocket ' + (num === 0 ? 'green' : (reds.includes(num) ? 'red' : 'black'));
+    pocket.textContent = num;
+    // Position around circle
+    const rad = (angle - 90) * Math.PI / 180;
+    const x = 50 + 42 * Math.cos(rad);
+    const y = 50 + 42 * Math.sin(rad);
+    pocket.style.left = x + '%';
+    pocket.style.top = y + '%';
+    container.appendChild(pocket);
+  });
+}
+
 function startWheel() {
+  buildRouletteNumbers();
   const wheel = $('roulette-wheel');
+  const numbers = $('roulette-numbers');
+  const track = $('roulette-track');
   const status = $('roulette-status');
   if (wheel) {
     wheel.classList.remove('stopped');
-    wheel.classList.add('spinning');
   }
+  if (numbers) numbers.classList.add('spinning');
+  if (track) track.classList.add('spinning');
   if (status) {
     status.textContent = 'Spinning... 🎰';
     status.classList.remove('stopped');
@@ -87,11 +114,12 @@ function startWheel() {
 
 function stopWheel() {
   const wheel = $('roulette-wheel');
+  const numbers = $('roulette-numbers');
+  const track = $('roulette-track');
   const status = $('roulette-status');
-  if (wheel) {
-    wheel.classList.remove('spinning');
-    wheel.classList.add('stopped');
-  }
+  if (wheel) wheel.classList.add('stopped');
+  if (numbers) numbers.classList.remove('spinning');
+  if (track) track.classList.remove('spinning');
   if (status) {
     status.textContent = 'Results! 🏆';
     status.classList.add('stopped');

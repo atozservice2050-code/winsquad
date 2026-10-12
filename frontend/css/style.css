@@ -457,70 +457,96 @@ button { font-family: inherit; cursor: pointer; border: none; border-radius: 12p
   align-items: center; justify-content: center; margin-right: 8px;
 }
 
-/* ROULETTE WHEEL — casino style spinning table with ball */
+/* ROULETTE WHEEL — real casino style */
 .roulette-wrap {
   position: relative; margin: 16px auto 8px; z-index: 1;
   text-align: center;
 }
 .roulette-wheel {
   position: relative;
-  width: 180px; height: 180px; margin: 0 auto;
+  width: 200px; height: 200px; margin: 0 auto;
   border-radius: 50%;
-  background:
-    conic-gradient(
-      #d4af37 0deg 30deg, #0d4d33 30deg 60deg,
-      #d4af37 60deg 90deg, #0d4d33 90deg 120deg,
-      #d4af37 120deg 150deg, #0d4d33 150deg 180deg,
-      #d4af37 180deg 210deg, #0d4d33 210deg 240deg,
-      #d4af37 240deg 270deg, #0d4d33 270deg 300deg,
-      #d4af37 300deg 330deg, #0d4d33 330deg 360deg
-    );
-  border: 4px solid var(--gold);
+  /* Wooden outer rim */
+  background: radial-gradient(circle, #1a1a1a 0%, #1a1a1a 62%, #5a3a1a 62%, #5a3a1a 70%, #3a2410 70%, #3a2410 100%);
+  border: 6px solid #8a6d3a;
   box-shadow:
-    0 0 30px rgba(212, 175, 55, 0.5),
-    inset 0 0 20px rgba(0, 0, 0, 0.6);
+    0 0 40px rgba(212, 175, 55, 0.4),
+    inset 0 0 30px rgba(0, 0, 0, 0.8),
+    0 8px 20px rgba(0, 0, 0, 0.6);
 }
-.roulette-wheel.spinning {
-  animation: roulette-spin 3s linear infinite;
+/* Numbered pockets ring */
+.roulette-numbers {
+  position: absolute;
+  top: 50%; left: 50%;
+  width: 150px; height: 150px;
+  margin: -75px 0 0 -75px;
+  border-radius: 50%;
 }
-.roulette-wheel.stopped {
-  animation: none;
+.roulette-numbers.spinning {
+  animation: roulette-spin 4s linear infinite;
 }
 @keyframes roulette-spin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
 }
+.roulette-pocket {
+  position: absolute;
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 9px; font-weight: 800; color: #fff;
+  border: 1px solid rgba(255,255,255,0.3);
+  transform: translate(-50%, -50%);
+}
+.roulette-pocket.red { background: radial-gradient(circle, #cc2222 0%, #881111 100%); }
+.roulette-pocket.black { background: radial-gradient(circle, #333 0%, #111 100%); }
+.roulette-pocket.green { background: radial-gradient(circle, #22aa44 0%, #116622 100%); }
+/* Ball track */
+.roulette-track {
+  position: absolute;
+  top: 50%; left: 50%;
+  width: 176px; height: 176px;
+  margin: -88px 0 0 -88px;
+  border-radius: 50%;
+  border: 2px solid rgba(212, 175, 55, 0.3);
+}
 .roulette-ball {
   position: absolute;
-  width: 16px; height: 16px;
-  background: radial-gradient(circle at 30% 30%, #fff 0%, #ccc 50%, #888 100%);
+  width: 14px; height: 14px;
+  background: radial-gradient(circle at 35% 35%, #ffffff 0%, #dddddd 40%, #999999 100%);
   border-radius: 50%;
-  top: 8px; left: 50%;
-  margin-left: -8px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.6);
-  z-index: 2;
+  top: -7px; left: 50%;
+  margin-left: -7px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.7), 0 0 6px rgba(255,255,255,0.5);
+  z-index: 3;
 }
-.roulette-wheel.spinning .roulette-ball {
-  animation: ball-orbit 1.5s linear infinite;
+.roulette-track.spinning .roulette-ball {
+  animation: ball-spin 1.2s linear infinite;
 }
-@keyframes ball-orbit {
-  from { transform: rotate(0deg) translateX(70px) rotate(0deg); }
-  to { transform: rotate(360deg) translateX(70px) rotate(-360deg); }
+@keyframes ball-spin {
+  from { transform: rotate(0deg) translateX(88px) rotate(0deg); }
+  to { transform: rotate(-360deg) translateX(88px) rotate(360deg); }
 }
+/* Center */
 .roulette-center {
   position: absolute;
   top: 50%; left: 50%;
   transform: translate(-50%, -50%);
-  font-size: 40px;
-  background: radial-gradient(circle, #1a5c3f 0%, #071f16 100%);
-  width: 70px; height: 70px;
+  width: 60px; height: 60px;
   border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #d4af37 0%, #8a6d1f 50%, #5a4510 100%);
+  border: 3px solid #3a2410;
   display: flex; align-items: center; justify-content: center;
-  border: 2px solid var(--gold);
-  box-shadow: inset 0 0 10px rgba(0,0,0,0.7);
+  font-size: 28px;
+  box-shadow: inset 0 2px 8px rgba(0,0,0,0.5), 0 0 15px rgba(212,175,55,0.5);
+  z-index: 2;
+}
+.roulette-wheel.stopped .roulette-numbers,
+.roulette-wheel.stopped .roulette-track {
+  animation-play-state: paused;
 }
 .roulette-status {
-  margin-top: 10px;
+  margin-top: 12px;
   color: var(--gold); font-weight: 700; font-size: 13px;
   letter-spacing: 1px;
 }
