@@ -130,18 +130,31 @@
             </div>
             <div class="arena-text">SQUAD STAKES</div>
             <div class="arena-sub">Play together. Win together.</div>
-            <!-- ROULETTE WHEEL (real casino style) -->
-            <div class="roulette-wrap">
-              <div class="roulette-wheel" id="roulette-wheel">
-                <div class="roulette-numbers" id="roulette-numbers">
-                  <!-- numbered pockets injected by JS -->
+            <!-- 3D ROULETTE TABLE (real casino style) -->
+            <div class="casino-table-3d">
+              <div class="table-felt">
+                <!-- Roulette wheel on left -->
+                <div class="roulette-wrap">
+                  <div class="roulette-wheel" id="roulette-wheel">
+                    <div class="roulette-numbers" id="roulette-numbers">
+                      <!-- numbered pockets injected by JS -->
+                    </div>
+                    <div class="roulette-track" id="roulette-track">
+                      <div class="roulette-ball"></div>
+                    </div>
+                    <div class="roulette-center">🎰</div>
+                  </div>
+                  <div class="roulette-status" id="roulette-status">Spinning... 🎰</div>
                 </div>
-                <div class="roulette-track" id="roulette-track">
-                  <div class="roulette-ball"></div>
+                <!-- Betting layout on right (3D) -->
+                <div class="betting-layout" id="betting-layout">
+                  <div class="layout-zero">0</div>
+                  <div class="layout-numbers" id="layout-numbers">
+                    <!-- 1-36 injected by JS -->
+                  </div>
                 </div>
-                <div class="roulette-center">🎰</div>
               </div>
-              <div class="roulette-status" id="roulette-status">Spinning... 🎰</div>
+              <div class="table-edge"></div>
             </div>
           </div>
 

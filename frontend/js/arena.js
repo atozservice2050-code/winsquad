@@ -93,6 +93,18 @@ function buildRouletteNumbers() {
     pocket.style.top = y + '%';
     container.appendChild(pocket);
   });
+
+  // Build betting layout (1-36 grid)
+  const layout = $('layout-numbers');
+  if (layout && layout.children.length === 0) {
+    for (let i = 1; i <= 36; i++) {
+      const cell = document.createElement('div');
+      cell.className = 'layout-num ' + (reds.includes(i) ? 'red' : 'black');
+      cell.textContent = i;
+      cell.dataset.num = i;
+      layout.appendChild(cell);
+    }
+  }
 }
 
 function startWheel() {
