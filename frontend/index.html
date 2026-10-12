@@ -152,7 +152,7 @@
             <div id="custom-bid-row" hidden>
               <input id="custom-bid-input" type="number" inputmode="numeric" min="10" placeholder="Enter amount (min Rs 10)" />
             </div>
-            <div class="bid-stats">
+            <div class="bid-stats" style="margin-top: 18px;">
               <div class="stat">
                 <span class="stat-label">Approx. win rate <span class="info" title="Estimated live from total bids vs your stake.">ⓘ</span></span>
                 <span class="stat-value" id="win-rate">–%</span>
@@ -160,6 +160,10 @@
               <div class="stat">
                 <span class="stat-label">Live profit share <span class="info" title="Your stake as a % of the total prize pool. Updates live as bids come in.">ⓘ</span></span>
                 <span class="stat-value green" id="profit-share">–%</span>
+              </div>
+              <div class="stat">
+                <span class="stat-label">Approx. winning</span>
+                <span class="stat-value green" id="approx-win">–</span>
               </div>
               <div class="stat">
                 <span class="stat-label">Your bid this round</span>

@@ -70,6 +70,33 @@ function renderActivity() {
 }
 
 /* ---------------- round loading ---------------- */
+/* Roulette wheel control */
+function startWheel() {
+  const wheel = $('roulette-wheel');
+  const status = $('roulette-status');
+  if (wheel) {
+    wheel.classList.remove('stopped');
+    wheel.classList.add('spinning');
+  }
+  if (status) {
+    status.textContent = 'Spinning... 🎰';
+    status.classList.remove('stopped');
+  }
+}
+
+function stopWheel() {
+  const wheel = $('roulette-wheel');
+  const status = $('roulette-status');
+  if (wheel) {
+    wheel.classList.remove('spinning');
+    wheel.classList.add('stopped');
+  }
+  if (status) {
+    status.textContent = 'Results! 🏆';
+    status.classList.add('stopped');
+  }
+}
+
 async function loadRound() {
   try {
     const { data, error } = await supabase.rpc('get_current_round');
@@ -85,6 +112,7 @@ async function loadRound() {
       resultShownFor = null;
       renderWinnersPlaceholder();
       updateBidEstimates();
+      startWheel(); // Start spinning for new round
     }
     startCountdown();
   } catch (e) {
@@ -122,7 +150,6 @@ function renderStats() {
   $('pot-players').textContent = fmtRs(displayPlayers);
   updateBidEstimates();
   renderPlayers();
-  renderChart();
 }
 
 /* 4 player seats + live bar chart
@@ -185,44 +212,13 @@ function renderPlayers() {
   });
 }
 
-function renderChart(animate) {
-  const chart = $('bid-chart');
-  if (!chart) return;
-  const N = 8;
-  if (!chart.children.length) {
-    for (let i = 0; i < N; i++) {
-      const col = document.createElement('div');
-      col.className = 'bar-col';
-      col.innerHTML = '<div class="bar"></div><div class="bar-label"></div>';
-      chart.appendChild(col);
-    }
-  }
-  const realTotal = Number(stats?.total_bids ?? round?.total_bids ?? 0);
-  // Visual pot = real + bot (bots make it look lively; payouts use REAL only)
-  const botTotal = botBids.reduce((s, b) => s + (b.amount || 0), 0);
-  const total = realTotal + botTotal;
-  const base = Math.max(total / N, 5);
-  Array.from(chart.children).forEach((col, i) => {
-    const bar = col.querySelector('.bar');
-    const label = col.querySelector('.bar-label');
-    // Random walk around the base — feels live, scales with visual pot
-    const jitter = 0.5 + Math.random();
-    const h = Math.min(100, Math.max(6, (base * jitter) / Math.max(base, 1) * 55 + Math.random() * 20));
-    bar.style.height = h.toFixed(0) + '%';
-    bar.classList.toggle('hot', h > 70);
-    label.textContent = 'Rs ' + fmtRs(Math.round(base * jitter));
-  });
-}
-
 function startChartLive() {
   clearInterval(chartTimer);
   simulateBotBids(); // initial bots
   renderPlayers();
-  renderChart();
   chartTimer = setInterval(() => {
     simulateBotBids(); // refresh bots every cycle
     renderPlayers();
-    renderChart(true);
   }, 5000);
 }
 
@@ -300,12 +296,19 @@ function updateBidEstimates() {
     $('win-rate').textContent = rate.toFixed(0) + '%';
     const share = Math.min(100, (stake / total) * 100);
     $('profit-share').textContent = share.toFixed(1) + '%';
+    // Approx winning = your share of 90% of estimated losers pool
+    // Rough estimate: assume top-2 bids are ~2x average
+    const estLosersPool = Math.min(total * 0.4, avg * 2 * 2);
+    const estWin = (stake / total) * estLosersPool * 0.9;
+    $('approx-win').textContent = 'Rs ' + fmtRs(Math.max(0, Math.round(estWin)));
   } else if (stake && total > 0) {
     $('win-rate').textContent = '–%';
     $('profit-share').textContent = Math.min(100, (stake / total) * 100).toFixed(1) + '%';
+    $('approx-win').textContent = '–';
   } else {
     $('win-rate').textContent = stake ? '–%' : '–%';
     $('profit-share').textContent = '–%';
+    $('approx-win').textContent = '–';
   }
 }
 
@@ -349,6 +352,7 @@ function renderWinnersPlaceholder() {
 
 /** Called when a round settles. Renders top-10 winners and the personal popup. */
 async function onRoundSettled(settledRoundId) {
+  stopWheel(); // Stop spinning when results come
   if (resultShownFor === settledRoundId) return;
   resultShownFor = settledRoundId;
   try {
