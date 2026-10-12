@@ -4,7 +4,10 @@
    If credentials are missing/placeholder, ENV_OK is false and
    supabase stays null — app.js shows the setup screen instead.
    ============================================================ */
-import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+/* supabase-js is loaded via classic script tag (js/supabase-js.js) in HTML.
+   Use the global window.supabase.createClient. */
+const createClient = (typeof window !== 'undefined' && window.supabase && window.supabase.createClient)
+  || (() => { throw new Error('Supabase JS not loaded'); });
 
 const env = (typeof window !== 'undefined' && window.__WINSQUAD_ENV__) || {};
 // Fallback defaults (public values) if js/env.js is missing — e.g. when the
