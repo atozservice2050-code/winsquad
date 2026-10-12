@@ -490,33 +490,47 @@ async function loadWinners(settledRoundId) {
 function renderWinners(winners, settledRoundId) {
   const list = $('winners-list');
   $('winners-round-label').textContent = '· round #' + (round?.round_no ?? '–');
-  if (!Array.isArray(winners) || winners.length === 0) {
-    list.innerHTML = '<p class="muted center">Results are being calculated…</p>';
-    // one retry a few seconds later in case settlement lags
-    setTimeout(async () => {
-      if (resultShownFor !== settledRoundId) return;
-      try {
-        const w = await loadWinners(settledRoundId);
-        if (w.length) renderWinners(w, settledRoundId);
-      } catch {}
-    }, 6000);
-    return;
+
+  /* FAKE RESULTS for show: if no real winners (no real players),
+     generate 10 fake winners to make the game look alive */
+  let displayWinners = [...(winners || [])];
+  const botNames = ['Ali 🏆', 'Sara ⭐', 'Usman 💰', 'Fatima 🎯', 'Bilal 👑', 'Ayesha 💎', 'Omar 🚀', 'Zara 🌟', 'Hassan 🎲', 'Maryam 💫'];
+
+  if (displayWinners.length === 0) {
+    // No real players: generate 10 FAKE winners for display
+    const usedNames = new Set();
+    while (displayWinners.length < 10) {
+      const name = botNames[Math.floor(Math.random() * botNames.length)];
+      if (usedNames.has(name)) continue;
+      usedNames.add(name);
+      const fakeBid = 10 + Math.floor(Math.random() * 491); // 10-500
+      const fakePayout = Math.round(fakeBid * (1.1 + Math.random() * 0.8)); // 110%-190% of bid
+      displayWinners.push({
+        display_name: name,
+        name: name,
+        bid_amount: fakeBid,
+        payout_amount: fakePayout,
+        amount: fakePayout,
+        isBot: true,
+        isFake: true,
+      });
+    }
+    // Sort by payout descending
+    displayWinners.sort((a, b) => b.payout_amount - a.payout_amount);
+  } else {
+    // Real winners exist: mix in bots to reach 10 (as before)
+    const usedNames = new Set(displayWinners.map(w => w.display_name || w.name));
+    while (displayWinners.length < 10) {
+      const name = botNames[Math.floor(Math.random() * botNames.length)];
+      if (usedNames.has(name)) continue;
+      usedNames.add(name);
+      const botPayout = 15 + Math.floor(Math.random() * 200);
+      displayWinners.push({ display_name: name, payout_amount: botPayout, isBot: true });
+    }
+    displayWinners.sort((a, b) => (b.payout_amount ?? b.amount ?? 0) - (a.payout_amount ?? a.amount ?? 0));
   }
-  /* BOT WINNERS (display-only): Mix bots into the list to look lively like the demo.
-     CRITICAL: These are visual only — real payouts come from the database. */
-  const allWinners = [...winners];
-  const botNames = ['Ali 🏆', 'Sara ⭐', 'Usman 💰', 'Fatima 🎯', 'Bilal 👑', 'Ayesha 💎', 'Omar 🚀', 'Zara 🌟'];
-  const usedNames = new Set(allWinners.map(w => w.display_name || w.name));
-  while (allWinners.length < 10) {
-    const name = botNames[Math.floor(Math.random() * botNames.length)];
-    if (usedNames.has(name)) continue;
-    usedNames.add(name);
-    // Bot payout: random realistic amount (visual only, not from database)
-    const botPayout = 15 + Math.floor(Math.random() * 200);
-    allWinners.push({ display_name: name, payout_amount: botPayout, isBot: true });
-  }
-  // Sort by payout descending (bots mixed in naturally)
-  allWinners.sort((a, b) => (b.payout_amount ?? b.amount ?? 0) - (a.payout_amount ?? a.amount ?? 0));
+
+  const allWinners = displayWinners;
 
   list.innerHTML = '';
   allWinners.slice(0, 10).forEach((w, i) => {
