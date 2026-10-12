@@ -115,6 +115,77 @@ function renderStats() {
   $('pot-total').textContent = fmtRs(total);
   $('pot-players').textContent = fmtRs(players);
   updateBidEstimates();
+  renderPlayers();
+  renderChart();
+}
+
+/* 4 player seats + live bar chart (visual only — real bids drive the pot) */
+const SEAT_EMOJIS = ['🦁', '🐯', '🦊', '🐼', '🐨', '🦄', '🐸', '🐵'];
+const SEAT_NAMES = ['Ali', 'Sara', 'Usman', 'Fatima', 'Bilal', 'Ayesha', 'Omar', 'Zara', 'Hassan', 'Maryam'];
+let chartTimer = null;
+
+function renderPlayers() {
+  const row = $('players-row');
+  if (!row) return;
+  row.innerHTML = '';
+  // Seat 1: you (if you bid this round)
+  const seats = [];
+  if (myBidRow) {
+    seats.push({ emoji: '😎', name: 'You', bid: Number(myBidRow.amount || 0), you: true });
+  }
+  // Fill remaining seats with lively placeholders
+  const used = new Set();
+  while (seats.length < 4) {
+    const i = Math.floor(Math.random() * SEAT_NAMES.length);
+    if (used.has(i)) continue;
+    used.add(i);
+    seats.push({
+      emoji: SEAT_EMOJIS[Math.floor(Math.random() * SEAT_EMOJIS.length)],
+      name: SEAT_NAMES[i],
+      bid: null, // not yet bid (visual placeholder)
+      you: false,
+    });
+  }
+  seats.forEach(s => {
+    const div = document.createElement('div');
+    div.className = 'player-seat' + (s.you ? ' you' : (s.bid === null ? ' empty' : ''));
+    div.innerHTML = '<div class="player-avatar">' + s.emoji + '</div>' +
+      '<div class="player-name"></div>' +
+      '<div class="player-bid">' + (s.bid !== null ? 'Rs ' + fmtRs(s.bid) : '—') + '</div>';
+    div.querySelector('.player-name').textContent = s.name;
+    row.appendChild(div);
+  });
+}
+
+function renderChart(animate) {
+  const chart = $('bid-chart');
+  if (!chart) return;
+  const N = 8;
+  if (!chart.children.length) {
+    for (let i = 0; i < N; i++) {
+      const col = document.createElement('div');
+      col.className = 'bar-col';
+      col.innerHTML = '<div class="bar"></div><div class="bar-label"></div>';
+      chart.appendChild(col);
+    }
+  }
+  const total = Number(stats?.total_bids ?? round?.total_bids ?? 0);
+  const base = Math.max(total / N, 5);
+  Array.from(chart.children).forEach((col, i) => {
+    const bar = col.querySelector('.bar');
+    const label = col.querySelector('.bar-label');
+    // Random walk around the base — feels live, scales with real pot
+    const jitter = 0.5 + Math.random();
+    const h = Math.min(100, Math.max(6, (base * jitter) / Math.max(base, 1) * 55 + Math.random() * 20));
+    bar.style.height = h.toFixed(0) + '%';
+    bar.classList.toggle('hot', h > 70);
+    label.textContent = 'Rs ' + fmtRs(Math.round(base * jitter));
+  });
+}
+
+function startChartLive() {
+  clearInterval(chartTimer);
+  chartTimer = setInterval(() => renderChart(true), 2500);
 }
 
 function startCountdown() {
@@ -322,7 +393,7 @@ async function showPersonalResult(settledRoundId) {
     $('result-emoji').textContent = '😭';
     $('result-title').textContent = 'Better luck next time';
     $('result-amount').textContent = '';
-    $('result-sub').textContent = 'Your bid was among the top 2 highest this round.';
+    $('result-sub').textContent = 'Try a different bid amount next round!';
     card.classList.add('lost');
   } else {
     return; // result not determinable — don't pop anything
@@ -390,9 +461,11 @@ export function initArena() {
 
   loadRound();
   subscribe();
+  startChartLive();
 }
 
 export function destroyArena() {
   unsubscribe();
   clearInterval(countdownInt);
+  clearInterval(chartTimer);
 }

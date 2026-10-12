@@ -116,12 +116,21 @@
             <div class="pot-sub"><span id="pot-players">0</span> players in this round</div>
           </div>
 
-          <!-- cinematic game visual -->
+          <!-- cinematic game visual: 4 players + live bar chart -->
           <div class="arena-visual">
             <div class="aura"></div>
-            <div class="arena-emoji">🎰</div>
+            <div class="players-row" id="players-row">
+              <!-- 4 player seats injected by JS -->
+            </div>
             <div class="arena-text">SQUAD STAKES</div>
-            <div class="arena-sub">Top 2 stakes lose — everyone else wins</div>
+            <div class="arena-sub">Play together. Win together.</div>
+            <!-- live bid bar chart -->
+            <div class="chart-wrap">
+              <div class="chart-title">📊 Live bids</div>
+              <div class="bar-chart" id="bid-chart">
+                <!-- bars injected by JS -->
+              </div>
+            </div>
           </div>
 
           <!-- your bid card -->
@@ -138,7 +147,7 @@
             </div>
             <div class="bid-stats">
               <div class="stat">
-                <span class="stat-label">Approx. win rate <span class="info" title="Smaller bids win more often: the 2 biggest stakes lose each round. Estimated live from total bids vs your stake.">ⓘ</span></span>
+                <span class="stat-label">Approx. win rate <span class="info" title="Estimated live from total bids vs your stake.">ⓘ</span></span>
                 <span class="stat-value" id="win-rate">–%</span>
               </div>
               <div class="stat">

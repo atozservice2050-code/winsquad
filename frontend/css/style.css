@@ -240,6 +240,41 @@ button { font-family: inherit; cursor: pointer; border: none; border-radius: 12p
 .arena-text { position: relative; color: var(--gold); font-weight: 900; letter-spacing: 3px; font-size: 20px; margin-top: 6px; }
 .arena-sub { position: relative; color: var(--muted); font-size: 12px; margin-top: 4px; }
 
+/* 4 players row */
+.players-row {
+  position: relative; display: flex; justify-content: center; gap: 10px;
+  margin: 12px 0 8px; z-index: 1;
+}
+.player-seat {
+  flex: 1; max-width: 78px; text-align: center;
+  background: rgba(0,0,0,0.35); border: 1px solid var(--gold);
+  border-radius: 12px; padding: 8px 4px;
+}
+.player-avatar { font-size: 28px; }
+.player-name { font-size: 10px; color: var(--gold-light); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.player-bid { font-size: 11px; color: var(--win-green); font-weight: 700; margin-top: 2px; }
+.player-seat.empty { opacity: 0.45; border-style: dashed; }
+.player-seat.you { border-color: var(--win-green); box-shadow: 0 0 10px rgba(0,255,150,0.25); }
+
+/* live bar chart */
+.chart-wrap { position: relative; margin-top: 10px; z-index: 1; }
+.chart-title { font-size: 12px; color: var(--gold); margin-bottom: 6px; }
+.bar-chart {
+  display: flex; align-items: flex-end; justify-content: center;
+  gap: 6px; height: 90px; padding: 8px;
+  background: rgba(0,0,0,0.3); border-radius: 10px;
+  border: 1px solid var(--card-border);
+}
+.bar-col { flex: 1; max-width: 44px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; }
+.bar {
+  width: 100%; border-radius: 4px 4px 0 0;
+  background: linear-gradient(180deg, var(--gold) 0%, #8a6d1f 100%);
+  transition: height 0.6s ease;
+  min-height: 4px;
+}
+.bar.hot { background: linear-gradient(180deg, #ff5a5a 0%, #a02020 100%); }
+.bar-label { font-size: 9px; color: var(--muted); margin-top: 3px; }
+
 .bid-tabs { display: flex; gap: 8px; margin: 6px 0 12px; }
 .bid-tab, .pbid-tab {
   flex: 1; padding: 12px 4px; font-size: 14px;
