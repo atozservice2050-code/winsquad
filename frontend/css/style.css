@@ -77,12 +77,16 @@ body {
   backdrop-filter: blur(6px);
   border-bottom: 1px solid var(--card-border);
 }
-.brand-mini { color: var(--gold); font-weight: 800; letter-spacing: 1px; }
+.brand-mini {
+  color: var(--gold); font-weight: 900; letter-spacing: 2px; font-size: 20px;
+  text-shadow: 0 0 12px rgba(212, 175, 55, 0.6);
+  flex: 1; text-align: center;
+}
 
 .activity {
-  display: flex; align-items: center; gap: 6px;
-  font-size: 11px; font-weight: 800; letter-spacing: 0.5px;
-  padding: 6px 10px; border-radius: 999px;
+  display: flex; align-items: center; gap: 4px;
+  font-size: 9px; font-weight: 800; letter-spacing: 0.5px;
+  padding: 4px 8px; border-radius: 999px;
   border: 1px solid;
 }
 .activity .dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; animation: pulse 1.6s infinite; }
@@ -130,14 +134,14 @@ body {
 
 /* Wallet pill in topbar (replaces clock) */
 .wallet-pill {
-  display: flex; align-items: center; gap: 6px;
+  display: flex; align-items: center; gap: 4px;
   background: linear-gradient(135deg, #0d4d33 0%, #071f16 100%);
   border: 1px solid var(--gold);
-  border-radius: 999px; padding: 6px 12px;
-  color: var(--win-green); font-weight: 800; font-size: 14px;
+  border-radius: 999px; padding: 4px 8px;
+  color: var(--win-green); font-weight: 700; font-size: 11px;
   cursor: pointer;
 }
-.wallet-pill .eye-toggle { font-size: 16px; opacity: 0.8; }
+.wallet-pill .eye-toggle { font-size: 13px; opacity: 0.8; }
 .wallet-pill .eye-toggle:hover { opacity: 1; }
 
 /* ---------- views ---------- */
