@@ -286,7 +286,7 @@ function stopSettlePoll() {
   clearInterval(settlePollTimer);
 }
 
-/* Check minimum 3 players at 5-sec mark */
+/* Check minimum 3 players at 5-sec mark — show ERROR directly */
 async function checkMinPlayers() {
   if (!round?.id) return;
   try {
@@ -294,7 +294,17 @@ async function checkMinPlayers() {
       .select('id', { count: 'exact', head: true })
       .eq('round_id', round.id);
     if (count !== null && count < 3) {
-      toast('⚠️ Not enough players! Round may be cancelled.', true);
+      // Show internal error immediately (no warning)
+      const modal = $('result-modal');
+      const card = modal.querySelector('.result-card');
+      sounds.lose();
+      if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+      $('result-emoji').textContent = '⚠️';
+      $('result-title').textContent = 'Internal Error';
+      $('result-amount').textContent = '';
+      $('result-sub').textContent = 'Not enough players. Your bid will be refunded.';
+      card.classList.add('lost');
+      modal.hidden = false;
     }
   } catch (e) { /* silent */ }
 }
