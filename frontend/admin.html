@@ -200,6 +200,7 @@
         <button class="admin-tab" data-tab="users">👥 Users</button>
         <button class="admin-tab" data-tab="transactions">💸 Transactions</button>
         <button class="admin-tab" data-tab="rounds">🎰 Rounds</button>
+        <button class="admin-tab" data-tab="livebids">🔥 Live Bids</button>
         <button class="admin-tab" data-tab="rewards">🎁 Rewards</button>
       </nav>
 
@@ -278,6 +279,22 @@
           <table class="data-table">
             <thead><tr><th>Code</th><th>Status</th><th>Round</th><th>Fee (10%)</th><th>Created</th></tr></thead>
             <tbody id="ptables-tbody"><tr><td colspan="5" class="muted">Loading…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- LIVE BIDS (high to low) -->
+      <div id="tab-livebids" class="admin-view" hidden>
+        <div class="fee-note">🔒 <strong>Admin-only.</strong> Live bids for the current round, sorted high → low.</div>
+        <div class="refresh-row">
+          <button class="btn-refresh" data-refresh="livebids">↻ Refresh</button>
+          <span id="livebids-round" class="muted"></span>
+        </div>
+        <div id="livebids-loading" class="loading">Loading live bids…</div>
+        <div id="livebids-content" class="table-wrap" hidden>
+          <table class="data-table">
+            <thead><tr><th>#</th><th>User</th><th>Phone</th><th>Bid Amount</th><th>Time</th></tr></thead>
+            <tbody id="livebids-tbody"></tbody>
           </table>
         </div>
       </div>
@@ -405,7 +422,7 @@ function initTabs() {
       document.querySelectorAll('.admin-tab').forEach(x => x.classList.remove('active'));
       t.classList.add('active');
       const name = t.dataset.tab;
-      ['dashboard', 'users', 'transactions', 'rounds', 'rewards'].forEach(n => {
+      ['dashboard', 'users', 'transactions', 'rounds', 'livebids', 'rewards'].forEach(n => {
         $('tab-' + n).hidden = n !== name;
       });
       if (TAB_LOADERS[name]) await TAB_LOADERS[name]();
@@ -684,6 +701,44 @@ async function loadRounds() {
   }
 }
 TAB_LOADERS.rounds = loadRounds;
+
+/* ================= live bids (high to low) ================= */
+async function loadLiveBids() {
+  $('livebids-loading').hidden = false;
+  $('livebids-content').hidden = true;
+  try {
+    // Get current open round
+    const { data: roundData } = await supabase.rpc('get_current_round');
+    const round = Array.isArray(roundData) ? roundData[0] : roundData;
+    if (!round) throw new Error('No active round');
+
+    $('livebids-round').textContent = 'Round #' + (round.round_no || '?');
+
+    // Get all bids for this round, sorted HIGH to LOW
+    const { data: bids, error } = await supabase.from('bids')
+      .select('user_id, amount, created_at')
+      .eq('round_id', round.id)
+      .order('amount', { ascending: false });
+    if (error) throw error;
+
+    await hydrateProfiles((bids || []).map(b => b.user_id));
+
+    $('livebids-tbody').innerHTML = (bids || []).map((b, i) => `
+      <tr style="${i < 2 ? 'background:rgba(255,60,60,0.1);' : ''}">
+        <td><strong>${i + 1}</strong></td>
+        <td><strong>${pname(b.user_id)}</strong></td>
+        <td class="muted mono">${pphone(b.user_id)}</td>
+        <td><strong style="color:${i < 2 ? '#ff6666' : '#00ff96'};">Rs ${fmtRs(b.amount)}</strong></td>
+        <td class="muted">${fmtDate(b.created_at)}</td>
+      </tr>`).join('') || '<tr><td colspan="5" class="muted center">No bids yet this round.</td></tr>';
+
+    $('livebids-loading').hidden = true;
+    $('livebids-content').hidden = false;
+  } catch (e) {
+    $('livebids-loading').textContent = 'Failed to load: ' + friendlyError(e);
+  }
+}
+TAB_LOADERS.livebids = loadLiveBids;
 
 /* ================= rewards ================= */
 async function loadRewards() {

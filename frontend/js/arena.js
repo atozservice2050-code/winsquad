@@ -121,7 +121,7 @@ function renderStats() {
   $('pot-total').textContent = fmtRs(total);
   $('pot-players').textContent = fmtRs(displayPlayers);
   updateBidEstimates();
-  renderPlayers(); renderLiveBids();
+  renderPlayers();
   renderChart();
 }
 
@@ -146,37 +146,6 @@ function simulateBotBids() {
       amount: amounts[Math.floor(Math.random() * amounts.length)],
     });
   }
-}
-
-/* Live bids sorted HIGH to LOW */
-function renderLiveBids() {
-  const list = $('live-bids-list');
-  if (!list) return;
-  const bids = [];
-  // Real user bid
-  if (myBidRow) {
-    bids.push({ name: 'You', amount: Number(myBidRow.amount || 0), you: true });
-  }
-  // Bot bids (visual only)
-  botBids.forEach(b => {
-    bids.push({ name: b.name, amount: b.amount, you: false });
-  });
-  // Sort HIGH to LOW
-  bids.sort((a, b) => b.amount - a.amount);
-
-  if (bids.length === 0) {
-    list.innerHTML = '<div class="muted center" style="padding:12px;">Waiting for bids...</div>';
-    return;
-  }
-
-  list.innerHTML = bids.map((b, i) => `
-    <div class="live-bid-row ${i === 0 ? 'top-bid' : ''}">
-      <div style="display:flex;align-items:center;">
-        <span class="live-bid-rank">${i + 1}</span>
-        <span class="live-bid-name">${esc(b.name)}${b.you ? ' (You)' : ''}</span>
-      </div>
-      <span class="live-bid-amount">Rs ${fmtRs(b.amount)}</span>
-    </div>`).join('');
 }
 
 function renderPlayers() {
@@ -248,11 +217,11 @@ function renderChart(animate) {
 function startChartLive() {
   clearInterval(chartTimer);
   simulateBotBids(); // initial bots
-  renderPlayers(); renderLiveBids();
+  renderPlayers();
   renderChart();
   chartTimer = setInterval(() => {
     simulateBotBids(); // refresh bots every cycle
-    renderPlayers(); renderLiveBids(); renderLiveBids();
+    renderPlayers();
     renderChart(true);
   }, 5000);
 }
