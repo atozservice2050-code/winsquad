@@ -250,7 +250,8 @@ async function onSettled(closedRoundId) {
     try { recordMissionEvent('win'); } catch (e) {}
     setResult(
       '🎉 <strong>' + String(winningSide).toUpperCase() + ' WINS!</strong> ' +
-      'You won <strong>Rs ' + fmtRs(myBid.payout) + '</strong> (2x)!',
+      'You won <strong>Rs ' + fmtRs(myBid.payout) + '</strong>' +
+      (Math.abs(Number(myBid.payout) - 2 * Number(myBid.amount)) < 0.01 ? ' (2x)!' : '!'),
       true
     );
   } else {
