@@ -16,6 +16,7 @@
    ============================================================ */
 import { supabase, unwrapRow, friendlyError } from './supabase-client.js';
 import { $, $$, toast, fmtRs, activityLevel, sounds, unlockAudio } from './util.js';
+import { refreshWallet } from './wallet.js';
 
 let round = null;            // current open round row
 let stats = null;            // live round_stats row for this round
@@ -337,6 +338,8 @@ async function placeBid(isFree) {
     lastBidRoundId = round.id; // track for result popup
     await loadMyBid(round.id);
     await loadStats(round.id);
+    // Refresh wallet immediately (bid amount deducted)
+    try { await refreshWallet(); } catch (e) { console.warn('wallet refresh failed', e); }
   } catch (e) {
     toast(friendlyError(e, 'Bid failed. Try again.'), true);
   } finally {
@@ -366,6 +369,8 @@ async function onRoundSettled(settledRoundId) {
 
     renderWinners(winners, settledRoundId);
     await showPersonalResult(settledRoundId);
+    // Refresh wallet immediately after settlement (win/loss applied)
+    try { await refreshWallet(); } catch (e) { console.warn('wallet refresh failed', e); }
   } catch (e) { console.warn('settlement render failed', e); }
 }
 
