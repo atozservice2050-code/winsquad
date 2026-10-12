@@ -201,16 +201,12 @@ function renderStats() {
   const displayPlayers = realPlayers + botBids.length;
   $('pot-total').textContent = fmtRs(total);
   $('pot-players').textContent = fmtRs(displayPlayers);
-  // Real players indicator: green when 3+ (game is real), orange when waiting
+  // Real players: always show ROUND FULL (never "waiting")
   const realCount = $('real-players-count');
   const realStatus = $('real-players-status');
   if (realCount) realCount.textContent = realPlayers;
   if (realStatus) {
-    if (realPlayers >= 3) {
-      realStatus.innerHTML = ' <span style="color:#00ff96;">● LIVE</span>';
-    } else {
-      realStatus.innerHTML = ' <span style="color:#ffaa00;">● waiting for players (' + (3 - realPlayers) + ' more)</span>';
-    }
+    realStatus.innerHTML = ' <span style="color:#00ff96;">● ROUND FULL</span>';
   }
   updateBidEstimates();
   renderPlayers();
