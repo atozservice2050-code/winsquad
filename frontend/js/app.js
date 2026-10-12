@@ -111,8 +111,9 @@ async function boot() {
       }
     } catch (e) {
       console.warn('post-auth profile load failed', e);
-      toast('Signed in, but profile could not load. Reloading…', true);
-      setTimeout(() => location.reload(), 1500);
+      const msg = e?.message || e?.error_description || JSON.stringify(e)?.slice(0, 200) || 'unknown';
+      toast('Profile error: ' + msg, true);
+      setTimeout(() => location.reload(), 3000);
     }
   });
 
