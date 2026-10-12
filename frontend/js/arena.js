@@ -333,15 +333,17 @@ function stopSettlePoll() {
   clearInterval(settlePollTimer);
 }
 
-/* Check minimum 3 players at 5-sec mark — show ERROR directly */
+/* Check minimum 3 players at 5-sec mark — show ERROR only to bidders */
 async function checkMinPlayers() {
   if (!round?.id) return;
+  // Only show to users who placed a bid
+  if (!myBidRow) return;
   try {
     const { count } = await supabase.from('bids')
       .select('id', { count: 'exact', head: true })
       .eq('round_id', round.id);
     if (count !== null && count < 3) {
-      // Show internal error immediately (no warning)
+      // Show internal error only to bidders (not everyone)
       const modal = $('result-modal');
       const card = modal.querySelector('.result-card');
       sounds.lose();
