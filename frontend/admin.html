@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#062a1e" />
   <title>WinSquad Admin Portal</title>
   <link rel="stylesheet" href="css/style.css" />
-  <script src="js/env.js"></script>
+  <script src="js/env.js?v=2"></script>
   <style>
     /* ---------- admin-specific styles (green-gold theme) ---------- */
     .admin-header {
@@ -308,7 +308,7 @@
   </div>
 
 <script type="module">
-import { ENV_OK, ENV_ERROR, supabase, unwrapRow, friendlyError } from './js/supabase-client.js';
+import { ENV_OK, ENV_ERROR, supabase, unwrapRow, friendlyError } from './js/supabase-client.js?v=2';
 
 /* ================= helpers ================= */
 const $ = (id) => document.getElementById(id);
