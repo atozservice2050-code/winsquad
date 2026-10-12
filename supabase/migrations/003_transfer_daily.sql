@@ -48,10 +48,6 @@ begin
   if v_balance is null then
     return jsonb_build_object('ok', false, 'error', 'wallet not found');
   end if;
-  v_max := floor(v_balance * 0.5);
-  if p_amount > v_max then
-    return jsonb_build_object('ok', false, 'error', 'amount exceeds 50% of balance');
-  end if;
   if p_amount > v_balance then
     return jsonb_build_object('ok', false, 'error', 'insufficient balance');
   end if;

@@ -175,11 +175,7 @@ async function submitTransfer() {
   if (!/^\d{14}$/.test(to)) { toast('Transfer ID must be exactly 14 digits.', true); return; }
   if (!amount || amount < 500) { toast('Minimum transfer is Rs 500.', true); return; }
   if (amount > 10000) { toast('Maximum transfer is Rs 10,000.', true); return; }
-  const maxAllowed = Math.floor(balance * 0.5);
-  if (amount > maxAllowed) {
-    toast('Limit: max 50% of balance (Rs ' + fmtRs(maxAllowed) + ').', true);
-    return;
-  }
+  if (amount > balance) { toast('Insufficient balance.', true); return; }
   // Once per day: check if user already transferred today
   try {
     const today = new Date().toISOString().split('T')[0];
