@@ -50,11 +50,52 @@ function setResult(html, won) {
 }
 
 function renderTotals(h, t) {
-  $('cf-heads-total').textContent = fmtRs(h);
-  $('cf-tails-total').textContent = fmtRs(t);
-  const total = h + t;
-  $('cf-tug-fill').style.width = total > 0 ? (h / total * 100).toFixed(1) + '%' : '50%';
+  // Store real totals for bot refresh
+  $('cf-heads-total').dataset.real = h;
+  $('cf-tails-total').dataset.real = t;
+  // Add bot amounts for visual liveliness (display only, not in backend)
+  const displayH = h + botHeadsTotal;
+  const displayT = t + botTailsTotal;
+  $('cf-heads-total').textContent = fmtRs(displayH);
+  $('cf-tails-total').textContent = fmtRs(displayT);
+  const total = displayH + displayT;
+  $('cf-tug-fill').style.width = total > 0 ? (displayH / total * 100).toFixed(1) + '%' : '50%';
 }
+
+/* BOT SIMULATION (display-only): Bots bet on heads/tails to look alive.
+   Real totals come from backend; bots are visual only. */
+let botHeadsTotal = 0;
+let botTailsTotal = 0;
+let botPlayerCount = 0;
+
+function simulateCoinFlipBots() {
+  // 8 bots, random split between heads/tails, amounts 10-500
+  // Decrease as real players join
+  const realBets = 0; // TODO: track from backend if needed
+  const targetBots = Math.max(0, 8 - botPlayerCount);
+
+  botHeadsTotal = 0;
+  botTailsTotal = 0;
+  for (let i = 0; i < targetBots; i++) {
+    const amount = 10 + Math.floor(Math.random() * 491); // 10-500
+    if (Math.random() < 0.5) {
+      botHeadsTotal += amount;
+    } else {
+      botTailsTotal += amount;
+    }
+  }
+}
+
+// Call on round start and periodically
+setInterval(() => {
+  if (round && !document.hidden) {
+    simulateCoinFlipBots();
+    // Re-render with current real totals + bots
+    const h = Number($('cf-heads-total').dataset.real || 0);
+    const t = Number($('cf-tails-total').dataset.real || 0);
+    renderTotals(h, t);
+  }
+}, 5000);
 
 function renderMyBet() {
   $('cf-my-bet').textContent = myBid
