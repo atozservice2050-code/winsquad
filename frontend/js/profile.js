@@ -52,6 +52,17 @@ async function saveAvatar(emoji) {
   }
 }
 
+// Check if user is admin, show admin button
+async function checkAdminAccess() {
+  try {
+    const { data } = await supabase.rpc('is_admin');
+    const isAdmin = Array.isArray(data) ? data[0] === true : data === true;
+    if (isAdmin) {
+      $('btn-admin-portal').hidden = false;
+    }
+  } catch (e) { /* not admin or error */ }
+}
+
 async function saveName() {
   const input = $('name-input');
   const name = input.value.trim();
@@ -83,6 +94,12 @@ export function initProfile() {
   $('btn-logout').addEventListener('click', async () => {
     if (confirm('Log out of WinSquad?')) await logout();
   });
+
+  // Admin portal button (only for admins)
+  $('btn-admin-portal').addEventListener('click', () => {
+    window.open('/admin', '_blank');
+  });
+  checkAdminAccess();
 
   // Name editing
   $('btn-edit-name').addEventListener('click', () => {
