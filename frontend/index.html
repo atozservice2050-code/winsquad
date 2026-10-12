@@ -325,7 +325,24 @@
       <section id="view-profile" class="view" hidden>
         <div class="card gold-frame">
           <div class="card-title">👤 Profile</div>
-          <div class="profile-row"><span>Display name</span><strong id="profile-name">–</strong></div>
+          <!-- avatar + name (editable) -->
+          <div class="profile-avatar-wrap">
+            <div id="profile-avatar" class="profile-avatar">😎</div>
+            <button id="btn-edit-avatar" class="btn-ghost small">✏️ Avatar</button>
+          </div>
+          <div class="profile-row"><span>Display name</span><strong id="profile-name">–</strong>
+            <button id="btn-edit-name" class="btn-ghost small">✏️</button></div>
+          <!-- name edit (hidden by default) -->
+          <div id="name-edit-row" hidden>
+            <input id="name-input" type="text" maxlength="20" placeholder="Your name" />
+            <button id="btn-save-name" class="btn-red small">Save</button>
+            <button id="btn-cancel-name" class="btn-ghost small">Cancel</button>
+          </div>
+          <!-- avatar picker (hidden by default) -->
+          <div id="avatar-picker" hidden>
+            <div class="avatar-grid" id="avatar-grid"></div>
+            <button id="btn-cancel-avatar" class="btn-ghost small">Cancel</button>
+          </div>
           <div class="profile-row"><span>Phone</span><strong id="profile-phone">–</strong></div>
           <div class="profile-row"><span>Referral ID</span><strong id="profile-referral">–</strong>
             <button class="btn-ghost small" data-copy="profile-referral">📋</button></div>

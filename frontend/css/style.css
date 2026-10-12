@@ -570,3 +570,30 @@ button { font-family: inherit; cursor: pointer; border: none; border-radius: 12p
   50% { transform: scale(1.05); }
 }
 .result-card.lost .result-amount { display: none; }
+
+/* Profile avatar (editable) */
+.profile-avatar-wrap { text-align: center; margin-bottom: 12px; }
+.profile-avatar {
+  font-size: 64px; width: 90px; height: 90px; line-height: 90px;
+  margin: 0 auto 8px;
+  background: radial-gradient(circle, #0d4d33 0%, #061f16 100%);
+  border: 2px solid var(--gold); border-radius: 50%;
+  box-shadow: 0 0 20px rgba(212, 175, 55, 0.3);
+}
+.avatar-grid {
+  display: grid; grid-template-columns: repeat(6, 1fr);
+  gap: 8px; margin: 10px 0;
+}
+.avatar-grid button {
+  font-size: 28px; padding: 8px;
+  background: #041d14; border: 1px solid var(--card-border);
+  border-radius: 10px; cursor: pointer;
+}
+.avatar-grid button:hover, .avatar-grid button.selected {
+  border-color: var(--gold);
+  box-shadow: 0 0 10px rgba(212, 175, 55, 0.4);
+}
+#name-edit-row { display: flex; gap: 8px; margin-bottom: 10px; }
+#name-edit-row[hidden] { display: none; }
+#name-edit-row input { flex: 1; }
+#avatar-picker[hidden] { display: none; }
