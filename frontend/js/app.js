@@ -65,6 +65,8 @@ function enterApp(profile, phone) {
   initWalletTopbar();
   $('app').hidden = false;
   showView('arena');
+  // Mission progress: daily visit
+  try { recordMissionEvent('daily_visit'); } catch (e) {}
 }
 
 /* ---------------- boot ---------------- */

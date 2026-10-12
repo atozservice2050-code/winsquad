@@ -249,6 +249,7 @@ async function onSettled(closedRoundId) {
   } else if (myBid.is_winner) {
     sounds.win();
     if (navigator.vibrate) navigator.vibrate([80, 40, 80]);
+    try { recordMissionEvent('win'); } catch (e) {}
     setResult(
       '🎉 <strong>' + String(winningSide).toUpperCase() + ' WINS!</strong> ' +
       'You won <strong>Rs ' + fmtRs(myBid.payout) + '</strong> (2x)!',

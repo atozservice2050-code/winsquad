@@ -8,6 +8,7 @@
    ============================================================ */
 import { supabase, unwrapRow, friendlyError } from './supabase-client.js';
 import { $, toast, copyText, unlockAudio, sounds } from './util.js';
+import { recordMissionEvent } from './missions.js';
 
 let userId = null;
 export function setUser(id) { userId = id; }
@@ -30,6 +31,7 @@ async function applyReferral() {
     sounds.win();
     toast('Referral applied — Rs 100 for you, Rs 500 for inviter! 🎉');
     $('apply-referral-input').value = '';
+    try { recordMissionEvent('referral'); } catch (e) {}
   } catch (e) {
     toast(friendlyError(e, 'That code was not accepted.'), true);
   } finally {

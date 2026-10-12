@@ -5,7 +5,7 @@
      which credits the wallet server-side (prevents double-claim).
    - Other modules report events via recordMissionEvent(type, data).
    ============================================================ */
-import { supabase } from './supabase-client.js';
+import { supabase, unwrapRow } from './supabase-client.js';
 import { $, toast, fmtRs, unlockAudio, sounds } from './util.js';
 import { refreshWallet } from './wallet.js';
 
@@ -143,10 +143,10 @@ async function claimMission(missionId, btn) {
 
 async function refreshBalance() {
   try {
-    const { data } = await supabase.from('wallets').select('balance').maybeSingle();
-    const bal = data && (Array.isArray(data) ? data[0] : data);
+    const { data } = await supabase.from('wallets').select('balance').eq('user_id', userId).maybeSingle();
+    const row = unwrapRow(data);
     const el = $('missions-balance');
-    if (el) el.textContent = 'Rs ' + fmtRs(bal?.balance ?? 0);
+    if (el) el.textContent = 'Rs ' + fmtRs(row?.balance ?? 0);
   } catch (e) { /* ignore */ }
 }
 
