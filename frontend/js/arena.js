@@ -404,8 +404,24 @@ function renderWinners(winners, settledRoundId) {
     }, 6000);
     return;
   }
+  /* BOT WINNERS (display-only): Mix bots into the list to look lively like the demo.
+     CRITICAL: These are visual only — real payouts come from the database. */
+  const allWinners = [...winners];
+  const botNames = ['Ali 🏆', 'Sara ⭐', 'Usman 💰', 'Fatima 🎯', 'Bilal 👑', 'Ayesha 💎', 'Omar 🚀', 'Zara 🌟'];
+  const usedNames = new Set(allWinners.map(w => w.display_name || w.name));
+  while (allWinners.length < 10) {
+    const name = botNames[Math.floor(Math.random() * botNames.length)];
+    if (usedNames.has(name)) continue;
+    usedNames.add(name);
+    // Bot payout: random realistic amount (visual only, not from database)
+    const botPayout = 15 + Math.floor(Math.random() * 200);
+    allWinners.push({ display_name: name, payout_amount: botPayout, isBot: true });
+  }
+  // Sort by payout descending (bots mixed in naturally)
+  allWinners.sort((a, b) => (b.payout_amount ?? b.amount ?? 0) - (a.payout_amount ?? a.amount ?? 0));
+
   list.innerHTML = '';
-  winners.slice(0, 10).forEach((w, i) => {
+  allWinners.slice(0, 10).forEach((w, i) => {
     const name = w.display_name || w.name || 'Player';
     const amt = w.payout_amount ?? w.amount ?? 0;
     const div = document.createElement('div');
