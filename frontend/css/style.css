@@ -1049,6 +1049,7 @@ button { font-family: inherit; cursor: pointer; border: none; border-radius: 12p
 .poker-art { background: radial-gradient(circle at 50% 30%, #1a3a4a 0%, #08141c 70%); }
 .ab-art    { background: radial-gradient(circle at 50% 30%, #1a4a2e 0%, #081c10 70%); }
 .cf-art    { background: radial-gradient(circle at 50% 30%, #4a3a12 0%, #1c1408 70%); }
+.dt-art    { background: radial-gradient(circle at 50% 30%, #4a1a1a 0%, #1c0808 70%); }
 .game-info { padding: 12px 14px 14px; }
 .game-name { font-size: 17px; font-weight: 900; color: #fff; }
 .game-desc { font-size: 12px; color: var(--muted); margin-top: 3px; }
