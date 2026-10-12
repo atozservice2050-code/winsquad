@@ -419,6 +419,44 @@ button { font-family: inherit; cursor: pointer; border: none; border-radius: 12p
   box-shadow: 0 0 16px rgba(0,255,150,0.4), 0 4px 12px rgba(0,0,0,0.5);
 }
 
+/* LIVE BIDS — high to low */
+.live-bids-wrap {
+  margin-top: 14px; position: relative; z-index: 1;
+}
+.live-bids-title {
+  font-size: 13px; color: var(--gold); font-weight: 800;
+  letter-spacing: 1px; margin-bottom: 8px;
+  display: flex; align-items: center; gap: 6px;
+}
+.live-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: #ff4444; animation: pulse 1.2s infinite;
+}
+.live-bids-list {
+  max-height: 160px; overflow-y: auto;
+  background: rgba(0,0,0,0.35);
+  border: 1px solid var(--gold);
+  border-radius: 10px; padding: 6px;
+}
+.live-bid-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 7px 10px; margin-bottom: 4px;
+  background: linear-gradient(90deg, rgba(212,175,55,0.12) 0%, transparent 100%);
+  border-radius: 8px; border-left: 3px solid var(--gold);
+}
+.live-bid-row.top-bid {
+  border-left-color: #ff4444;
+  background: linear-gradient(90deg, rgba(255,60,60,0.15) 0%, transparent 100%);
+}
+.live-bid-name { font-size: 12px; color: #fff; font-weight: 600; }
+.live-bid-amount { font-size: 13px; color: var(--win-green); font-weight: 800; }
+.live-bid-rank {
+  font-size: 11px; color: var(--gold); font-weight: 800;
+  background: rgba(212,175,55,0.2); border-radius: 50%;
+  width: 22px; height: 22px; display: flex;
+  align-items: center; justify-content: center; margin-right: 8px;
+}
+
 /* ROULETTE WHEEL — casino style spinning table with ball */
 .roulette-wrap {
   position: relative; margin: 16px auto 8px; z-index: 1;
