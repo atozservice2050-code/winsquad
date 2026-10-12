@@ -83,7 +83,8 @@ async function loadStats(roundId) {
 
 async function loadMyBid(roundId) {
   try {
-    const { data } = await supabase.from('bids').select('*').eq('round_id', roundId)
+    const { data } = await supabase.from('bids').select('*')
+      .eq('round_id', roundId).eq('user_id', userId)
       .order('created_at', { ascending: false }).limit(1);
     const row = unwrapRow(data);
     myBidRow = row;
