@@ -14,7 +14,7 @@ import { initRewards, refreshRewards, setUser as setRewardsUser } from './reward
 import { initProfile, renderProfile } from './profile.js';
 
 const VIEWS = ['auth', 'setup', 'home', 'arena', 'private', 'wallet', 'rewards', 'profile'];
-const TAB_VIEWS = ['home', 'private', 'wallet', 'rewards', 'profile'];
+const TAB_VIEWS = ['arena', 'private', 'wallet', 'rewards', 'profile'];
 let currentView = null;
 let currentProfile = null;
 let initialized = {};
@@ -57,7 +57,7 @@ function enterApp(profile, phone) {
   setRewardsUser(uid);
   initWalletTopbar();
   $('app').hidden = false;
-  showView('home');
+  showView('arena');
 }
 
 /* ---------------- boot ---------------- */
