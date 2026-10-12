@@ -21,6 +21,15 @@ function phoneToEmail(phone) {
   return `atozservice2050+${digits}@gmail.com`;
 }
 
+/** Detect where the user is signing up from: the APK (Android WebView),
+ *  a mobile browser, or desktop web — so the owner can compare platforms. */
+function detectDeviceSource() {
+  const ua = navigator.userAgent || '';
+  if (ua.indexOf('; wv)') !== -1 || /\bwv\b/.test(ua)) return 'apk';
+  if (/Mobi|Android|iPhone|iPad|Mobile/i.test(ua)) return 'mobile-web';
+  return 'desktop-web';
+}
+
 function showError(msg) {
   const el = $('auth-error');
   el.textContent = msg;
@@ -60,7 +69,7 @@ export function initAuth(onAuthed) {
           email,
           password,
           options: {
-            data: { phone, recovery_email: recoveryEmail || null },
+            data: { phone, recovery_email: recoveryEmail || null, device_source: detectDeviceSource() },
           },
         });
         if (error) throw error;

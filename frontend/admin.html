@@ -229,10 +229,11 @@
           <input id="user-search" type="text" placeholder="🔍 Search phone, name, WS-ID…" />
           <button class="btn-refresh" id="btn-user-search">Search</button>
         </div>
+        <div id="source-summary" class="muted" style="margin:6px 2px;font-size:13px"></div>
         <div id="users-loading" class="loading">Loading users…</div>
         <div id="users-content" class="table-wrap" hidden>
           <table class="data-table">
-            <thead><tr><th>Name</th><th>Phone</th><th>IDs</th><th>Balance</th><th>Joined</th></tr></thead>
+            <thead><tr><th>Name</th><th>Phone</th><th>IDs</th><th>Source</th><th>Balance</th><th>Joined</th></tr></thead>
             <tbody id="users-tbody"></tbody>
           </table>
         </div>
@@ -511,12 +512,23 @@ async function loadUsers() {
   $('users-content').hidden = true;
   try {
     const q = $('user-search').value.trim();
-    let query = supabase.from('profiles')
-      .select('id, phone, display_name, referral_id, transfer_id, created_at')
-      .order('created_at', { ascending: false })
-      .limit(50);
-    const { data: profiles, error } = await query;
-    if (error) throw error;
+    // signup_source column exists only after migration 012; fall back gracefully.
+    let profiles;
+    try {
+      const r = await supabase.from('profiles')
+        .select('id, phone, display_name, referral_id, transfer_id, signup_source, created_at')
+        .order('created_at', { ascending: false })
+        .limit(50);
+      if (r.error) throw r.error;
+      profiles = r.data;
+    } catch (e) {
+      const r = await supabase.from('profiles')
+        .select('id, phone, display_name, referral_id, transfer_id, created_at')
+        .order('created_at', { ascending: false })
+        .limit(50);
+      if (r.error) throw r.error;
+      profiles = r.data;
+    }
 
     let rows = profiles || [];
     if (q) {
@@ -536,14 +548,26 @@ async function loadUsers() {
       (w || []).forEach(x => { balances[x.user_id] = x.balance; });
     }
 
+    const srcLabel = (s) => s === 'apk' ? '📱 APK' : s === 'mobile-web' ? '🌐 Mobile web' : s === 'desktop-web' ? '💻 Desktop' : '–';
     $('users-tbody').innerHTML = rows.map(p => `
       <tr>
         <td><strong>${esc(p.display_name)}</strong></td>
         <td class="mono">${esc(p.phone || '–')}</td>
         <td><span class="mono">${esc(p.referral_id || '')}</span><br /><span class="muted mono">${esc(p.transfer_id || '')}</span></td>
+        <td class="muted">${srcLabel(p.signup_source)}</td>
         <td class="green"><strong>Rs ${fmtRs(balances[p.id])}</strong></td>
         <td class="muted">${fmtDate(p.created_at)}</td>
-      </tr>`).join('') || '<tr><td colspan="5" class="muted center">No users found.</td></tr>';
+      </tr>`).join('') || '<tr><td colspan="6" class="muted center">No users found.</td></tr>';
+
+    // Platform summary: how many users came from each source.
+    try {
+      const { data: all, error: e2 } = await supabase.from('profiles').select('signup_source');
+      if (e2) throw e2;
+      const counts = { apk: 0, 'mobile-web': 0, 'desktop-web': 0, unknown: 0 };
+      (all || []).forEach(x => { counts[x.signup_source] ? counts[x.signup_source]++ : counts.unknown++; });
+      $('source-summary').textContent =
+        `📱 APK: ${counts.apk} · 🌐 Mobile web: ${counts['mobile-web']} · 💻 Desktop: ${counts['desktop-web']}${counts.unknown ? ' · –: ' + counts.unknown : ''}`;
+    } catch (e2) { $('source-summary').textContent = ''; }
 
     $('users-loading').hidden = true;
     $('users-content').hidden = false;
