@@ -1,5 +1,5 @@
 /* ============================================================
-   REWARDS — referral (Rs 100 both sides), daily streak claim
+   REWARDS — referral (Rs 100 joiner, Rs 500 inviter), daily streak claim
    (Rs 10/day increasing to Rs 70 on day 7), free-bid status
    (one Rs 10 public bid per calendar day).
    - claim_daily_streak() -> {ok, streak_day, amount, error}
@@ -28,7 +28,7 @@ async function applyReferral() {
     const row = unwrapRow(data);
     if (row && row.ok === false) throw new Error(row.error || 'Code not accepted');
     sounds.win();
-    toast('Referral applied — Rs 100 bonus for both! 🎉');
+    toast('Referral applied — Rs 100 for you, Rs 500 for inviter! 🎉');
     $('apply-referral-input').value = '';
   } catch (e) {
     toast(friendlyError(e, 'That code was not accepted.'), true);

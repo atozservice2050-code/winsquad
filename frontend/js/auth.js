@@ -128,7 +128,7 @@ export function initSetup(onDone) {
           const { data, error: refErr } = await supabase.rpc('apply_referral', { p_referral_id: code });
           const row = unwrapRow(data);
           if (refErr || (row && row.ok === false)) throw refErr || new Error(row.error);
-          toast('Referral applied — Rs 100 bonus for both! 🎉');
+          toast('Referral applied — Rs 100 for you, Rs 500 for inviter! 🎉');
         } catch (e) {
           toast('Name saved, but referral code was not accepted.', true);
         }
