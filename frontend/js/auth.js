@@ -85,6 +85,9 @@ export function initAuth(onAuthed) {
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
+        // Ensure session is fully established before loading profile
+        // (avoids race where getUser() runs before auth state updates).
+        await supabase.auth.getSession();
       }
       onAuthed();
     } catch (e) {
@@ -102,7 +105,13 @@ export function initAuth(onAuthed) {
 
 /** Load the current user's profile row (created by backend trigger on signup). */
 export async function loadProfile() {
-  const { data: { user } } = await supabase.auth.getUser();
+  // Retry getUser once — after signIn the session can take a moment to settle.
+  let user = null;
+  for (let i = 0; i < 3; i++) {
+    const { data } = await supabase.auth.getUser();
+    if (data?.user) { user = data.user; break; }
+    await new Promise(r => setTimeout(r, 400));
+  }
   if (!user) return { user: null, profile: null };
   const { data, error } = await supabase
     .from('profiles')
