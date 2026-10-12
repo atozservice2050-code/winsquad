@@ -883,7 +883,7 @@ async function boot() {
   } catch (e) { console.warn('getSession failed', e); }
 
   if (session?.user) {
-    await enterPortal();
+    await onAdminAuthed();
   } else {
     $('admin-auth').hidden = false;
   }
