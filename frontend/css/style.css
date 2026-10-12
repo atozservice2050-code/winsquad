@@ -1,22 +1,25 @@
 /* ============================================================
-   WinSquad — green-gold premium casino theme
+   WinSquad — dark premium casino theme (b9-style)
    Phone-only: max-width 430px app column, centered.
    Wider screens see the "phones only" notice instead.
    ============================================================ */
 :root {
-  --felt: #0a3b2a;
-  --felt-dark: #062a1e;
-  --felt-deep: #041d14;
+  --felt: #0c0c16;
+  --felt-dark: #08080f;
+  --felt-deep: #050509;
   --gold: #d4af37;
   --gold-light: #f5d76e;
   --gold-dim: #9a7c24;
+  --orange: #ff8c00;
+  --orange-light: #ffab3d;
+  --orange-dark: #b25f00;
   --red: #d21f2c;
   --red-dark: #8f1420;
   --win-green: #2ee06f;
-  --text: #f5f0e1;
-  --muted: #a8b8a4;
-  --card: #0d4a34;
-  --card-border: rgba(212, 175, 55, 0.45);
+  --text: #f4f1ea;
+  --muted: #9090a8;
+  --card: #14141f;
+  --card-border: rgba(212, 175, 55, 0.28);
   --radius: 14px;
 }
 
@@ -32,7 +35,8 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   color: var(--text);
   background:
-    radial-gradient(1200px 600px at 50% -10%, #0f5a3d 0%, transparent 60%),
+    radial-gradient(1200px 600px at 50% -10%, #1c1030 0%, transparent 60%),
+    radial-gradient(900px 500px at 50% 110%, #101a3a 0%, transparent 55%),
     linear-gradient(180deg, var(--felt) 0%, var(--felt-dark) 55%, var(--felt-deep) 100%);
   background-attachment: fixed;
 }
@@ -71,17 +75,18 @@ body {
 /* ---------- top bar ---------- */
 #topbar {
   position: sticky; top: 0; z-index: 50;
-  display: flex; align-items: center; justify-content: space-between;
+  display: flex; align-items: center; gap: 8px;
   padding: 10px 14px;
-  background: rgba(4, 29, 20, 0.92);
+  background: rgba(8, 8, 16, 0.94);
   backdrop-filter: blur(6px);
   border-bottom: 1px solid var(--card-border);
 }
 .brand-mini {
   color: var(--gold); font-weight: 900; letter-spacing: 2px; font-size: 20px;
   text-shadow: 0 0 12px rgba(212, 175, 55, 0.6);
-  flex: 1; text-align: center;
+  text-align: left;
 }
+.topbar-spacer { flex: 1; }
 
 .activity {
   display: flex; align-items: center; gap: 4px;
@@ -110,7 +115,7 @@ body {
   margin: 10px auto 0;
   font-size: 28px; font-weight: 900;
   padding: 12px 28px;
-  background: linear-gradient(180deg, #1e6b47 0%, #0d3d28 50%, #071f16 100%);
+  background: linear-gradient(180deg, #23232f 0%, #14141c 50%, #0a0a10 100%);
   border: 2px solid var(--gold);
   border-radius: 16px;
   box-shadow:
@@ -166,13 +171,13 @@ body {
 .method-notice strong { color: #ffcc44; }
 .method-notice em { color: #cc9955; font-size: 12px; }
 
-/* Wallet pill in topbar (replaces clock) */
+/* Wallet pill in topbar (coin balance, gold) */
 .wallet-pill {
   display: flex; align-items: center; gap: 4px;
-  background: linear-gradient(135deg, #0d4d33 0%, #071f16 100%);
+  background: linear-gradient(135deg, #1e1608 0%, #0d0b06 100%);
   border: 1px solid var(--gold);
   border-radius: 999px; padding: 4px 8px;
-  color: var(--win-green); font-weight: 700; font-size: 11px;
+  color: var(--gold-light); font-weight: 700; font-size: 11px;
   cursor: pointer;
 }
 .wallet-pill .eye-toggle { font-size: 13px; opacity: 0.8; }
@@ -204,8 +209,8 @@ h1.gold, h2.gold, .gold { color: var(--gold); }
 /* Premium demo-style auth */
 .auth-card.premium {
   background:
-    radial-gradient(ellipse at 50% 0%, rgba(212,175,55,0.12) 0%, transparent 60%),
-    linear-gradient(165deg, #0a3524 0%, #061f16 50%, #04170f 100%);
+    radial-gradient(ellipse at 50% 0%, rgba(255,140,0,0.10) 0%, transparent 60%),
+    linear-gradient(165deg, #181824 0%, #101018 50%, #0a0a10 100%);
   border: 3px double var(--gold);
   box-shadow: 0 0 40px rgba(212,175,55,0.25), inset 0 0 30px rgba(0,0,0,0.4);
   position: relative;
@@ -265,12 +270,12 @@ h1.gold, h2.gold, .gold { color: var(--gold); }
 }
 
 .card {
-  background: linear-gradient(180deg, #0e4f38 0%, #0b3d2c 100%);
+  background: linear-gradient(180deg, #181824 0%, #12121a 100%);
   border: 1px solid var(--card-border);
   border-radius: var(--radius);
   padding: 16px;
   margin-bottom: 14px;
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.5);
 }
 .card.gold-frame { border: 2px solid var(--gold); box-shadow: 0 0 18px rgba(212, 175, 55, 0.22); }
 .card-title { color: var(--gold); font-weight: 800; font-size: 16px; margin-bottom: 10px; }
@@ -280,23 +285,25 @@ h1.gold, h2.gold, .gold { color: var(--gold); }
 input, select {
   width: 100%; padding: 13px 14px;
   font-size: 16px; color: var(--text);
-  background: #041d14; border: 1px solid var(--card-border); border-radius: 10px;
+  background: #0b0b13; border: 1px solid var(--card-border); border-radius: 10px;
   outline: none;
 }
 input:focus, select:focus { border-color: var(--gold); box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.25); }
-select option { background: #041d14; }
+select option { background: #0b0b13; }
 .hint { font-size: 12.5px; color: var(--muted); line-height: 1.55; }
 .error { color: #ff8a8a; font-size: 13px; background: #d21f2c22; border: 1px solid #d21f2c66; padding: 10px; border-radius: 10px; }
 
 button { font-family: inherit; cursor: pointer; border: none; border-radius: 12px; font-weight: 800; }
+/* Primary CTA — orange casino gradient */
 .btn-red {
   width: 100%; padding: 15px; margin-top: 14px;
   font-size: 16px; color: #fff;
-  background: linear-gradient(180deg, #e63946 0%, var(--red) 45%, var(--red-dark) 100%);
-  box-shadow: 0 4px 0 #5e0d15, 0 6px 16px rgba(210, 31, 44, 0.45);
+  background: linear-gradient(180deg, var(--orange-light) 0%, var(--orange) 45%, var(--orange-dark) 100%);
+  box-shadow: 0 4px 0 #6e3a00, 0 6px 16px rgba(255, 140, 0, 0.45);
   letter-spacing: 0.5px;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.35);
 }
-.btn-red:active { transform: translateY(3px); box-shadow: 0 1px 0 #5e0d15; }
+.btn-red:active { transform: translateY(3px); box-shadow: 0 1px 0 #6e3a00; }
 .btn-red.big { font-size: 18px; padding: 17px; }
 .btn-red:disabled { opacity: 0.5; }
 .btn-gold {
@@ -357,7 +364,7 @@ button { font-family: inherit; cursor: pointer; border: none; border-radius: 12p
 
 .pot-card {
   text-align: center; padding: 16px;
-  background: radial-gradient(ellipse at center, #145c40 0%, #0b3d2c 70%);
+  background: radial-gradient(ellipse at center, #1d1d2b 0%, #12121a 70%);
   border: 2px solid var(--gold); border-radius: var(--radius);
   box-shadow: 0 0 24px rgba(212, 175, 55, 0.25), inset 0 0 30px #00000055;
   margin-bottom: 14px;
@@ -370,7 +377,7 @@ button { font-family: inherit; cursor: pointer; border: none; border-radius: 12p
 .arena-visual {
   position: relative; text-align: center; overflow: hidden;
   border-radius: var(--radius); margin-bottom: 14px; padding: 26px 10px;
-  background: radial-gradient(ellipse at center, #147a4d33 0%, transparent 70%), #071f16;
+  background: radial-gradient(ellipse at center, #241a3a55 0%, transparent 70%), #0a0a12;
   border: 1px solid var(--card-border);
 }
 .arena-visual .aura {
@@ -388,7 +395,7 @@ button { font-family: inherit; cursor: pointer; border: none; border-radius: 12p
   position: relative; display: flex; justify-content: center; gap: 8px;
   margin: 16px 0 12px; z-index: 1;
   padding: 14px 8px;
-  background: radial-gradient(ellipse at center, rgba(20, 90, 60, 0.4) 0%, transparent 70%);
+  background: radial-gradient(ellipse at center, rgba(60, 40, 100, 0.35) 0%, transparent 70%);
   border-radius: 50%;
 }
 .player-seat {
@@ -663,7 +670,7 @@ button { font-family: inherit; cursor: pointer; border: none; border-radius: 12p
 .bid-tabs { display: flex; gap: 8px; margin: 6px 0 12px; }
 .bid-tab, .pbid-tab {
   flex: 1; padding: 12px 4px; font-size: 14px;
-  background: #041d14; color: var(--muted);
+  background: #0c0c15; color: var(--muted);
   border: 1px solid var(--card-border); border-radius: 10px;
 }
 .bid-tab.active, .pbid-tab.active {
@@ -675,7 +682,7 @@ button { font-family: inherit; cursor: pointer; border: none; border-radius: 12p
 
 .bid-stats { display: flex; gap: 8px; margin-bottom: 6px; }
 .stat {
-  flex: 1; background: #041d14aa; border: 1px solid #ffffff14;
+  flex: 1; background: #0c0c15aa; border: 1px solid #ffffff14;
   border-radius: 10px; padding: 10px 8px; text-align: center;
 }
 .stat-label { display: block; font-size: 10.5px; color: var(--muted); margin-bottom: 4px; line-height: 1.35; }
@@ -685,7 +692,7 @@ button { font-family: inherit; cursor: pointer; border: none; border-radius: 12p
 .winners-list { display: flex; flex-direction: column; gap: 8px; }
 .winner-row {
   display: flex; align-items: center; gap: 10px;
-  background: #041d14aa; border: 1px solid #ffffff10;
+  background: #0c0c15aa; border: 1px solid #ffffff10;
   border-radius: 10px; padding: 9px 12px;
 }
 .winner-row .rank {
@@ -705,7 +712,7 @@ button { font-family: inherit; cursor: pointer; border: none; border-radius: 12p
 /* ---------- private tables ---------- */
 .seats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 0; }
 .seat {
-  background: #041d14; border: 1px dashed var(--card-border);
+  background: #0c0c15; border: 1px dashed var(--card-border);
   border-radius: 12px; padding: 16px 8px; text-align: center;
 }
 .seat .seat-emoji { font-size: 30px; }
@@ -716,7 +723,7 @@ button { font-family: inherit; cursor: pointer; border: none; border-radius: 12p
 .seat.empty { opacity: 0.55; }
 .invite-code {
   font-size: 34px; font-weight: 900; letter-spacing: 6px; text-align: center;
-  color: var(--gold-light); background: #041d14;
+  color: var(--gold-light); background: #0c0c15;
   border: 2px dashed var(--gold); border-radius: 12px; padding: 14px; margin: 10px 0;
 }
 .divider { display: flex; align-items: center; gap: 10px; margin: 16px 0; color: var(--muted); font-size: 12px; }
@@ -728,7 +735,7 @@ button { font-family: inherit; cursor: pointer; border: none; border-radius: 12p
 /* ---------- wallet ---------- */
 .balance-card {
   text-align: center; padding: 22px;
-  background: radial-gradient(ellipse at center, #145c40 0%, #0b3d2c 70%);
+  background: radial-gradient(ellipse at center, #1d1d2b 0%, #12121a 70%);
   border: 2px solid var(--gold); border-radius: var(--radius);
   box-shadow: 0 0 24px rgba(212, 175, 55, 0.25);
   margin-bottom: 14px;
@@ -746,7 +753,7 @@ button { font-family: inherit; cursor: pointer; border: none; border-radius: 12p
 .txn-list { display: flex; flex-direction: column; gap: 8px; max-height: 320px; overflow-y: auto; }
 .txn-row {
   display: flex; align-items: center; gap: 10px;
-  background: #041d14aa; border-radius: 10px; padding: 10px 12px; font-size: 13px;
+  background: #0c0c15aa; border-radius: 10px; padding: 10px 12px; font-size: 13px;
 }
 .txn-row .txn-type { flex: 1; font-weight: 700; text-transform: capitalize; }
 .txn-row .txn-date { color: var(--muted); font-size: 11px; display: block; font-weight: 400; }
@@ -762,7 +769,7 @@ button { font-family: inherit; cursor: pointer; border: none; border-radius: 12p
 .streak-days { display: flex; gap: 6px; margin: 12px 0; }
 .streak-day {
   flex: 1; text-align: center; padding: 10px 2px;
-  background: #041d14; border: 1px solid #ffffff14; border-radius: 10px;
+  background: #0c0c15; border: 1px solid #ffffff14; border-radius: 10px;
   font-size: 11px; color: var(--muted);
 }
 .streak-day .d-amt { display: block; font-weight: 900; font-size: 13px; color: var(--text); margin-top: 2px; }
@@ -786,7 +793,7 @@ button { font-family: inherit; cursor: pointer; border: none; border-radius: 12p
   position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
   width: min(430px, 100%); z-index: 50;
   display: flex;
-  background: rgba(4, 29, 20, 0.96);
+  background: rgba(8, 8, 16, 0.97);
   border-top: 1px solid var(--card-border);
   padding: 6px 4px calc(8px + env(safe-area-inset-bottom));
 }
@@ -796,13 +803,13 @@ button { font-family: inherit; cursor: pointer; border: none; border-radius: 12p
   display: flex; flex-direction: column; align-items: center; gap: 2px;
 }
 .tab span { font-size: 10px; font-weight: 700; }
-.tab.active { color: var(--gold-light); background: #d4af3718; }
+.tab.active { color: var(--orange-light); background: #ff8c0018; }
 
 /* ---------- toast & result modal ---------- */
 #toast {
   position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%);
   width: min(400px, calc(100% - 32px)); z-index: 200;
-  background: #041d14f2; border: 1px solid var(--gold); color: var(--text);
+  background: #0c0c15f2; border: 1px solid var(--gold); color: var(--text);
   padding: 13px 16px; border-radius: 12px; font-size: 14px; text-align: center;
   box-shadow: 0 8px 30px rgba(0,0,0,0.6);
   animation: fadeIn 0.2s ease;
@@ -817,7 +824,7 @@ button { font-family: inherit; cursor: pointer; border: none; border-radius: 12p
 #result-modal[hidden] { display: none !important; }
 .result-card {
   width: min(360px, 100%); text-align: center;
-  background: linear-gradient(180deg, #0e4f38, #071f16);
+  background: linear-gradient(180deg, #1b1b26, #0c0c12);
   border: 3px double var(--gold); border-radius: 18px; padding: 30px 22px;
   box-shadow: 0 0 50px rgba(212, 175, 55, 0.35);
   animation: popIn 0.35s cubic-bezier(0.2, 1.4, 0.4, 1);
@@ -856,7 +863,7 @@ button { font-family: inherit; cursor: pointer; border: none; border-radius: 12p
 .profile-avatar {
   font-size: 64px; width: 90px; height: 90px; line-height: 90px;
   margin: 0 auto 8px;
-  background: radial-gradient(circle, #0d4d33 0%, #061f16 100%);
+  background: radial-gradient(circle, #23232f 0%, #0e0e14 100%);
   border: 2px solid var(--gold); border-radius: 50%;
   box-shadow: 0 0 20px rgba(212, 175, 55, 0.3);
 }
@@ -866,7 +873,7 @@ button { font-family: inherit; cursor: pointer; border: none; border-radius: 12p
 }
 .avatar-grid button {
   font-size: 28px; padding: 8px;
-  background: #041d14; border: 1px solid var(--card-border);
+  background: #0c0c15; border: 1px solid var(--card-border);
   border-radius: 10px; cursor: pointer;
 }
 .avatar-grid button:hover, .avatar-grid button.selected {
@@ -877,3 +884,75 @@ button { font-family: inherit; cursor: pointer; border: none; border-radius: 12p
 #name-edit-row[hidden] { display: none; }
 #name-edit-row input { flex: 1; }
 #avatar-picker[hidden] { display: none; }
+
+/* ============================================================
+   GAMES HUB — b9-style game lobby
+   ============================================================ */
+.hub-header { text-align: center; margin: 6px 0 14px; }
+.hub-title { font-size: 22px; font-weight: 900; letter-spacing: 2px; }
+.hub-sub { color: var(--muted); font-size: 12.5px; margin-top: 4px; }
+
+.game-card {
+  position: relative;
+  background: linear-gradient(180deg, #191924 0%, #111118 100%);
+  border: 1px solid #ffffff14;
+  border-radius: 18px;
+  overflow: hidden;
+  cursor: pointer;
+  margin-bottom: 14px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+  transition: transform 0.15s ease;
+}
+.game-card:active { transform: scale(0.98); }
+.game-card.featured {
+  border: 2px solid var(--gold);
+  box-shadow: 0 0 24px rgba(212, 175, 55, 0.25), 0 6px 20px rgba(0, 0, 0, 0.5);
+}
+.game-art {
+  height: 120px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 64px;
+  position: relative;
+}
+.game-art::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(180deg, transparent 55%, rgba(0,0,0,0.55) 100%);
+}
+.squad-art { background: radial-gradient(circle at 50% 30%, #3a2a12 0%, #141005 70%); }
+.slots-art { background: radial-gradient(circle at 50% 30%, #3a1a4a 0%, #12081c 70%); }
+.dice-art  { background: radial-gradient(circle at 50% 30%, #1a2a5a 0%, #0a1028 70%); }
+.bj-art    { background: radial-gradient(circle at 50% 30%, #4a1a1a 0%, #1c0a0a 70%); }
+.poker-art { background: radial-gradient(circle at 50% 30%, #1a3a4a 0%, #08141c 70%); }
+.game-info { padding: 12px 14px 14px; }
+.game-name { font-size: 17px; font-weight: 900; color: #fff; }
+.game-desc { font-size: 12px; color: var(--muted); margin-top: 3px; }
+.game-badge {
+  position: absolute; top: 10px; right: 10px;
+  font-size: 11px; font-weight: 900; letter-spacing: 1px;
+  padding: 6px 12px; border-radius: 999px; z-index: 2;
+}
+.game-badge.play {
+  color: #fff;
+  background: linear-gradient(180deg, var(--orange-light), var(--orange-dark));
+  box-shadow: 0 3px 10px rgba(255, 140, 0, 0.5);
+}
+.game-badge.soon {
+  color: #bdbdcf;
+  background: #ffffff14;
+  border: 1px solid #ffffff22;
+}
+.live-strip {
+  position: absolute; top: 10px; left: 10px; z-index: 2;
+  display: flex; align-items: center; gap: 5px;
+  font-size: 10px; font-weight: 900; letter-spacing: 1px; color: #ff6b6b;
+  background: rgba(0,0,0,0.55); padding: 5px 10px; border-radius: 999px;
+}
+.games-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+}
+.games-grid .game-card { margin-bottom: 0; }
+.games-grid .game-art { height: 96px; font-size: 48px; }
+.games-grid .game-name { font-size: 14px; }
+.games-grid .game-desc { font-size: 11px; }
+.game-card.soon { cursor: default; }
+.game-card.soon .game-art { filter: grayscale(0.55); opacity: 0.75; }

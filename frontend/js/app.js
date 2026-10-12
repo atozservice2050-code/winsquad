@@ -13,23 +13,25 @@ import { initWallet, refreshWallet, setUser as setWalletUser, initWalletTopbar }
 import { initRewards, refreshRewards, setUser as setRewardsUser } from './rewards.js';
 import { initProfile, renderProfile } from './profile.js';
 
-const VIEWS = ['auth', 'setup', 'arena', 'private', 'wallet', 'rewards', 'profile'];
-const TAB_VIEWS = ['arena', 'private', 'wallet', 'rewards', 'profile'];
+const VIEWS = ['auth', 'setup', 'home', 'arena', 'private', 'wallet', 'rewards', 'profile'];
+const TAB_VIEWS = ['home', 'private', 'wallet', 'rewards', 'profile'];
 let currentView = null;
 let currentProfile = null;
 let initialized = {};
 
 /* ---------------- router ---------------- */
 function showView(name) {
-  if (!VIEWS.includes(name)) name = 'arena';
+  if (!VIEWS.includes(name)) name = 'home';
   currentView = name;
   VIEWS.forEach(v => { $('view-' + v).hidden = v !== name; });
 
-  const inTabs = TAB_VIEWS.includes(name);
+  // Arena is reached from the Games hub; tabbar stays visible with Games active.
+  const inTabs = TAB_VIEWS.includes(name) || name === 'arena';
+  const activeTab = name === 'arena' ? 'home' : name;
   $('tabbar').hidden = !inTabs;
   $('topbar').style.display = inTabs ? 'flex' : 'none';
   document.querySelectorAll('.tab').forEach(t =>
-    t.classList.toggle('active', t.dataset.view === name));
+    t.classList.toggle('active', t.dataset.view === activeTab));
 
   window.scrollTo(0, 0);
 
@@ -55,7 +57,7 @@ function enterApp(profile, phone) {
   setRewardsUser(uid);
   initWalletTopbar();
   $('app').hidden = false;
-  showView('arena');
+  showView('home');
 }
 
 /* ---------------- boot ---------------- */
@@ -129,5 +131,15 @@ async function boot() {
 
 document.querySelectorAll('.tab').forEach(t =>
   t.addEventListener('click', () => showView(t.dataset.view)));
+
+/* Games hub: Squad Stakes opens the arena; others are coming soon. */
+document.querySelectorAll('.game-card').forEach(c =>
+  c.addEventListener('click', () => {
+    if (c.dataset.game === 'squad') {
+      showView('arena');
+    } else {
+      toast('Coming soon! 🎮');
+    }
+  }));
 
 boot();
