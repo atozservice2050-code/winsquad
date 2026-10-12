@@ -274,6 +274,19 @@ function stopSettlePoll() {
   clearInterval(settlePollTimer);
 }
 
+/* Check minimum 3 players at 5-sec mark */
+async function checkMinPlayers() {
+  if (!round?.id) return;
+  try {
+    const { count } = await supabase.from('bids')
+      .select('id', { count: 'exact', head: true })
+      .eq('round_id', round.id);
+    if (count !== null && count < 3) {
+      toast('⚠️ Not enough players! Round may be cancelled.', true);
+    }
+  } catch (e) { /* silent */ }
+}
+
 function startCountdown() {
   clearInterval(countdownInt);
   lastTickSecond = -1;
@@ -290,6 +303,10 @@ function startCountdown() {
     if (remain <= 5 && remain > 0 && remain !== lastTickSecond) {
       lastTickSecond = remain;
       sounds.tick();
+      // 5-sec warning: check if fewer than 3 real bidders
+      if (remain === 5) {
+        checkMinPlayers();
+      }
     }
     if (remainMs <= 0) {
       clearInterval(countdownInt);
@@ -478,6 +495,36 @@ function renderWinners(winners, settledRoundId) {
  *  row for this round they won, otherwise (they bid) they lost. */
 async function showPersonalResult(settledRoundId) {
   if (!myBidRow) return; // user didn't play this round
+
+  // Check if round was cancelled (fewer than 3 players) — bids refunded
+  try {
+    const { data: roundData } = await supabase.from('rounds')
+      .select('status')
+      .eq('id', settledRoundId)
+      .maybeSingle();
+    // If no results exist for this round, it was cancelled
+    const { data: resCheck } = await supabase.from('round_results')
+      .select('id')
+      .eq('round_id', settledRoundId)
+      .limit(1);
+    if (!resCheck || resCheck.length === 0) {
+      // Round cancelled: show internal error, bid refunded
+      const modal = $('result-modal');
+      const card = modal.querySelector('.result-card');
+      sounds.lose();
+      if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+      $('result-emoji').textContent = '⚠️';
+      $('result-title').textContent = 'Internal Error';
+      $('result-amount').textContent = '';
+      $('result-sub').textContent = 'Not enough players. Your bid has been refunded to your wallet.';
+      card.classList.add('lost');
+      modal.hidden = false;
+      setTimeout(() => { modal.hidden = true; }, 10000);
+      try { await refreshWallet(); } catch (e) {}
+      return;
+    }
+  } catch (e) { console.warn('cancel check failed', e); }
+
   let won = null, payout = 0;
   try {
     const { data, error } = await supabase.from('round_results')
