@@ -1197,3 +1197,99 @@ button { font-family: inherit; cursor: pointer; border: none; border-radius: 12p
 .cf-promo .game-name { font-size: 16px; font-weight: 900; color: var(--gold-light); }
 .cf-promo .game-desc { font-size: 12px; color: var(--muted); margin-top: 2px; }
 .cf-promo .btn-red { padding: 10px 16px; font-size: 14px; white-space: nowrap; }
+
+/* ============================================================
+   SIMPLIFIED ARENA — b9-style clean layout
+   ============================================================ */
+.arena-wrap { display: flex; flex-direction: column; gap: 14px; padding: 12px 12px 20px; }
+
+/* TOP: round status + big timer */
+.round-top {
+  text-align: center;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(212, 175, 55, 0.35);
+  border-radius: 16px;
+  padding: 14px 12px;
+}
+.round-live { font-size: 13px; font-weight: 800; color: var(--gold-light); letter-spacing: 1px; }
+.round-timer {
+  font-size: 52px; font-weight: 900; color: #fff;
+  line-height: 1.15; margin: 4px 0;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 0 24px rgba(212, 175, 55, 0.35);
+}
+.round-timer.urgent { color: #ff5a5a; text-shadow: 0 0 24px rgba(255, 60, 60, 0.5); }
+.round-players { font-size: 13px; color: var(--muted); }
+
+/* HOW TO PLAY: 3 visual steps */
+.howto {
+  display: flex; align-items: center; justify-content: center;
+  gap: 8px; padding: 12px 8px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+}
+.howto-step { text-align: center; flex: 1; }
+.howto-emoji { font-size: 28px; }
+.howto-text { font-size: 12px; color: var(--text); margin-top: 4px; line-height: 1.4; }
+.howto-text strong { color: #ff5a5a; }
+.howto-arrow { font-size: 18px; color: var(--gold); flex: 0 0 auto; }
+
+/* BID: main action */
+.bid-simple {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(212, 175, 55, 0.45);
+  border-radius: 16px;
+  padding: 14px 12px;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.bid-tabs { display: flex; gap: 8px; }
+.bid-tab {
+  flex: 1; padding: 12px 4px; font-size: 15px; font-weight: 800;
+  border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.15);
+  background: #1d1d2b; color: var(--text); cursor: pointer;
+}
+.bid-tab.active {
+  border-color: var(--gold); color: var(--gold-light);
+  box-shadow: 0 0 12px rgba(212, 175, 55, 0.3);
+}
+#custom-bid-row input {
+  width: 100%; padding: 12px; font-size: 16px; font-weight: 700;
+  border-radius: 12px; border: 1px solid rgba(212, 175, 55, 0.5);
+  background: #14141f; color: #fff; text-align: center;
+}
+.my-bid-row { text-align: center; font-size: 13px; color: var(--muted); }
+.my-bid-row strong { color: var(--gold-light); }
+.bid-cta {
+  font-size: 22px !important; font-weight: 900 !important;
+  padding: 18px !important; letter-spacing: 1px;
+}
+#btn-free-bid { align-self: center; }
+
+/* PLAYERS: horizontal scroll chips */
+.players-simple {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px; padding: 10px 12px;
+}
+.players-simple-title { font-size: 13px; font-weight: 800; color: var(--muted); margin-bottom: 8px; }
+.players-scroll {
+  display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px;
+  -webkit-overflow-scrolling: touch;
+}
+.player-chip {
+  flex: 0 0 auto; display: flex; align-items: center; gap: 6px;
+  background: #1d1d2b; border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px; padding: 6px 12px 6px 8px;
+}
+.player-chip.you { border-color: var(--gold); box-shadow: 0 0 10px rgba(212, 175, 55, 0.25); }
+.chip-emoji { font-size: 20px; }
+.chip-name { font-size: 12px; font-weight: 700; color: var(--text); max-width: 70px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chip-bid { font-size: 12px; font-weight: 800; color: #2ee06f; }
+
+/* WINNERS: simple list */
+.winners-simple {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px; padding: 12px;
+}

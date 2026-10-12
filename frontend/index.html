@@ -160,94 +160,36 @@
 
       <!-- ============ ARENA (Squad Stakes) ============ -->
       <section id="view-arena" class="view" hidden>
-        <!-- lightning streak bars -->
-        <div class="streak-bar left"><div id="streak-fill-left" class="streak-fill"></div></div>
-        <div class="streak-bar right"><div id="streak-fill-right" class="streak-fill"></div></div>
-
         <div class="arena-wrap">
-          <!-- live pot ticker (user-safe total, fee never shown) -->
-          <div class="pot-card">
-            <div class="pot-label">🔥 LIVE ROUND <span id="round-no">#–</span></div>
-            <div class="pot-total">Rs <span id="pot-total">0</span></div>
-            <div class="pot-sub"><span id="pot-players">0</span> players in this round</div>
-            <div class="pot-sub" id="real-players-indicator" style="margin-top:4px; font-size:11px;">
-              <span id="real-players-count">0</span> real players
-              <span id="real-players-status"></span>
+          <!-- TOP: round status + big timer -->
+          <div class="round-top">
+            <div class="round-live">🔴 LIVE ROUND <span id="round-no">#–</span></div>
+            <div id="round-clock" class="round-timer" title="Time left in this round">
+              <span id="clock-time">--:--</span>
             </div>
-            <!-- demo-style casino countdown clock -->
-            <div id="round-clock" class="clock demo-clock" title="Time left in this round">
-              <span class="clock-icon">⏱</span><span id="clock-time">--:--</span>
+            <div class="round-players"><span id="pot-players">0</span> playing</div>
+          </div>
+
+          <!-- HOW TO PLAY: 3 simple visual steps -->
+          <div class="howto">
+            <div class="howto-step">
+              <div class="howto-emoji">💰</div>
+              <div class="howto-text">Place a bid</div>
+            </div>
+            <div class="howto-arrow">→</div>
+            <div class="howto-step">
+              <div class="howto-emoji">⏰</div>
+              <div class="howto-text">Wait 30 sec</div>
+            </div>
+            <div class="howto-arrow">→</div>
+            <div class="howto-step">
+              <div class="howto-emoji">🏆</div>
+              <div class="howto-text"><strong>Top 2 highest LOSE</strong><br>others WIN!</div>
             </div>
           </div>
 
-          <!-- cinematic game visual: 4 players + live bar chart -->
-          <div class="arena-visual">
-            <div class="aura"></div>
-            <div class="players-row" id="players-row">
-              <!-- 4 player seats injected by JS -->
-            </div>
-            <div class="arena-text">SQUAD STAKES</div>
-            <div class="arena-sub">Play together. Win together.</div>
-            <!-- 3D ROULETTE TABLE (premium casino style) -->
-            <div class="casino-table-3d">
-              <div class="table-wood">
-                <div class="table-felt">
-                  <!-- Roulette wheel on top -->
-                  <div class="roulette-wrap">
-                    <div class="chip-rack left" aria-hidden="true">
-                      <div class="chip-stack"><i class="chip c-blue"></i><i class="chip c-blue"></i><i class="chip c-blue"></i></div>
-                      <div class="chip-stack"><i class="chip c-red"></i><i class="chip c-red"></i><i class="chip c-red"></i></div>
-                      <div class="chip-stack"><i class="chip c-yellow"></i><i class="chip c-yellow"></i><i class="chip c-yellow"></i></div>
-                    </div>
-                    <div class="roulette-wheel" id="roulette-wheel">
-                      <div class="roulette-wood-ring"></div>
-                      <div class="roulette-numbers" id="roulette-numbers">
-                        <!-- numbered pockets injected by JS -->
-                      </div>
-                      <div class="roulette-track" id="roulette-track">
-                        <div class="roulette-ball"></div>
-                      </div>
-                      <div class="roulette-spindle">
-                        <span class="spindle-arm a1"></span>
-                        <span class="spindle-arm a2"></span>
-                        <span class="spindle-dome"></span>
-                      </div>
-                    </div>
-                    <div class="chip-rack right" aria-hidden="true">
-                      <div class="chip-stack"><i class="chip c-green"></i><i class="chip c-green"></i><i class="chip c-green"></i></div>
-                      <div class="chip-stack"><i class="chip c-orange"></i><i class="chip c-orange"></i><i class="chip c-orange"></i></div>
-                      <div class="chip-stack"><i class="chip c-purple"></i><i class="chip c-purple"></i><i class="chip c-purple"></i></div>
-                    </div>
-                  </div>
-                  <div class="roulette-status" id="roulette-status">Spinning... 🎰</div>
-                  <!-- Proper roulette betting layout (visual only) -->
-                  <div class="betting-layout" id="betting-layout">
-                    <div class="layout-main" id="layout-main">
-                      <!-- 0 + 3x12 numbers + 2:1 injected by JS -->
-                    </div>
-                    <div class="layout-dozens">
-                      <div class="layout-cell dozen">1st 12</div>
-                      <div class="layout-cell dozen">2nd 12</div>
-                      <div class="layout-cell dozen">3rd 12</div>
-                    </div>
-                    <div class="layout-outside">
-                      <div class="layout-cell outside">1 to 18</div>
-                      <div class="layout-cell outside">Even</div>
-                      <div class="layout-cell outside"><span class="diamond red-dia"></span></div>
-                      <div class="layout-cell outside"><span class="diamond black-dia"></span></div>
-                      <div class="layout-cell outside">Odd</div>
-                      <div class="layout-cell outside">19 to 36</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div class="table-edge"></div>
-            </div>
-          </div>
-
-          <!-- your bid card -->
-          <div class="card gold-frame">
-            <div class="card-title">🎯 Your bid</div>
+          <!-- BID: the main action -->
+          <div class="bid-simple">
             <div class="bid-tabs" role="tablist">
               <button class="bid-tab active" data-amount="10">Rs 10</button>
               <button class="bid-tab" data-amount="50">Rs 50</button>
@@ -257,49 +199,36 @@
             <div id="custom-bid-row" hidden>
               <input id="custom-bid-input" type="number" inputmode="numeric" min="10" placeholder="Enter amount (min Rs 10)" />
             </div>
-            <div class="bid-stats" style="margin-top: 18px;">
-              <div class="stat">
-                <span class="stat-label">Approx. win rate <span class="info" title="Estimated live from total bids vs your stake.">ⓘ</span></span>
-                <span class="stat-value" id="win-rate">–%</span>
-              </div>
-              <div class="stat">
-                <span class="stat-label">Live profit share <span class="info" title="Your stake as a % of the total prize pool. Updates live as bids come in.">ⓘ</span></span>
-                <span class="stat-value green" id="profit-share">–%</span>
-              </div>
-              <div class="stat">
-                <span class="stat-label">Approx. winning</span>
-                <span class="stat-value green" id="approx-win">–</span>
-              </div>
-              <div class="stat">
-                <span class="stat-label">Your bid this round</span>
-                <span class="stat-value gold-text" id="my-bid">—</span>
-              </div>
+            <div id="my-bid-row" class="my-bid-row" hidden>
+              Your bid: <strong id="my-bid">—</strong>
             </div>
-            <button id="btn-place-bid" class="btn-red big">⚡ Place bid</button>
-            <button id="btn-free-bid" class="btn-gold">🎁 Free Rs 10 bid <span id="free-bid-note">(1/day)</span></button>
+            <button id="btn-place-bid" class="btn-red big bid-cta">⚡ PLACE BID</button>
+            <button id="btn-free-bid" class="btn-ghost small">🎁 Free Rs 10 bid <span id="free-bid-note">(1/day)</span></button>
           </div>
 
-          <!-- coin flip mini game -->
-          <div class="card gold-frame cf-promo">
-            <div class="cf-promo-row">
-              <div class="cf-promo-art">🪙</div>
-              <div class="cf-promo-info">
-                <div class="game-name">Coin Flip</div>
-                <div class="game-desc">Heads vs Tails · lower side wins <strong class="green">2x</strong></div>
-              </div>
-              <button class="btn-red" data-open-view="coinflip">▶ PLAY</button>
+          <!-- PLAYERS: simple horizontal scroll -->
+          <div class="players-simple">
+            <div class="players-simple-title">👥 Players</div>
+            <div class="players-scroll" id="players-row">
+              <!-- player chips injected by JS -->
             </div>
           </div>
 
-          <!-- top 10 winners -->
-          <div class="card">
-            <div class="card-title">🏆 Top winners <span class="muted" id="winners-round-label"></span></div>
+          <!-- WINNERS: simple list -->
+          <div class="winners-simple">
+            <div class="card-title">🏆 Winners <span class="muted" id="winners-round-label"></span></div>
             <div id="winners-list" class="winners-list">
               <p class="muted center">Winners appear when the round ends…</p>
             </div>
           </div>
 
-          <p class="rules-tiny">Rounds run every 30 seconds. Place your bid and win with your squad!</p>
+          <!-- more games -->
+          <button class="btn-ghost small" data-open-view="coinflip" style="align-self:center;">🪙 Play Coin Flip</button>
+
+          <!-- hidden compat spans (kept for JS that reads totals) -->
+          <span id="pot-total" hidden>0</span>
+          <span id="real-players-count" hidden>0</span>
+          <span id="real-players-status" hidden></span>
         </div>
       </section>
 

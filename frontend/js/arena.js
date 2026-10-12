@@ -1,15 +1,15 @@
 /* ============================================================
-   ARENA — Squad Stakes (public 30-second rounds).
+   ARENA — Squad Stakes (public 30-second rounds). SIMPLIFIED UI.
    - get_current_round() -> open round
    - Realtime: round_stats (live totals/countdown), public_rounds
      (round open/closed transitions)
    - place_bid(p_round_id, p_amount, p_is_free)
-   - Business rules reflected: top 2 highest bids lose; everyone
-     else wins a proportional share. The 10% company fee is NEVER
-     shown or mentioned in the UI (admin-side only).
+   - Business rules: top 2 highest bids lose; everyone else wins a
+     proportional share. The 10% company fee is NEVER shown or
+     mentioned in the UI (admin-side only).
    - Winners list: read from the winners-only `round_results` table
-     (round_id, user_id, bid_amount, payout) joined with
-     `public_profiles` for display names. Losers are never exposed.
+     joined with `public_profiles` for display names. Losers never
+     exposed.
    - Personal result: if the user has a `round_results` row for the
      round they won (payout shown); if they bid but have no row,
      they lost.
@@ -29,37 +29,13 @@ let resultShownFor = null;   // round id we already popped a result for
 let userId = null;
 let channels = [];
 
-const STREAK_KEY = () => 'ws_winstreak_' + (userId || 'anon');
-
 export function setUser(id) { userId = id; }
-
-/* ---------------- win streak (personal, device-local) ---------------- */
-function getStreak() {
-  try { return Number(JSON.parse(localStorage.getItem(STREAK_KEY()) || '0')) || 0; }
-  catch { return 0; }
-}
-function setStreak(n) {
-  try { localStorage.setItem(STREAK_KEY(), JSON.stringify(Math.max(0, n))); } catch {}
-  renderStreakBars();
-}
-function renderStreakBars() {
-  const n = getStreak();
-  const pct = Math.min(n, 10) * 10;
-  // Bars rise as the streak builds; on a loss they collapse (reset look).
-  // Higher streak = hotter colors to increase greed (demo-style).
-  ['streak-fill-left', 'streak-fill-right'].forEach(id => {
-    const el = $(id);
-    if (!el) return;
-    el.style.height = Math.max(4, pct) + '%';
-    el.style.opacity = n > 0 ? '1' : '0.35';
-    el.classList.toggle('hot', n >= 3); // 3+ wins = intense fire mode
-  });
-}
 
 /* ---------------- activity signal (Fear & Greed style) ---------------- */
 function renderActivity() {
   const level = activityLevel();
   const pill = $('activity-pill');
+  if (!pill) return;
   pill.className = 'activity ' + level;
   $('activity-label').textContent =
     level === 'peak' ? '🔥 PEAK HOURS' : level === 'down' ? '💤 SLOW HOURS' : '📊 NORMAL HOURS';
@@ -71,88 +47,6 @@ function renderActivity() {
 }
 
 /* ---------------- round loading ---------------- */
-/* Roulette wheel control */
-/* Proper European roulette wheel order (clockwise) */
-const WHEEL_ORDER = [0,32,15,19,4,21,2,25,17,34,6,27,13,36,11,30,8,23,10,5,24,16,33,1,20,14,31,9,22,18,29,7,28,12,35,3,26];
-const REDS = [1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36];
-/* Betting-grid rows: standard 3x12 layout */
-const GRID_ROWS = [
-  [3,6,9,12,15,18,21,24,27,30,33,36],
-  [2,5,8,11,14,17,20,23,26,29,32,35],
-  [1,4,7,10,13,16,19,22,25,28,31,34],
-];
-
-function buildRouletteNumbers() {
-  const container = $('roulette-numbers');
-  if (container && container.children.length === 0) {
-    WHEEL_ORDER.forEach((num, idx) => {
-      const angle = (idx / WHEEL_ORDER.length) * 360;
-      const pocket = document.createElement('div');
-      pocket.className = 'roulette-pocket ' + (num === 0 ? 'green' : (REDS.includes(num) ? 'red' : 'black'));
-      pocket.textContent = num;
-      const rad = (angle - 90) * Math.PI / 180;
-      const x = 50 + 43 * Math.cos(rad);
-      const y = 50 + 43 * Math.sin(rad);
-      pocket.style.left = x + '%';
-      pocket.style.top = y + '%';
-      container.appendChild(pocket);
-    });
-  }
-
-  // Build proper betting layout: 0 (spans 3 rows) + 3x12 + 2:1 column
-  const layout = $('layout-main');
-  if (layout && layout.children.length === 0) {
-    const zero = document.createElement('div');
-    zero.className = 'layout-zero';
-    zero.textContent = '0';
-    layout.appendChild(zero);
-    GRID_ROWS.forEach(row => {
-      row.forEach(num => {
-        const cell = document.createElement('div');
-        cell.className = 'layout-num ' + (REDS.includes(num) ? 'red' : 'black');
-        cell.textContent = num;
-        cell.dataset.num = num;
-        layout.appendChild(cell);
-      });
-    });
-    const colbet = document.createElement('div');
-    colbet.className = 'layout-colbet';
-    colbet.textContent = '2 to 1';
-    layout.appendChild(colbet);
-  }
-}
-
-function startWheel() {
-  buildRouletteNumbers();
-  const wheel = $('roulette-wheel');
-  const numbers = $('roulette-numbers');
-  const track = $('roulette-track');
-  const status = $('roulette-status');
-  if (wheel) {
-    wheel.classList.remove('stopped');
-  }
-  if (numbers) numbers.classList.add('spinning');
-  if (track) track.classList.add('spinning');
-  if (status) {
-    status.textContent = 'Spinning... 🎰';
-    status.classList.remove('stopped');
-  }
-}
-
-function stopWheel() {
-  const wheel = $('roulette-wheel');
-  const numbers = $('roulette-numbers');
-  const track = $('roulette-track');
-  const status = $('roulette-status');
-  if (wheel) wheel.classList.add('stopped');
-  if (numbers) numbers.classList.remove('spinning');
-  if (track) track.classList.remove('spinning');
-  if (status) {
-    status.textContent = 'Results! 🏆';
-    status.classList.add('stopped');
-  }
-}
-
 async function loadRound() {
   try {
     const { data, error } = await supabase.rpc('get_current_round');
@@ -167,8 +61,6 @@ async function loadRound() {
     if (isNewRound) {
       resultShownFor = null;
       renderWinnersPlaceholder();
-      updateBidEstimates();
-      startWheel(); // Start spinning for new round
     }
     startCountdown();
   } catch (e) {
@@ -196,13 +88,14 @@ async function loadMyBid(roundId) {
     const row = unwrapRow(data);
     myBidRow = row;
     myBidAmount = row ? Number(row.amount) : null;
-    $('my-bid').textContent = myBidAmount != null ? 'Rs ' + fmtRs(myBidAmount) : '—';
-    updateBidEstimates();
+    const myBidEl = $('my-bid');
+    const myBidRowEl = $('my-bid-row');
+    if (myBidEl) myBidEl.textContent = myBidAmount != null ? 'Rs ' + fmtRs(myBidAmount) : '—';
+    if (myBidRowEl) myBidRowEl.hidden = myBidAmount == null;
   } catch (e) { console.warn('own bids read failed', e); }
 }
 
 /* ---------------- live stats + countdown ---------------- */
-// Update real player count from round stats
 function updateRealPlayerCount(count) {
   realPlayerCount = count || 0;
   simulateBotBids(); // re-generate bots based on new count
@@ -210,24 +103,20 @@ function updateRealPlayerCount(count) {
 }
 
 function renderStats() {
-  const total = Number(stats?.total_bids ?? round?.total_bids ?? 0);
   const realPlayers = Number(stats?.player_count ?? round?.player_count ?? 0);
   // Show bots in the live count to look lively (visual only)
   const displayPlayers = realPlayers + botBids.length;
-  $('pot-total').textContent = fmtRs(total);
-  $('pot-players').textContent = fmtRs(displayPlayers);
-  // Real players: always show ROUND FULL (never "waiting")
+  const potPlayers = $('pot-players');
+  if (potPlayers) potPlayers.textContent = fmtRs(displayPlayers);
+  // hidden compat spans
+  const potTotal = $('pot-total');
+  if (potTotal) potTotal.textContent = fmtRs(Number(stats?.total_bids ?? round?.total_bids ?? 0));
   const realCount = $('real-players-count');
-  const realStatus = $('real-players-status');
   if (realCount) realCount.textContent = realPlayers;
-  if (realStatus) {
-    realStatus.innerHTML = ' <span style="color:#00ff96;">● ROUND FULL</span>';
-  }
-  updateBidEstimates();
   renderPlayers();
 }
 
-/* 4 player seats + live bar chart
+/* ---------------- players (simple horizontal scroll) ----------------
    BOT SIMULATION (display-only): Bots make the game look lively.
    CRITICAL: Bots NEVER touch the database or payout logic.
    Real bids/payouts use ONLY actual user data via Supabase. */
@@ -256,7 +145,7 @@ const BOT_POOL = [
 }));
 
 function simulateBotBids() {
-  // Select 10 bots from the 100-bot pool
+  // Select up to 10 bots from the 100-bot pool
   // If real player bid, only bots with LOWER bids than player
   const playerBid = myBidRow ? Number(myBidRow.amount || 0) : 0;
   const targetBots = Math.max(0, 10 - realPlayerCount);
@@ -269,7 +158,7 @@ function simulateBotBids() {
   // If not enough eligible, use all
   if (eligible.length < targetBots) eligible = BOT_POOL;
 
-  // Randomly pick 10 (shuffled)
+  // Randomly pick (shuffled)
   const shuffled = [...eligible].sort(() => Math.random() - 0.5);
   botBids = shuffled.slice(0, targetBots).map(b => ({
     emoji: b.emoji,
@@ -282,37 +171,26 @@ function renderPlayers() {
   const row = $('players-row');
   if (!row) return;
   row.innerHTML = '';
-  const seats = [];
-  // Seat 1: you (if you bid this round) — REAL user
+  // Chip 1: you (if you bid this round) — REAL user
   if (myBidRow) {
-    seats.push({ emoji: '😎', name: 'You', bid: Number(myBidRow.amount || 0), you: true, bot: false });
+    const chip = document.createElement('div');
+    chip.className = 'player-chip you';
+    chip.innerHTML = '<span class="chip-emoji">😎</span><span class="chip-name">You</span><span class="chip-bid">Rs ' + fmtRs(Number(myBidRow.amount || 0)) + '</span>';
+    row.appendChild(chip);
   }
-  // Fill with BOT seats (visual only)
-  const used = new Set();
+  // Bot chips (visual only)
   botBids.forEach(b => {
-    if (seats.length >= 4) return;
-    seats.push({ emoji: b.emoji, name: b.name, bid: b.amount, you: false, bot: true });
+    const chip = document.createElement('div');
+    chip.className = 'player-chip';
+    chip.innerHTML = '<span class="chip-emoji"></span><span class="chip-name"></span><span class="chip-bid">Rs ' + fmtRs(b.amount) + '</span>';
+    chip.querySelector('.chip-emoji').textContent = b.emoji;
+    chip.querySelector('.chip-name').textContent = b.name;
+    row.appendChild(chip);
   });
-  while (seats.length < 4) {
-    const i = Math.floor(Math.random() * SEAT_NAMES.length);
-    if (used.has(i)) continue;
-    used.add(i);
-    seats.push({
-      emoji: SEAT_EMOJIS[Math.floor(Math.random() * SEAT_EMOJIS.length)],
-      name: SEAT_NAMES[i],
-      bid: null, // waiting (visual placeholder)
-      you: false, bot: true,
-    });
+  // If nobody yet, show a friendly placeholder
+  if (row.children.length === 0) {
+    row.innerHTML = '<p class="muted center" style="width:100%">Players will appear here…</p>';
   }
-  seats.forEach(s => {
-    const div = document.createElement('div');
-    div.className = 'player-seat' + (s.you ? ' you' : (s.bid === null ? ' empty' : ''));
-    div.innerHTML = '<div class="player-avatar">' + s.emoji + '</div>' +
-      '<div class="player-name"></div>' +
-      '<div class="player-bid">' + (s.bid !== null ? 'Rs ' + fmtRs(s.bid) : '—') + '</div>';
-    div.querySelector('.player-name').textContent = s.name;
-    row.appendChild(div);
-  });
 }
 
 function startChartLive() {
@@ -378,13 +256,15 @@ function startCountdown() {
   lastTickSecond = -1;
   countdownInt = setInterval(() => {
     const endsAt = stats?.ends_at || round?.ends_at;
-    if (!endsAt) { $('clock-time').textContent = '--:--'; return; }
+    const clockEl = $('clock-time');
+    const clockWrap = $('round-clock');
+    if (!endsAt) { if (clockEl) clockEl.textContent = '--:--'; return; }
     const remainMs = new Date(endsAt).getTime() - Date.now();
     const remain = Math.max(0, Math.ceil(remainMs / 1000));
     const mm = String(Math.floor(remain / 60)).padStart(2, '0');
     const ss = String(remain % 60).padStart(2, '0');
-    $('clock-time').textContent = mm + ':' + ss;
-    $('round-clock').classList.toggle('urgent', remain <= 10 && remain > 0);
+    if (clockEl) clockEl.textContent = mm + ':' + ss;
+    if (clockWrap) clockWrap.classList.toggle('urgent', remain <= 10 && remain > 0);
     // soft tick in the last 5 seconds
     if (remain <= 5 && remain > 0 && remain !== lastTickSecond) {
       lastTickSecond = remain;
@@ -401,47 +281,13 @@ function startCountdown() {
   }, 250);
 }
 
-/* ---------------- bid estimates ----------------
-   Win rate: the 2 biggest stakes lose, so smaller bids win more
-   often. Estimate = base survival rate × size penalty, where the
-   penalty shrinks as your stake drops below the average stake.
-   Live profit share: your stake as % of the live total — i.e. your
-   share of the prize pool, updating live. The company fee is
-   backend-side only and never enters these numbers. */
+/* ---------------- bid amount tabs ---------------- */
 function currentStake() {
   if (selectedBid === 'custom') {
     const v = Number($('custom-bid-input').value);
     return v > 0 ? v : null;
   }
   return selectedBid;
-}
-function updateBidEstimates() {
-  const stake = currentStake();
-  const total = Number(stats?.total_bids ?? round?.total_bids ?? 0);
-  const players = Number(stats?.player_count ?? round?.player_count ?? 1);
-
-  if (stake && total > 0 && players > 2) {
-    const base = (players - 2) / players;                 // survive top-2 rule
-    const avg = total / players;
-    const penalty = 1 / (1 + stake / Math.max(avg, 1));    // big stake -> lower rate
-    const rate = Math.max(1, Math.min(99, base * penalty * 100));
-    $('win-rate').textContent = rate.toFixed(0) + '%';
-    const share = Math.min(100, (stake / total) * 100);
-    $('profit-share').textContent = share.toFixed(1) + '%';
-    // Approx winning = your share of 90% of estimated losers pool
-    // Rough estimate: assume top-2 bids are ~2x average
-    const estLosersPool = Math.min(total * 0.4, avg * 2 * 2);
-    const estWin = (stake / total) * estLosersPool * 0.9;
-    $('approx-win').textContent = 'Rs ' + fmtRs(Math.max(0, Math.round(estWin)));
-  } else if (stake && total > 0) {
-    $('win-rate').textContent = '–%';
-    $('profit-share').textContent = Math.min(100, (stake / total) * 100).toFixed(1) + '%';
-    $('approx-win').textContent = '–';
-  } else {
-    $('win-rate').textContent = stake ? '–%' : '–%';
-    $('profit-share').textContent = '–%';
-    $('approx-win').textContent = '–';
-  }
 }
 
 /* ---------------- placing bids ---------------- */
@@ -487,9 +333,8 @@ function renderWinnersPlaceholder() {
   $('winners-round-label').textContent = '';
 }
 
-/** Called when a round settles. Renders top-10 winners and the personal popup. */
+/** Called when a round settles. Renders winners and the personal popup. */
 async function onRoundSettled(settledRoundId) {
-  stopWheel(); // Stop spinning when results come
   if (resultShownFor === settledRoundId) return;
   resultShownFor = settledRoundId;
   try {
@@ -540,12 +385,12 @@ function renderWinners(winners, settledRoundId) {
   $('winners-round-label').textContent = '· round #' + (round?.round_no ?? '–');
 
   /* FAKE RESULTS for show: if no real winners (no real players),
-     generate 10 fake winners to make the game look alive */
+     generate fake winners to make the game look alive */
   let displayWinners = [...(winners || [])];
   const botNames = ['Ali 🏆', 'Sara ⭐', 'Usman 💰', 'Fatima 🎯', 'Bilal 👑', 'Ayesha 💎', 'Omar 🚀', 'Zara 🌟', 'Hassan 🎲', 'Maryam 💫'];
 
   if (displayWinners.length === 0) {
-    // No real players: generate 10 FAKE winners for display
+    // No real players: generate fake winners for display
     const usedNames = new Set();
     while (displayWinners.length < 10) {
       const name = botNames[Math.floor(Math.random() * botNames.length)];
@@ -601,11 +446,6 @@ async function showPersonalResult(settledRoundId) {
 
   // Check if round was cancelled (fewer than 3 players) — bids refunded
   try {
-    const { data: roundData } = await supabase.from('rounds')
-      .select('status')
-      .eq('id', settledRoundId)
-      .maybeSingle();
-    // If no results exist for this round, it was cancelled
     const { data: resCheck } = await supabase.from('round_results')
       .select('id')
       .eq('round_id', settledRoundId)
@@ -642,7 +482,6 @@ async function showPersonalResult(settledRoundId) {
   const modal = $('result-modal');
   const card = modal.querySelector('.result-card');
   if (won === true && payout > 0) {
-    setStreak(getStreak() + 1);
     sounds.win();
     // Vibrate: celebratory pattern (short-long-short)
     if (navigator.vibrate) navigator.vibrate([100, 50, 200, 50, 300]);
@@ -655,7 +494,6 @@ async function showPersonalResult(settledRoundId) {
     // Edge case: won but payout is 0 — don't pop a confusing modal.
     return;
   } else if (won === false) {
-    setStreak(0);
     sounds.lose();
     // Vibrate: sad pattern (long buzz)
     if (navigator.vibrate) navigator.vibrate([400]);
@@ -708,7 +546,6 @@ function unsubscribe() {
 /* ---------------- init ---------------- */
 export function initArena() {
   renderActivity();
-  renderStreakBars();
   setInterval(renderActivity, 60000); // refresh the signal each minute
 
   $$('.bid-tab').forEach(tab => tab.addEventListener('click', () => {
@@ -717,9 +554,9 @@ export function initArena() {
     tab.classList.add('active');
     selectedBid = tab.dataset.amount === 'custom' ? 'custom' : Number(tab.dataset.amount);
     $('custom-bid-row').hidden = selectedBid !== 'custom';
-    updateBidEstimates();
   }));
-  $('custom-bid-input').addEventListener('input', updateBidEstimates);
+  const customInput = $('custom-bid-input');
+  if (customInput) customInput.addEventListener('input', () => {});
 
   $('btn-place-bid').addEventListener('click', () => placeBid(false));
   $('btn-free-bid').addEventListener('click', () => placeBid(true));
