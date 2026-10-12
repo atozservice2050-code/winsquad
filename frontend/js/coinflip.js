@@ -13,6 +13,7 @@
 import { supabase, unwrapRow, friendlyError } from './supabase-client.js';
 import { $, $$, toast, fmtRs, unlockAudio, sounds } from './util.js';
 import { refreshWallet } from './wallet.js';
+import { recordMissionEvent } from './missions.js';
 
 let userId = null;
 let round = null;            // current open round row
@@ -315,6 +316,7 @@ async function placeBet() {
     await loadMyBid(round.id);
     await loadStats(round.id);
     try { await refreshWallet(); } catch (e) { console.warn('wallet refresh failed', e); }
+    try { recordMissionEvent('bid', { amount }); } catch (e) {}
   } catch (e) {
     toast(friendlyError(e, 'Bet failed. Try again.'), true);
     if (!myBid) $('btn-cf-bet').disabled = false;

@@ -11,11 +11,11 @@ import { refreshWallet } from './wallet.js';
 const AVATARS = ['😎','🦁','🐯','🦊','🐼','🐨','🦄','🐸','🐵','🐙','🦋','🐝','🦖','🐳','🍀','⚡','🔥','💎','👑','🎯','🚀','🌟'];
 
 const VIP_TIERS = [
-  { min: 5, name: 'Diamond Circle' },
-  { min: 4, name: 'Gold Circle' },
-  { min: 3, name: 'Silver Circle' },
-  { min: 2, name: 'Bronze Circle' },
-  { min: 1, name: 'Bronze Circle' },
+  { min: 10, name: 'Diamond' },
+  { min: 5, name: 'Gold' },
+  { min: 3, name: 'Silver' },
+  { min: 2, name: 'Bronze' },
+  { min: 1, name: 'Rookie' },
 ];
 
 let currentUserId = null;

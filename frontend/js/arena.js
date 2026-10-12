@@ -17,6 +17,7 @@
 import { supabase, unwrapRow, friendlyError } from './supabase-client.js';
 import { $, $$, toast, fmtRs, activityLevel, sounds, unlockAudio } from './util.js';
 import { refreshWallet } from './wallet.js';
+import { recordMissionEvent } from './missions.js';
 
 let round = null;            // current open round row
 let stats = null;            // live round_stats row for this round
@@ -321,6 +322,8 @@ async function placeBid(isFree) {
     renderPlayers();
     // Refresh wallet immediately (bid amount deducted)
     try { await refreshWallet(); } catch (e) { console.warn('wallet refresh failed', e); }
+    // Mission progress: bid placed
+    try { recordMissionEvent('bid', { amount }); } catch (e) {}
   } catch (e) {
     toast(friendlyError(e, 'Bid failed. Try again.'), true);
   } finally {
@@ -491,6 +494,8 @@ async function showPersonalResult(settledRoundId) {
     $('result-amount').textContent = 'Rs ' + fmtRs(payout);
     $('result-sub').textContent = 'You won this round! Winnings are in your wallet.';
     card.classList.remove('lost');
+    // Mission progress: win
+    try { recordMissionEvent('win'); } catch (e) {}
   } else if (won === true) {
     // Edge case: won but payout is 0 — don't pop a confusing modal.
     return;

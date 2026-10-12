@@ -126,17 +126,7 @@ export function initRewards() {
     copyText($('referral-code').textContent.trim(), 'Referral code copied!'));
   $('btn-apply-referral').addEventListener('click', applyReferral);
   $('btn-claim-streak').addEventListener('click', claimStreak);
-  // Mission Vault: open missions view if it exists, else "coming soon"
-  $('btn-mission-vault')?.addEventListener('click', () => {
-    unlockAudio();
-    const mv = $('view-missions');
-    if (mv) {
-      document.querySelectorAll('.view').forEach(v => { v.hidden = v !== mv; });
-      window.scrollTo(0, 0);
-    } else {
-      toast('Missions coming soon! 🎯');
-    }
-  });
+  // Mission Vault uses data-open-view="missions" (wired in app.js).
 }
 
 export async function refreshRewards(referralId) {
