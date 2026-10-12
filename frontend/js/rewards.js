@@ -69,6 +69,12 @@ async function loadStreak() {
     daysEl.appendChild(div);
   }
   const nextDay = Math.min(currentDay + 1, 7);
+  const label = $('streak-label');
+  if (label) {
+    label.textContent = claimedToday
+      ? 'Day ' + currentDay + ' · Rs ' + STREAK_AMOUNTS[Math.min(currentDay, 7) - 1] + ' · Claimed ✓'
+      : 'Day ' + nextDay + ' · Rs ' + STREAK_AMOUNTS[nextDay - 1] + ' · Ready to claim';
+  }
   $('streak-status').textContent = claimedToday
     ? '✅ Claimed for today — come back tomorrow for Day ' + Math.min(nextDay + 1, 7) + '!'
     : 'Next claim: Day ' + nextDay + ' = Rs ' + STREAK_AMOUNTS[nextDay - 1] + '.';
@@ -120,6 +126,17 @@ export function initRewards() {
     copyText($('referral-code').textContent.trim(), 'Referral code copied!'));
   $('btn-apply-referral').addEventListener('click', applyReferral);
   $('btn-claim-streak').addEventListener('click', claimStreak);
+  // Mission Vault: open missions view if it exists, else "coming soon"
+  $('btn-mission-vault')?.addEventListener('click', () => {
+    unlockAudio();
+    const mv = $('view-missions');
+    if (mv) {
+      document.querySelectorAll('.view').forEach(v => { v.hidden = v !== mv; });
+      window.scrollTo(0, 0);
+    } else {
+      toast('Missions coming soon! 🎯');
+    }
+  });
 }
 
 export async function refreshRewards(referralId) {

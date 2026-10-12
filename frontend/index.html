@@ -428,9 +428,50 @@
 
       <!-- ============ REWARDS ============ -->
       <section id="view-rewards" class="view" hidden>
-        <div class="card gold-frame">
-          <div class="card-title">🤝 Referral bonus</div>
-          <p class="hint">Invite a friend with your code — you <strong>both</strong> get <strong>Rs 100</strong>.</p>
+        <div class="rewards-head">
+          <h2 class="gold">REWARDS</h2>
+          <p class="rewards-sub">Real cash rewards</p>
+        </div>
+
+        <div class="reward-section">DAILY BONUS</div>
+        <div class="reward-card">
+          <div class="reward-row">
+            <div>
+              <div class="reward-title">Daily Streak</div>
+              <div class="reward-desc" id="streak-label">Day 1 · Ready to claim</div>
+            </div>
+            <button id="btn-claim-streak" class="btn-claim">CLAIM</button>
+          </div>
+          <div class="streak-days" id="streak-days"></div>
+          <p class="hint" id="streak-status"></p>
+        </div>
+
+        <div class="reward-section">FREE BID</div>
+        <div class="reward-card">
+          <div class="reward-row">
+            <div>
+              <div class="reward-title">Free Daily Bid</div>
+              <div class="reward-desc">One Rs 10 public bid free every day</div>
+            </div>
+          </div>
+          <div id="free-bid-status" class="free-status">Checking…</div>
+        </div>
+
+        <div class="reward-section">EARN MORE</div>
+        <div class="reward-card">
+          <div class="reward-row">
+            <div>
+              <div class="reward-title">🎁 Watch Ad &amp; Earn</div>
+              <div class="reward-desc">Watch a short ad and earn Rs 50</div>
+            </div>
+            <button class="btn-claim" disabled>SOON</button>
+          </div>
+        </div>
+
+        <div class="reward-section">REFERRALS</div>
+        <div class="reward-card">
+          <div class="reward-title">Referral Bonus</div>
+          <p class="hint">Invite friends — you get <strong>Rs 500</strong>, they get <strong>Rs 100</strong>.</p>
           <div class="invite-code" id="referral-code">WS-••••••</div>
           <button id="btn-copy-referral" class="btn-ghost">📋 Copy referral code</button>
           <div class="divider"><span>have a code?</span></div>
@@ -440,33 +481,56 @@
           </div>
         </div>
 
-        <div class="card gold-frame">
-          <div class="card-title">🔥 Daily streak</div>
-          <p class="hint">Claim every day in a row. Reward grows <strong>Rs 10 → Rs 70</strong> by day 7.</p>
-          <div class="streak-days" id="streak-days"></div>
-          <button id="btn-claim-streak" class="btn-red">Claim today's reward</button>
-          <p class="hint" id="streak-status"></p>
-        </div>
-
-        <div class="card">
-          <div class="card-title">🎁 Free daily bid</div>
-          <p class="hint">One <strong>Rs 10</strong> public bid free every calendar day.</p>
-          <div id="free-bid-status" class="free-status">Checking…</div>
+        <div class="reward-section">EVENT REWARDS</div>
+        <div class="reward-card">
+          <div class="reward-row">
+            <div>
+              <div class="reward-title">Mission Vault</div>
+              <div class="reward-desc">Complete missions for cash rewards</div>
+            </div>
+            <button id="btn-mission-vault" class="btn-claim">GO</button>
+          </div>
         </div>
         <p id="rewards-error" class="error" hidden></p>
       </section>
 
+      <!-- ============ MISSIONS ============ -->
+      <section id="view-missions" class="view" hidden>
+        <div class="missions-head">
+          <div>
+            <h2 class="gold">MISSIONS</h2>
+            <p class="hint">Virtual rewards only</p>
+          </div>
+          <div class="missions-balance">🪙 <span id="missions-balance">Rs 0</span></div>
+        </div>
+        <div id="missions-list"></div>
+        <p id="missions-error" class="error" hidden></p>
+      </section>
+
       <!-- ============ PROFILE ============ -->
       <section id="view-profile" class="view" hidden>
-        <div class="card gold-frame">
-          <div class="card-title">👤 Profile</div>
-          <!-- avatar + name (editable) -->
-          <div class="profile-avatar-wrap">
-            <div id="profile-avatar" class="profile-avatar">😎</div>
-            <button id="btn-edit-avatar" class="btn-ghost small">✏️ Avatar</button>
+        <div class="acct-header">
+          <h2 class="gold">MY ACCOUNT</h2>
+        </div>
+
+        <!-- GOLD ACCOUNT CARD -->
+        <div class="acct-card">
+          <div class="acct-top">
+            <div class="acct-avatar-wrap">
+              <div id="profile-avatar" class="acct-avatar">😎</div>
+              <button id="btn-edit-avatar" class="btn-ghost small">✏️</button>
+            </div>
+            <div class="acct-info">
+              <div class="vip-badge">VIP <span id="vip-level">1</span> · <span id="vip-tier">Bronze Circle</span></div>
+              <div class="acct-name-row">
+                <strong id="profile-name">–</strong>
+                <button class="btn-ghost small" data-copy="profile-name">📋</button>
+              </div>
+              <div class="acct-meta">Nickname: <span id="profile-nickname">–</span></div>
+              <div class="acct-meta">Joined: <span id="profile-joined">–</span>
+                <button id="btn-edit-name" class="btn-ghost small">✏️</button></div>
+            </div>
           </div>
-          <div class="profile-row"><span>Display name</span><strong id="profile-name">–</strong>
-            <button id="btn-edit-name" class="btn-ghost small">✏️</button></div>
           <!-- name edit (hidden by default) -->
           <div id="name-edit-row" hidden>
             <input id="name-input" type="text" maxlength="20" placeholder="Your name" />
@@ -478,14 +542,53 @@
             <div class="avatar-grid" id="avatar-grid"></div>
             <button id="btn-cancel-avatar" class="btn-ghost small">Cancel</button>
           </div>
+          <!-- VIP progress -->
+          <div class="vip-progress">
+            <div class="vip-row"><span>VIP <span id="vip-level2">1</span></span><span>Next Level VIP <span id="vip-next">2</span></span></div>
+            <div class="vip-bar"><div class="vip-fill" id="vip-fill"></div></div>
+            <div class="vip-row muted"><span id="vip-xp">0 / 1000 XP</span><span>Remaining <span id="vip-remaining">1000</span> XP</span></div>
+          </div>
+          <!-- Balance -->
+          <div class="acct-balance-row">
+            <span class="acct-balance">🪙 <strong id="acct-balance">0</strong></span>
+            <button id="btn-refresh-balance" class="btn-ghost small">🔄</button>
+          </div>
+          <!-- Action buttons -->
+          <div class="acct-actions">
+            <button id="btn-get-coins" class="btn-purple">GET COINS</button>
+            <button id="btn-balance" class="btn-purple" data-open-view="wallet">BALANCE</button>
+            <button id="btn-game-cards" class="btn-purple">GAME CARDS</button>
+          </div>
+        </div>
+
+        <!-- MEMBER CENTER -->
+        <div class="member-pill">MEMBER CENTER</div>
+        <div class="member-grid">
+          <button class="member-item" data-open-view="rewards"><span class="member-icon">⭐</span><span>Reward Center</span></button>
+          <button class="member-item" id="btn-betting-record"><span class="member-icon">📊</span><span>Betting Record</span></button>
+          <button class="member-item" id="btn-profit-loss"><span class="member-icon">📈</span><span>Profit &amp; Loss</span></button>
+          <button class="member-item" data-copy="profile-referral"><span class="member-icon">👥</span><span>Invite Friends</span></button>
+          <button class="member-item" data-open-view="wallet"><span class="member-icon">💰</span><span>My Wallet</span></button>
+          <button class="member-item" id="btn-my-bids"><span class="member-icon">🧾</span><span>My Bids</span></button>
+          <button class="member-item" id="btn-admin-portal" hidden><span class="member-icon">🔐</span><span>Admin</span></button>
+          <button class="member-item" id="btn-logout"><span class="member-icon">🚪</span><span>Switch Account</span></button>
+        </div>
+
+        <!-- IDs -->
+        <div class="card gold-frame">
           <div class="profile-row"><span>Phone</span><strong id="profile-phone">–</strong></div>
           <div class="profile-row"><span>Referral ID</span><strong id="profile-referral">–</strong>
             <button class="btn-ghost small" data-copy="profile-referral">📋</button></div>
           <div class="profile-row"><span>Transfer ID</span><strong id="profile-transfer">–</strong>
             <button class="btn-ghost small" data-copy="profile-transfer">📋</button></div>
           <p class="hint">Your <strong>transfer ID</strong> (14 digits) is what other players use to send you funds. Your <strong>referral ID</strong> is for invites.</p>
-          <button id="btn-admin-portal" class="btn-red" hidden>🔐 Admin Portal</button>
-          <button id="btn-logout" class="btn-ghost">🚪 Log out</button>
+        </div>
+
+        <!-- Betting record / P&L panel (hidden by default) -->
+        <div class="card gold-frame" id="record-panel" hidden>
+          <div class="card-title" id="record-title">📊 Betting Record</div>
+          <div id="record-list"><p class="hint">Loading…</p></div>
+          <button class="btn-ghost small" id="btn-record-close">Close</button>
         </div>
       </section>
 
@@ -497,6 +600,7 @@
       <button class="tab" data-view="private">🔒<span>Private</span></button>
       <button class="tab" data-view="wallet">💰<span>Wallet</span></button>
       <button class="tab" data-view="rewards">🎁<span>Rewards</span></button>
+      <button class="tab" data-view="missions">🎯<span>Missions</span></button>
       <button class="tab" data-view="profile">👤<span>Profile</span></button>
     </nav>
   </div>

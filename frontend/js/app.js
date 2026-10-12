@@ -13,9 +13,10 @@ import { initWallet, refreshWallet, setUser as setWalletUser, initWalletTopbar }
 import { initRewards, refreshRewards, setUser as setRewardsUser } from './rewards.js';
 import { initProfile, renderProfile } from './profile.js';
 import { initCoinflip, setUser as setCoinflipUser, destroyCoinflip } from './coinflip.js';
+import { initMissions, refreshMissions, setUser as setMissionsUser, recordMissionEvent } from './missions.js';
 
-const VIEWS = ['auth', 'setup', 'home', 'arena', 'private', 'wallet', 'rewards', 'profile', 'coinflip'];
-const TAB_VIEWS = ['arena', 'private', 'wallet', 'rewards', 'profile'];
+const VIEWS = ['auth', 'setup', 'home', 'arena', 'private', 'wallet', 'rewards', 'missions', 'profile', 'coinflip'];
+const TAB_VIEWS = ['arena', 'private', 'wallet', 'rewards', 'missions', 'profile'];
 let currentView = null;
 let currentProfile = null;
 let initialized = {};
@@ -41,10 +42,12 @@ function showView(name) {
   if (name === 'private' && !initialized.private) { initPrivate(); initialized.private = true; }
   if (name === 'wallet' && !initialized.wallet) { initWallet(); initialized.wallet = true; }
   if (name === 'rewards' && !initialized.rewards) { initRewards(); initialized.rewards = true; }
+  if (name === 'missions' && !initialized.missions) { initMissions(); initialized.missions = true; }
   if (name === 'profile' && !initialized.profile) { initProfile(); initialized.profile = true; }
 
   if (name === 'wallet') refreshWallet();
   if (name === 'rewards') refreshRewards(currentProfile?.referral_id);
+  if (name === 'missions') refreshMissions();
   if (name === 'profile') renderProfile(currentProfile);
   if (name === 'coinflip' && !initialized.coinflip) { initCoinflip(); initialized.coinflip = true; }
   if (name === 'arena' && initialized.arena) { /* arena runs its own realtime loop */ }
@@ -57,6 +60,7 @@ function enterApp(profile, phone) {
   setPrivateUser(uid, profile?.display_name);
   setWalletUser(uid);
   setRewardsUser(uid);
+  setMissionsUser(uid);
   setCoinflipUser(uid);
   initWalletTopbar();
   $('app').hidden = false;

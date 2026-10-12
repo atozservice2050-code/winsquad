@@ -1,23 +1,134 @@
 /* ============================================================
-   PROFILE — display name, phone, referral ID (WS-######),
-   14-digit numeric transfer ID, copy buttons, logout.
-   Users can change their display name and emoji avatar.
+   PROFILE — b9-style MY ACCOUNT: gold card, VIP level, member
+   center grid, betting record, profit/loss. Keeps display name,
+   phone, referral ID, 14-digit transfer ID, copy, logout, admin.
    ============================================================ */
-import { $, copyText, unlockAudio, toast } from './util.js';
+import { $, copyText, unlockAudio, toast, fmtRs } from './util.js';
 import { logout } from './auth.js';
 import { supabase } from './supabase-client.js';
+import { refreshWallet } from './wallet.js';
 
 const AVATARS = ['😎','🦁','🐯','🦊','🐼','🐨','🦄','🐸','🐵','🐙','🦋','🐝','🦖','🐳','🍀','⚡','🔥','💎','👑','🎯','🚀','🌟'];
+
+const VIP_TIERS = [
+  { min: 5, name: 'Diamond Circle' },
+  { min: 4, name: 'Gold Circle' },
+  { min: 3, name: 'Silver Circle' },
+  { min: 2, name: 'Bronze Circle' },
+  { min: 1, name: 'Bronze Circle' },
+];
 
 let currentUserId = null;
 
 export function renderProfile(profile, phone) {
-  $('profile-name').textContent = profile?.display_name || '–';
+  const name = profile?.display_name || '–';
+  $('profile-name').textContent = name;
+  $('profile-nickname').textContent = name;
   $('profile-phone').textContent = phone || profile?.phone || '–';
   $('profile-referral').textContent = profile?.referral_id || '–';
   $('profile-transfer').textContent = profile?.transfer_id || '–';
   $('profile-avatar').textContent = profile?.avatar || '😎';
-  if (profile?.id) currentUserId = profile.id;
+  // Joined date
+  try {
+    const d = profile?.created_at ? new Date(profile.created_at) : null;
+    $('profile-joined').textContent = d
+      ? d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+      : '–';
+  } catch { $('profile-joined').textContent = '–'; }
+  if (profile?.id) {
+    currentUserId = profile.id;
+    loadVipStats();
+    loadAccountBalance();
+  }
+}
+
+/* VIP level from total wagered: 1 level per Rs 1000 wagered. */
+async function loadVipStats() {
+  if (!currentUserId) return;
+  try {
+    let total = 0;
+    // Squad Stakes bids
+    const { data: bids } = await supabase.from('bids')
+      .select('amount').eq('user_id', currentUserId);
+    (bids || []).forEach(b => { total += Number(b.amount || 0); });
+    // Coin Flip bids
+    try {
+      const { data: cfBids } = await supabase.from('cf_bids')
+        .select('amount').eq('user_id', currentUserId);
+      (cfBids || []).forEach(b => { total += Number(b.amount || 0); });
+    } catch { /* cf tables may not exist yet */ }
+
+    const level = Math.min(99, 1 + Math.floor(total / 1000));
+    const xp = Math.floor(total % 1000);
+    const tier = (VIP_TIERS.find(t => level >= t.min) || VIP_TIERS[VIP_TIERS.length - 1]).name;
+    $('vip-level').textContent = level;
+    $('vip-level2').textContent = level;
+    $('vip-next').textContent = level + 1;
+    $('vip-tier').textContent = tier;
+    $('vip-fill').style.width = (xp / 1000 * 100).toFixed(1) + '%';
+    $('vip-xp').textContent = xp.toLocaleString() + ' / 1000 XP';
+    $('vip-remaining').textContent = (1000 - xp).toLocaleString();
+  } catch (e) { console.warn('vip stats failed', e); }
+}
+
+/* Balance on the gold card (mirrors wallet). */
+async function loadAccountBalance() {
+  try {
+    const { data } = await supabase.from('wallets')
+      .select('balance').eq('user_id', currentUserId).maybeSingle();
+    const bal = data ? Number(data.balance || 0) : 0;
+    $('acct-balance').textContent = fmtRs(bal);
+  } catch (e) { console.warn('balance load failed', e); }
+}
+
+/* Betting record / Profit & Loss panel. */
+async function showRecord(kind) {
+  const panel = $('record-panel');
+  const list = $('record-list');
+  $('record-title').textContent = kind === 'pnl' ? '📈 Profit & Loss' : '📊 Betting Record';
+  panel.hidden = false;
+  list.innerHTML = '<p class="hint">Loading…</p>';
+  if (!currentUserId) { list.innerHTML = '<p class="hint">Not signed in.</p>'; return; }
+  try {
+    if (kind === 'pnl') {
+      // Sum wins and losses from transactions
+      const { data } = await supabase.from('transactions')
+        .select('type, amount').eq('user_id', currentUserId);
+      let won = 0, lost = 0;
+      (data || []).forEach(t => {
+        const a = Number(t.amount || 0);
+        if (t.type === 'coinflip_win' || t.type === 'payout') won += a;
+        else if (t.type === 'coinflip_bet' || t.type === 'bid') lost += a;
+      });
+      const net = won - lost;
+      list.innerHTML =
+        '<div class="profile-row"><span>Total won</span><strong style="color:#2ee06f">Rs ' + fmtRs(won) + '</strong></div>' +
+        '<div class="profile-row"><span>Total wagered</span><strong>Rs ' + fmtRs(lost) + '</strong></div>' +
+        '<div class="profile-row"><span>Net P&amp;L</span><strong style="color:' + (net >= 0 ? '#2ee06f' : '#ff5555') + '">Rs ' + fmtRs(net) + '</strong></div>';
+    } else {
+      // Recent bids (Squad Stakes + Coin Flip)
+      const rows = [];
+      const { data: bids } = await supabase.from('bids')
+        .select('amount, created_at').eq('user_id', currentUserId)
+        .order('created_at', { ascending: false }).limit(10);
+      (bids || []).forEach(b => rows.push({ label: 'Squad Stakes bid', amount: b.amount, at: b.created_at }));
+      try {
+        const { data: cfBids } = await supabase.from('cf_bids')
+          .select('amount, side, created_at').eq('user_id', currentUserId)
+          .order('created_at', { ascending: false }).limit(10);
+        (cfBids || []).forEach(b => rows.push({ label: 'Coin Flip · ' + b.side, amount: b.amount, at: b.created_at }));
+      } catch { /* ignore */ }
+      rows.sort((a, b) => new Date(b.at) - new Date(a.at));
+      if (!rows.length) { list.innerHTML = '<p class="hint">No bets yet.</p>'; return; }
+      list.innerHTML = rows.slice(0, 15).map(r =>
+        '<div class="profile-row"><span>' + r.label + '</span><strong>Rs ' + fmtRs(r.amount) + '</strong></div>'
+      ).join('');
+    }
+  } catch (e) {
+    console.warn('record load failed', e);
+    list.innerHTML = '<p class="hint">Could not load.</p>';
+  }
+  panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
 function buildAvatarGrid() {
@@ -88,18 +199,48 @@ export function initProfile() {
     btn.addEventListener('click', () => {
       unlockAudio();
       const target = $(btn.dataset.copy);
-      copyText(target.textContent.trim(), 'Copied!');
+      if (target) copyText(target.textContent.trim(), 'Copied!');
     });
   });
+
+  // Switch account = logout
   $('btn-logout').addEventListener('click', async () => {
     if (confirm('Log out of WinSquad?')) await logout();
   });
 
-  // Admin portal button (only for admins)
-  $('btn-admin-portal').addEventListener('click', () => {
+  // Admin portal button (only for admins) — member grid item
+  const adminBtn = $('btn-admin-portal');
+  if (adminBtn) adminBtn.addEventListener('click', () => {
     window.open('/admin', '_blank');
   });
   checkAdminAccess();
+
+  // Balance refresh
+  $('btn-refresh-balance').addEventListener('click', async () => {
+    unlockAudio();
+    try { await refreshWallet(); } catch {}
+    await loadAccountBalance();
+    toast('Balance updated');
+  });
+
+  // GET COINS → rewards tab; GAME CARDS → toast for now
+  $('btn-get-coins').addEventListener('click', () => {
+    unlockAudio();
+    const el = document.querySelector('[data-open-view="rewards"]');
+    if (el) el.click();
+    else toast('Open Rewards 🎁');
+  });
+  $('btn-balance').addEventListener('click', () => { unlockAudio(); });
+  $('btn-game-cards').addEventListener('click', () => {
+    unlockAudio();
+    toast('Game cards coming soon! 🃏');
+  });
+
+  // Member center: betting record / P&L / my bids
+  $('btn-betting-record').addEventListener('click', () => { unlockAudio(); showRecord('bets'); });
+  $('btn-profit-loss').addEventListener('click', () => { unlockAudio(); showRecord('pnl'); });
+  $('btn-my-bids').addEventListener('click', () => { unlockAudio(); showRecord('bets'); });
+  $('btn-record-close').addEventListener('click', () => { $('record-panel').hidden = true; });
 
   // Name editing
   $('btn-edit-name').addEventListener('click', () => {
