@@ -4,8 +4,8 @@
    - wallets (own row), transactions (own rows)
    - transfer_funds(p_to_transfer_id, p_amount) -> {ok, error}
      Rules reflected: recipient = 14-digit numeric transfer ID,
-     max 50% of balance, once per week (backend enforces; the UI
-     pre-checks the 50% rule and shows the weekly limit).
+     Rs 500 – Rs 10,000, once per day (backend enforces via
+     003_transfer_daily.sql; the UI pre-checks the daily limit).
    - Deposit/withdraw are MANUAL: the UI inserts pending rows into
      the `transactions` ledger (type='deposit'/'withdraw',
      status='pending'); an admin approves deposits via
@@ -207,7 +207,7 @@ async function submitTransfer() {
     await loadBalance();
     await loadHistory();
   } catch (e) {
-    toast(friendlyError(e, 'Transfer failed. Note: transfers are limited to once per week.'), true);
+    toast(friendlyError(e, 'Transfer failed. Note: only 1 transfer per day is allowed.'), true);
   } finally {
     $('btn-transfer-submit').disabled = false;
   }
