@@ -105,31 +105,51 @@ body {
 .clock.urgent { color: #ff6b6b; border-color: #ff6b6b; animation: pulse 1s infinite; }
 .clock.big { font-size: 20px; justify-content: center; margin: 8px 0; }
 
-/* Demo-style casino clock (in pot card) */
+/* Demo-style 3D casino clock (in pot card) */
 .demo-clock {
   margin: 10px auto 0;
-  font-size: 26px; font-weight: 900;
-  padding: 10px 24px;
-  background: radial-gradient(ellipse at center, #1a5c3f 0%, #0a2e20 100%);
+  font-size: 28px; font-weight: 900;
+  padding: 12px 28px;
+  background: linear-gradient(180deg, #1e6b47 0%, #0d3d28 50%, #071f16 100%);
   border: 2px solid var(--gold);
-  box-shadow: 0 0 20px rgba(212, 175, 55, 0.4), inset 0 0 15px rgba(0,0,0,0.5);
-  letter-spacing: 2px;
+  border-radius: 16px;
+  box-shadow:
+    0 6px 0 #5a4510,
+    0 8px 20px rgba(0, 0, 0, 0.6),
+    0 0 25px rgba(212, 175, 55, 0.4),
+    inset 0 2px 4px rgba(255, 255, 255, 0.2),
+    inset 0 -3px 6px rgba(0, 0, 0, 0.5);
+  letter-spacing: 3px;
+  color: #fff;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8), 0 0 10px rgba(212, 175, 55, 0.6);
+  transform: perspective(400px) rotateX(8deg);
+  transform-style: preserve-3d;
 }
-.demo-clock .clock-icon { font-size: 28px; animation: tick 1s ease-in-out infinite; }
+.demo-clock .clock-icon {
+  font-size: 30px;
+  display: inline-block;
+  animation: tick 1s ease-in-out infinite;
+  filter: drop-shadow(0 2px 3px rgba(0,0,0,0.6));
+}
 @keyframes tick {
   0%, 100% { transform: rotate(0deg); }
   50% { transform: rotate(15deg); }
 }
 .demo-clock.urgent {
   border-color: #ff4444;
-  background: radial-gradient(ellipse at center, #5c1a1a 0%, #2e0a0a 100%);
-  box-shadow: 0 0 25px rgba(255, 60, 60, 0.6);
+  background: linear-gradient(180deg, #6b1e1e 0%, #3d0d0d 50%, #1f0707 100%);
+  box-shadow:
+    0 6px 0 #5a1010,
+    0 8px 20px rgba(0, 0, 0, 0.6),
+    0 0 30px rgba(255, 60, 60, 0.7),
+    inset 0 2px 4px rgba(255, 255, 255, 0.2),
+    inset 0 -3px 6px rgba(0, 0, 0, 0.5);
   animation: urgent-shake 0.5s ease-in-out infinite;
 }
 @keyframes urgent-shake {
-  0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-3px); }
-  75% { transform: translateX(3px); }
+  0%, 100% { transform: perspective(400px) rotateX(8deg) translateX(0); }
+  25% { transform: perspective(400px) rotateX(8deg) translateX(-3px); }
+  75% { transform: perspective(400px) rotateX(8deg) translateX(3px); }
 }
 
 /* Wallet pill in topbar (replaces clock) */
