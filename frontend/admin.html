@@ -266,13 +266,25 @@
       <!-- ROUNDS -->
       <div id="tab-rounds" class="admin-view" hidden>
         <div class="fee-note">🔒 Fee column is <strong>admin-only</strong> — never shown in the player app.</div>
-        <div class="refresh-row"><button class="btn-refresh" data-refresh="rounds">↻ Refresh</button></div>
-        <div id="rounds-loading" class="loading">Loading rounds…</div>
-        <div id="rounds-content" class="table-wrap" hidden>
-          <table class="data-table">
-            <thead><tr><th>#</th><th>Status</th><th>Players</th><th>Total bids</th><th>Fee (10%)</th><th>Ended</th></tr></thead>
-            <tbody id="rounds-tbody"></tbody>
-          </table>
+        <div id="rounds-list-view">
+          <div class="refresh-row"><button class="btn-refresh" data-refresh="rounds">↻ Refresh</button></div>
+          <div id="rounds-loading" class="loading">Loading rounds…</div>
+          <div id="rounds-content" class="table-wrap" hidden>
+            <table class="data-table">
+              <thead><tr><th>#</th><th>Status</th><th>Players</th><th>Total bids</th><th>Fee (10%)</th><th>Ended</th><th></th></tr></thead>
+              <tbody id="rounds-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div id="round-detail-view" hidden>
+          <button id="btn-back-rounds" class="btn-ghost">← All rounds</button>
+          <h3 id="round-detail-title" class="gold"></h3>
+          <div id="round-detail-content" class="table-wrap">
+            <table class="data-table">
+              <thead><tr><th>User</th><th>Bid</th><th>Result</th><th>Profit</th></tr></thead>
+              <tbody id="round-detail-tbody"></tbody>
+            </table>
+          </div>
         </div>
         <h3 class="section-title">Private tables</h3>
         <div id="ptables-content" class="table-wrap">
@@ -664,6 +676,8 @@ TAB_LOADERS.transactions = loadTransactions;
 async function loadRounds() {
   $('rounds-loading').hidden = false;
   $('rounds-content').hidden = true;
+  $('rounds-list-view').hidden = false;
+  $('round-detail-view').hidden = true;
   try {
     const { data: rounds, error } = await supabase.from('rounds')
       .select('id, round_no, status, player_count, total_bids, fee_amount, ends_at')
@@ -679,7 +693,15 @@ async function loadRounds() {
         <td>Rs ${fmtRs(r.total_bids)}</td>
         <td class="gold-text"><strong>Rs ${fmtRs(r.fee_amount)}</strong></td>
         <td class="muted">${fmtDate(r.ends_at)}</td>
-      </tr>`).join('') || '<tr><td colspan="6" class="muted center">No rounds yet.</td></tr>';
+        <td><button class="btn-ghost" data-view-round="${r.id}" data-round-no="${r.round_no}">View →</button></td>
+      </tr>`).join('') || '<tr><td colspan="7" class="muted center">No rounds yet.</td></tr>';
+
+    // Click handler for round detail
+    $('rounds-tbody').querySelectorAll('[data-view-round]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        loadRoundDetail(btn.getAttribute('data-view-round'), btn.getAttribute('data-round-no'));
+      });
+    });
 
     const { data: pt } = await supabase.from('private_tables')
       .select('code, status, current_round_no, fee_amount, created_at')
@@ -701,6 +723,70 @@ async function loadRounds() {
   }
 }
 TAB_LOADERS.rounds = loadRounds;
+
+/* Round detail: bid-wise results with losers, winners, and profit */
+async function loadRoundDetail(roundId, roundNo) {
+  $('rounds-list-view').hidden = true;
+  $('round-detail-view').hidden = false;
+  $('round-detail-title').textContent = 'Round #' + roundNo + ' — Results';
+  $('round-detail-tbody').innerHTML = '<tr><td colspan="4" class="muted center">Loading…</td></tr>';
+  try {
+    // Get all bids for this round
+    const { data: bids, error } = await supabase.from('bids')
+      .select('user_id, amount, created_at')
+      .eq('round_id', roundId)
+      .order('amount', { ascending: false });
+    if (error) throw error;
+
+    // Get results (winners with payouts, losers)
+    const { data: results } = await supabase.from('results')
+      .select('user_id, payout, is_winner')
+      .eq('round_id', roundId);
+
+    const resultMap = {};
+    (results || []).forEach(r => {
+      resultMap[r.user_id] = r;
+    });
+
+    await hydrateProfiles((bids || []).map(b => b.user_id));
+
+    $('round-detail-tbody').innerHTML = (bids || []).map(b => {
+      const res = resultMap[b.user_id];
+      const isWinner = res && res.is_winner;
+      const payout = res ? Number(res.payout || 0) : 0;
+      const profit = payout - Number(b.amount);
+
+      let resultBadge, profitText, profitColor;
+      if (!res) {
+        resultBadge = '<span class="pill pending">pending</span>';
+        profitText = '–'; profitColor = '';
+      } else if (isWinner) {
+        resultBadge = '<span class="pill completed">🏆 Winner</span>';
+        profitText = '+' + fmtRs(profit);
+        profitColor = 'color:#00ff96;';
+      } else {
+        resultBadge = '<span class="pill" style="background:#ff444433;color:#ff6666;">😭 Loser</span>';
+        profitText = '-' + fmtRs(b.amount);
+        profitColor = 'color:#ff6666;';
+      }
+
+      return `
+      <tr>
+        <td><strong>${pname(b.user_id)}</strong><br /><span class="muted mono">${pphone(b.user_id)}</span></td>
+        <td><strong>Rs ${fmtRs(b.amount)}</strong></td>
+        <td>${resultBadge}</td>
+        <td><strong style="${profitColor}">${profitText}</strong></td>
+      </tr>`;
+    }).join('') || '<tr><td colspan="4" class="muted center">No bids in this round.</td></tr>';
+  } catch (e) {
+    $('round-detail-tbody').innerHTML = '<tr><td colspan="4" class="muted center">Error: ' + esc(e.message) + '</td></tr>';
+  }
+}
+
+$('btn-back-rounds')?.addEventListener('click', () => {
+  $('round-detail-view').hidden = true;
+  $('rounds-list-view').hidden = false;
+});
 
 /* ================= live bids (high to low) ================= */
 async function loadLiveBids() {
