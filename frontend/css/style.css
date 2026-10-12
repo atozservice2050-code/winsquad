@@ -1047,6 +1047,8 @@ button { font-family: inherit; cursor: pointer; border: none; border-radius: 12p
 .dice-art  { background: radial-gradient(circle at 50% 30%, #1a2a5a 0%, #0a1028 70%); }
 .bj-art    { background: radial-gradient(circle at 50% 30%, #4a1a1a 0%, #1c0a0a 70%); }
 .poker-art { background: radial-gradient(circle at 50% 30%, #1a3a4a 0%, #08141c 70%); }
+.ab-art    { background: radial-gradient(circle at 50% 30%, #1a4a2e 0%, #081c10 70%); }
+.cf-art    { background: radial-gradient(circle at 50% 30%, #4a3a12 0%, #1c1408 70%); }
 .game-info { padding: 12px 14px 14px; }
 .game-name { font-size: 17px; font-weight: 900; color: #fff; }
 .game-desc { font-size: 12px; color: var(--muted); margin-top: 3px; }
@@ -1443,3 +1445,235 @@ button { font-family: inherit; cursor: pointer; border: none; border-radius: 12p
   font-weight: 900; font-size: 12px; padding: 8px 16px;
 }
 .mission-claim:disabled { opacity: 0.6; }
+
+/* ============ ANDAR BAHAR (mirrors coin flip, card theme) ============ */
+.ab-wrap { display: flex; flex-direction: column; gap: 12px; }
+.ab-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin: 4px 0 2px;
+}
+
+/* dealer card reveal */
+.ab-stage {
+  perspective: 900px;
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  margin: 6px 0 14px;
+  min-height: 170px;
+}
+.ab-card {
+  width: 110px; height: 150px;
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.9s cubic-bezier(0.2, 0.7, 0.3, 1.2);
+}
+.ab-card.flipped { transform: rotateY(180deg); }
+.ab-card-face {
+  position: absolute; inset: 0;
+  border-radius: 12px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 6px;
+  background:
+    radial-gradient(circle at 32% 28%, #1d3a2e 0%, #0f241c 55%, #08170f 100%);
+  border: 3px solid var(--gold);
+  box-shadow:
+    0 10px 26px rgba(0,0,0,0.65),
+    inset 0 3px 8px rgba(212,175,55,0.25),
+    inset 0 -6px 14px rgba(0,0,0,0.45);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+.ab-card-face span { font-size: 52px; line-height: 1; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.4)); }
+.ab-card-face em {
+  font-style: normal; font-size: 12px; font-weight: 900; letter-spacing: 2px;
+  color: var(--gold-light); text-shadow: 0 1px 0 rgba(0,0,0,0.5);
+}
+.ab-card-back { transform: rotateY(180deg); }
+.ab-piles { display: flex; gap: 26px; }
+.ab-pile {
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  font-size: 34px; opacity: 0.75;
+}
+.ab-pile em { font-style: normal; font-size: 11px; font-weight: 900; letter-spacing: 1.5px; color: var(--muted); }
+
+/* result banner */
+.ab-result {
+  font-size: 16px; font-weight: 800;
+  padding: 12px; border-radius: 12px; margin-bottom: 12px;
+  border: 1px solid var(--card-border);
+}
+.ab-result.win { color: var(--win-green); background: rgba(46,224,111,0.08); border-color: rgba(46,224,111,0.4); }
+.ab-result.lose { color: #ff8f8f; background: rgba(210,31,44,0.08); border-color: rgba(210,31,44,0.4); }
+
+/* andar/bahar choice */
+.ab-choices { display: flex; gap: 10px; margin-bottom: 14px; }
+
+/* bet tabs reuse .bid-tab; custom row */
+#ab-custom-row { margin: 10px 0; }
+#ab-custom-row input {
+  width: 100%; padding: 12px; font-size: 16px; text-align: center;
+  color: var(--text); background: #1d1d2b;
+  border: 2px solid var(--card-border); border-radius: var(--radius);
+}
+#btn-ab-bet { width: 100%; margin-top: 12px; }
+.ab-mybet { margin-top: 10px; font-size: 13px; color: var(--muted); }
+.ab-mybet strong { color: var(--gold-light); }
+
+/* live sides panel */
+.ab-sides { display: flex; align-items: stretch; gap: 8px; margin: 10px 0 8px; }
+.ab-side {
+  flex: 1; text-align: center; padding: 10px 6px;
+  border-radius: var(--radius); border: 2px solid #ffffff1a;
+  background: #1d1d2b;
+}
+.ab-side-name { font-size: 13px; font-weight: 900; letter-spacing: 1px; }
+.ab-side-total { font-size: 18px; font-weight: 900; color: var(--gold-light); margin-top: 4px; }
+.andar-side.winning { border-color: var(--win-green); box-shadow: 0 0 14px rgba(46,224,111,0.35); }
+.bahar-side.winning { border-color: var(--win-green); box-shadow: 0 0 14px rgba(46,224,111,0.35); }
+.ab-vs {
+  display: flex; align-items: center;
+  font-size: 12px; font-weight: 900; color: var(--muted); letter-spacing: 1px;
+}
+/* tug-of-war bar: gold fill width = andar share of the pot */
+.ab-tug {
+  height: 10px; border-radius: 999px; overflow: hidden;
+  background: #2a2a3a; border: 1px solid #ffffff14; margin-bottom: 8px;
+}
+.ab-tug-fill {
+  height: 100%; width: 50%;
+  background: linear-gradient(90deg, var(--gold-dim), var(--gold-light));
+  border-radius: 999px;
+  transition: width 0.8s ease;
+}
+.ab-rule { font-size: 12px; color: var(--muted); margin-bottom: 10px; }
+
+/* recent rounds history */
+.ab-history { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; min-height: 34px; }
+.ab-chip {
+  min-width: 40px; height: 40px; padding: 0 8px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 4px;
+  border-radius: 999px; font-size: 13px; font-weight: 900;
+  border: 1px solid #ffffff22; background: #1d1d2b; color: var(--text);
+}
+.ab-chip.won { border-color: rgba(46,224,111,0.55); box-shadow: 0 0 10px rgba(46,224,111,0.25); }
+.ab-chip.lost { border-color: rgba(210,31,44,0.55); opacity: 0.85; }
+
+/* ============================================================
+   DRAGON TIGER — card reveal game (dark b9-style theme)
+   ============================================================ */
+.dt-wrap { display: flex; flex-direction: column; gap: 12px; }
+.dt-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin: 4px 0 2px;
+}
+
+/* live sides panel */
+.dt-sides { display: flex; align-items: stretch; gap: 8px; margin: 10px 0 8px; }
+.dt-side {
+  flex: 1; text-align: center; padding: 10px 6px;
+  border-radius: var(--radius); border: 2px solid #ffffff1a;
+  background: #1d1d2b;
+}
+.dt-side-name { font-size: 13px; font-weight: 900; letter-spacing: 1px; }
+.dt-side-total { font-size: 18px; font-weight: 900; color: var(--gold-light); margin-top: 4px; }
+.dragon-side.winning { border-color: var(--win-green); box-shadow: 0 0 14px rgba(46,224,111,0.35); }
+.tiger-side.winning { border-color: var(--win-green); box-shadow: 0 0 14px rgba(46,224,111,0.35); }
+.dt-vs {
+  display: flex; align-items: center;
+  font-size: 12px; font-weight: 900; color: var(--muted); letter-spacing: 1px;
+}
+/* tug-of-war bar: gold fill width = dragon share of the pot */
+.dt-tug {
+  height: 10px; border-radius: 999px; overflow: hidden;
+  background: #2a2a3a; border: 1px solid #ffffff14; margin-bottom: 8px;
+}
+.dt-tug-fill {
+  height: 100%; width: 50%;
+  background: linear-gradient(90deg, var(--gold-dim), var(--gold-light));
+  border-radius: 999px;
+  transition: width 0.8s ease;
+}
+.dt-rule { font-size: 12px; color: var(--muted); margin-bottom: 10px; }
+
+/* card table + flip cards */
+.dt-table {
+  display: flex; align-items: center; justify-content: center; gap: 18px;
+  margin: 8px 0 14px;
+  perspective: 900px;
+}
+.dt-card-slot { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.dt-card-label { font-size: 12px; font-weight: 900; letter-spacing: 1.5px; color: var(--muted); }
+.dt-card-vs { font-size: 28px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5)); }
+.dt-card { width: 110px; height: 150px; }
+.dt-card-inner {
+  position: relative; width: 100%; height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 0.9s cubic-bezier(0.2, 0.7, 0.3, 1.2);
+}
+.dt-card.flipped .dt-card-inner { transform: rotateY(180deg); }
+.dt-card-back, .dt-card-front {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 12px;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.55), inset 0 2px 6px rgba(255,255,255,0.15);
+  border: 3px solid #8a6d1f;
+}
+.dt-card-back {
+  background:
+    radial-gradient(circle at 30% 25%, #2a4a6f 0%, #16283f 45%, #0a1420 100%);
+}
+.dt-card-back span { font-size: 52px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5)); }
+.dt-card-front {
+  transform: rotateY(180deg);
+  background:
+    radial-gradient(circle at 32% 28%, #fffdf5 0%, #f5f0e1 60%, #d8cfae 100%);
+}
+.dt-card-front span {
+  font-size: 44px; font-weight: 900; color: #1a1a2e;
+  text-shadow: 0 1px 0 rgba(255,255,255,0.6);
+  letter-spacing: 1px;
+}
+.dt-card.winner .dt-card-inner {
+  animation: dt-winner-pulse 0.8s ease-in-out 2;
+}
+.dt-card.winner .dt-card-front {
+  border-color: var(--win-green);
+  box-shadow: 0 0 22px rgba(46,224,111,0.55), inset 0 2px 6px rgba(255,255,255,0.2);
+}
+@keyframes dt-winner-pulse {
+  0%, 100% { transform: rotateY(180deg) scale(1); }
+  50% { transform: rotateY(180deg) scale(1.08); }
+}
+
+/* result banner */
+.dt-result {
+  font-size: 16px; font-weight: 800;
+  padding: 12px; border-radius: 12px; margin-bottom: 12px;
+  border: 1px solid var(--card-border);
+}
+.dt-result.win { color: var(--win-green); background: rgba(46,224,111,0.08); border-color: rgba(46,224,111,0.4); }
+.dt-result.lose { color: #ff8f8f; background: rgba(210,31,44,0.08); border-color: rgba(210,31,44,0.4); }
+
+/* dragon/tiger choice */
+.dt-choices { display: flex; gap: 10px; margin-bottom: 14px; }
+#dt-custom-row { margin: 10px 0; }
+#dt-custom-row input {
+  width: 100%; padding: 12px; font-size: 16px; text-align: center;
+  color: var(--text); background: #1d1d2b;
+  border: 2px solid var(--card-border); border-radius: var(--radius);
+}
+#btn-dt-bet { width: 100%; margin-top: 12px; }
+.dt-mybet { margin-top: 10px; font-size: 13px; color: var(--muted); }
+.dt-mybet strong { color: var(--gold-light); }
+
+/* recent rounds history */
+.dt-history { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; min-height: 34px; }
+.dt-chip {
+  min-width: 40px; height: 40px; padding: 0 8px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 4px;
+  border-radius: 999px; font-size: 13px; font-weight: 900;
+  border: 1px solid #ffffff22; background: #1d1d2b; color: var(--text);
+}
+.dt-chip.won { border-color: rgba(46,224,111,0.55); box-shadow: 0 0 10px rgba(46,224,111,0.25); }
+.dt-chip.lost { border-color: rgba(210,31,44,0.55); opacity: 0.85; }

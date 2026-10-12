@@ -123,6 +123,24 @@
         </div>
 
         <div class="games-grid">
+          <div class="game-card playable" data-game="andarbahar">
+            <div class="live-strip"><span class="live-dot"></span> LIVE</div>
+            <div class="game-badge play">▶ PLAY</div>
+            <div class="game-art ab-art">🃏</div>
+            <div class="game-info">
+              <div class="game-name">Andar Bahar</div>
+              <div class="game-desc">Pick a side · lower wins 2x</div>
+            </div>
+          </div>
+          <div class="game-card playable" data-game="coinflip">
+            <div class="live-strip"><span class="live-dot"></span> LIVE</div>
+            <div class="game-badge play">▶ PLAY</div>
+            <div class="game-art cf-art">🪙</div>
+            <div class="game-info">
+              <div class="game-name">Coin Flip</div>
+              <div class="game-desc">Heads or tails · lower wins 2x</div>
+            </div>
+          </div>
           <div class="game-card soon" data-game="slots">
             <div class="game-badge soon">SOON</div>
             <div class="game-art slots-art">🎰</div>
@@ -224,6 +242,8 @@
 
           <!-- more games -->
           <button class="btn-ghost small" data-open-view="coinflip" style="align-self:center;">🪙 Play Coin Flip</button>
+          <button class="btn-ghost small" data-open-view="dt" style="align-self:center;">🐉🐯 Play Dragon Tiger</button>
+          <button class="btn-ghost small" data-open-view="andarbahar" style="align-self:center;">🃏 Play Andar Bahar</button>
 
           <!-- hidden compat spans (kept for JS that reads totals) -->
           <span id="pot-total" hidden>0</span>
@@ -299,6 +319,173 @@
             <div class="card-title">🕘 Recent rounds</div>
             <div id="cf-history" class="cf-history">
               <p class="muted center">No rounds yet 🪙</p>
+            </div>
+          </div>
+
+          <p class="rules-tiny">Bet on a side every 30 seconds. The side with the lower total wins 2x!</p>
+        </div>
+      </section>
+
+      <!-- ============ DRAGON TIGER ============ -->
+      <section id="view-dt" class="view" hidden>
+        <div class="dt-wrap">
+          <div class="dt-header">
+            <button class="btn-ghost small" data-open-view="arena">← Arena</button>
+            <div class="card-title" style="margin:0;">🐉🐯 <span class="gold">DRAGON TIGER</span></div>
+            <span style="width:64px;"></span>
+          </div>
+
+          <!-- live round -->
+          <div class="card gold-frame">
+            <div class="pot-label">🐉🐯 LIVE ROUND <span id="dt-round-no">#–</span></div>
+            <div class="dt-sides">
+              <div class="dt-side dragon-side">
+                <div class="dt-side-name">🐉 DRAGON</div>
+                <div class="dt-side-total">Rs <span id="dt-dragon-total">0</span></div>
+              </div>
+              <div class="dt-vs">VS</div>
+              <div class="dt-side tiger-side">
+                <div class="dt-side-name">🐯 TIGER</div>
+                <div class="dt-side-total">Rs <span id="dt-tiger-total">0</span></div>
+              </div>
+            </div>
+            <div class="dt-tug"><div id="dt-tug-fill" class="dt-tug-fill"></div></div>
+            <div class="dt-rule">Lower side wins · winners get <strong class="green">2x</strong></div>
+            <div id="dt-clock" class="clock demo-clock" title="Time left in this round">
+              <span class="clock-icon">⏱</span><span id="dt-clock-time">--:--</span>
+            </div>
+          </div>
+
+          <div class="card gold-frame center">
+            <!-- card reveal -->
+            <div class="dt-table">
+              <div class="dt-card-slot">
+                <div class="dt-card-label">🐉 DRAGON</div>
+                <div class="dt-card" id="dt-card-dragon">
+                  <div class="dt-card-inner">
+                    <div class="dt-card-back"><span>🐉</span></div>
+                    <div class="dt-card-front"><span>🂠</span></div>
+                  </div>
+                </div>
+              </div>
+              <div class="dt-card-vs">⚔️</div>
+              <div class="dt-card-slot">
+                <div class="dt-card-label">🐯 TIGER</div>
+                <div class="dt-card" id="dt-card-tiger">
+                  <div class="dt-card-inner">
+                    <div class="dt-card-back"><span>🐯</span></div>
+                    <div class="dt-card-front"><span>🂠</span></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div id="dt-result" class="dt-result" hidden></div>
+
+            <!-- choice -->
+            <div class="dt-choices">
+              <button class="choice-btn" id="dt-dragon">🐉<span>DRAGON</span></button>
+              <button class="choice-btn" id="dt-tiger">🐯<span>TIGER</span></button>
+            </div>
+
+            <!-- bet amount -->
+            <div class="bid-tabs" role="tablist" id="dt-tabs">
+              <button class="bid-tab active" data-amount="10">Rs 10</button>
+              <button class="bid-tab" data-amount="50">Rs 50</button>
+              <button class="bid-tab" data-amount="100">Rs 100</button>
+              <button class="bid-tab" data-amount="500">Rs 500</button>
+              <button class="bid-tab" data-amount="custom">Custom</button>
+            </div>
+            <div id="dt-custom-row" hidden>
+              <input id="dt-custom-input" type="number" inputmode="numeric" min="10" placeholder="Enter amount (min Rs 10)" />
+            </div>
+
+            <button id="btn-dt-bet" class="btn-red big">⚡ Place bet</button>
+            <div class="dt-mybet">Your bet: <strong id="dt-my-bet">—</strong></div>
+          </div>
+
+          <!-- recent rounds -->
+          <div class="card">
+            <div class="card-title">🕘 Recent rounds</div>
+            <div id="dt-history" class="dt-history">
+              <p class="muted center">No rounds yet 🐉🐯</p>
+            </div>
+          </div>
+
+          <p class="rules-tiny">Bet on a side every 30 seconds. One card each — the lower-total side wins 2x!</p>
+        </div>
+      </section>
+
+      <!-- ============ ANDAR BAHAR (multiplayer, 30s rounds) ============ -->
+      <section id="view-ab" class="view" hidden>
+        <div class="ab-wrap">
+          <div class="ab-header">
+            <button class="btn-ghost small" data-open-view="arena">← Arena</button>
+            <div class="card-title" style="margin:0;">🃏 <span class="gold">ANDAR BAHAR</span></div>
+            <span style="width:64px;"></span>
+          </div>
+
+          <!-- live round -->
+          <div class="card gold-frame">
+            <div class="pot-label">🃏 LIVE ROUND <span id="ab-round-no">#–</span></div>
+            <div class="ab-sides">
+              <div class="ab-side andar-side">
+                <div class="ab-side-name">🃏 ANDAR</div>
+                <div class="ab-side-total">Rs <span id="ab-andar-total">0</span></div>
+              </div>
+              <div class="ab-vs">VS</div>
+              <div class="ab-side bahar-side">
+                <div class="ab-side-name">🎴 BAHAR</div>
+                <div class="ab-side-total">Rs <span id="ab-bahar-total">0</span></div>
+              </div>
+            </div>
+            <div class="ab-tug"><div id="ab-tug-fill" class="ab-tug-fill"></div></div>
+            <div class="ab-rule">Lower side wins · winners get <strong class="green">2x</strong></div>
+            <div id="ab-clock" class="clock demo-clock" title="Time left in this round">
+              <span class="clock-icon">⏱</span><span id="ab-clock-time">--:--</span>
+            </div>
+          </div>
+
+          <div class="card gold-frame center">
+            <!-- dealer card reveal -->
+            <div class="ab-stage">
+              <div class="ab-card" id="ab-joker">
+                <div class="ab-card-face ab-card-front"><span>🂠</span><em>JOKER</em></div>
+                <div class="ab-card-face ab-card-back"><span>🂠</span><em>?</em></div>
+              </div>
+              <div class="ab-piles">
+                <div class="ab-pile"><span>🃏</span><em>ANDAR</em></div>
+                <div class="ab-pile"><span>🎴</span><em>BAHAR</em></div>
+              </div>
+            </div>
+            <div id="ab-result" class="ab-result" hidden></div>
+
+            <!-- choice -->
+            <div class="ab-choices">
+              <button class="choice-btn" id="ab-andar">🃏<span>ANDAR</span></button>
+              <button class="choice-btn" id="ab-bahar">🎴<span>BAHAR</span></button>
+            </div>
+
+            <!-- bet amount -->
+            <div class="bid-tabs" role="tablist" id="ab-tabs">
+              <button class="bid-tab active" data-amount="10">Rs 10</button>
+              <button class="bid-tab" data-amount="50">Rs 50</button>
+              <button class="bid-tab" data-amount="100">Rs 100</button>
+              <button class="bid-tab" data-amount="500">Rs 500</button>
+              <button class="bid-tab" data-amount="custom">Custom</button>
+            </div>
+            <div id="ab-custom-row" hidden>
+              <input id="ab-custom-input" type="number" inputmode="numeric" min="10" placeholder="Enter amount (min Rs 10)" />
+            </div>
+
+            <button id="btn-ab-bet" class="btn-red big">⚡ Place bet</button>
+            <div class="ab-mybet">Your bet: <strong id="ab-my-bet">—</strong></div>
+          </div>
+
+          <!-- recent rounds -->
+          <div class="card">
+            <div class="card-title">🕘 Recent rounds</div>
+            <div id="ab-history" class="ab-history">
+              <p class="muted center">No rounds yet 🃏</p>
             </div>
           </div>
 

@@ -13,9 +13,11 @@ import { initWallet, refreshWallet, setUser as setWalletUser, initWalletTopbar }
 import { initRewards, refreshRewards, setUser as setRewardsUser } from './rewards.js';
 import { initProfile, renderProfile } from './profile.js';
 import { initCoinflip, setUser as setCoinflipUser, destroyCoinflip } from './coinflip.js';
+import { initAndarBahar, setUser as setAndarBaharUser, destroyAndarBahar } from './ab.js';
+import { initDT, setUser as setDTUser, destroyDT } from './dt.js';
 import { initMissions, refreshMissions, setUser as setMissionsUser, recordMissionEvent } from './missions.js';
 
-const VIEWS = ['auth', 'setup', 'home', 'arena', 'private', 'wallet', 'rewards', 'missions', 'profile', 'coinflip'];
+const VIEWS = ['auth', 'setup', 'home', 'arena', 'private', 'wallet', 'rewards', 'missions', 'profile', 'coinflip', 'andarbahar', 'dt'];
 const TAB_VIEWS = ['arena', 'private', 'wallet', 'rewards', 'missions', 'profile'];
 let currentView = null;
 let currentProfile = null;
@@ -50,6 +52,8 @@ function showView(name) {
   if (name === 'missions') refreshMissions();
   if (name === 'profile') renderProfile(currentProfile);
   if (name === 'coinflip' && !initialized.coinflip) { initCoinflip(); initialized.coinflip = true; }
+  if (name === 'andarbahar' && !initialized.andarbahar) { initAndarBahar(); initialized.andarbahar = true; }
+  if (name === 'dt' && !initialized.dt) { initDT(); initialized.dt = true; }
   if (name === 'arena' && initialized.arena) { /* arena runs its own realtime loop */ }
 }
 
@@ -62,6 +66,8 @@ function enterApp(profile, phone) {
   setRewardsUser(uid);
   setMissionsUser(uid);
   setCoinflipUser(uid);
+  setAndarBaharUser(uid);
+  setDTUser(uid);
   initWalletTopbar();
   $('app').hidden = false;
   showView('arena');
@@ -134,6 +140,8 @@ async function boot() {
       destroyArena();
       destroyPrivate();
       destroyCoinflip();
+      destroyAndarBahar();
+      destroyDT();
       location.reload();
     }
   });
@@ -146,11 +154,17 @@ document.querySelectorAll('.tab').forEach(t =>
 document.querySelectorAll('[data-open-view]').forEach(b =>
   b.addEventListener('click', () => { unlockAudio(); showView(b.dataset.openView); }));
 
-/* Games hub: Squad Stakes opens the arena; others are coming soon. */
+/* Games hub: playable games open their views; others are coming soon. */
 document.querySelectorAll('.game-card').forEach(c =>
   c.addEventListener('click', () => {
     if (c.dataset.game === 'squad') {
       showView('arena');
+    } else if (c.dataset.game === 'coinflip') {
+      showView('coinflip');
+    } else if (c.dataset.game === 'andarbahar') {
+      showView('andarbahar');
+    } else if (c.dataset.game === 'dragontiger') {
+      showView('dt');
     } else {
       toast('Coming soon! 🎮');
     }
