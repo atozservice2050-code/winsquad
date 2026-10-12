@@ -62,71 +62,50 @@ function renderTotals(h, t) {
   $('cf-tug-fill').style.width = total > 0 ? (displayH / total * 100).toFixed(1) + '%' : '50%';
 }
 
-/* BOT SIMULATION (display-only): Bots bet on heads/tails to look alive.
-   Real totals come from backend; bots are visual only.
-
-   RULES:
-   - 1 real player: Bots on BOTH sides. Player's side gets bots with LOWER bids,
-     other side gets bots to ensure player's side LOSES (higher total).
-   - 2+ real players (both sides): Bots follow each side's real bets (lower amounts).
+/* BOT SIMULATION (display-only): Simple rule.
+   - Player bets on Side A.
+   - Bots put MORE on Side A (same side as player).
+   - Bots put LESS on Side B.
+   - Lower side wins -> player loses.
 */
 let botHeadsTotal = 0;
 let botTailsTotal = 0;
 let realHeadsTotal = 0;
 let realTailsTotal = 0;
-let realPlayerSide = null; // 'heads' | 'tails' | 'both' | null
+let realPlayerSide = null;
 
 function simulateCoinFlipBots() {
-  const targetBots = 8;
   botHeadsTotal = 0;
   botTailsTotal = 0;
 
-  if (realPlayerSide === 'heads' && myBid) {
-    // 1 player on Heads: player LOSES
-    // Bots on Heads: lower than player (player side stays higher)
-    // Bots on Tails: enough to make Tails win (lower total)
-    const playerAmt = Number(myBid.amount || 100);
-    // 3 bots on player's side (lower bids)
-    for (let i = 0; i < 3; i++) {
-      botHeadsTotal += 10 + Math.floor(Math.random() * Math.min(playerAmt - 10, 100));
+  if (!myBid) {
+    // No player: random 8 bots
+    for (let i = 0; i < 8; i++) {
+      const amt = 10 + Math.floor(Math.random() * 200);
+      if (Math.random() < 0.5) botHeadsTotal += amt;
+      else botTailsTotal += amt;
     }
-    // 5 bots on other side (ensure Tails total < Heads total)
-    const headsTotal = playerAmt + botHeadsTotal;
-    for (let i = 0; i < 5; i++) {
-      const maxTails = Math.max(10, Math.floor(headsTotal / 6));
-      botTailsTotal += 10 + Math.floor(Math.random() * maxTails);
-    }
-  } else if (realPlayerSide === 'tails' && myBid) {
-    // 1 player on Tails: player LOSES (mirror)
-    const playerAmt = Number(myBid.amount || 100);
-    for (let i = 0; i < 3; i++) {
-      botTailsTotal += 10 + Math.floor(Math.random() * Math.min(playerAmt - 10, 100));
-    }
-    const tailsTotal = playerAmt + botTailsTotal;
-    for (let i = 0; i < 5; i++) {
-      const maxHeads = Math.max(10, Math.floor(tailsTotal / 6));
-      botHeadsTotal += 10 + Math.floor(Math.random() * maxHeads);
-    }
-  } else {
-    // 0 or 2+ players: random split, bots follow (lower amounts)
-    for (let i = 0; i < targetBots; i++) {
-      const amount = 10 + Math.floor(Math.random() * 200); // 10-210
-      if (Math.random() < 0.5) {
-        botHeadsTotal += amount;
-      } else {
-        botTailsTotal += amount;
-      }
-    }
+    return;
+  }
+
+  // Player exists: bots put MORE on player's side, LESS on other side
+  const side = myBid.side; // 'heads' or 'tails'
+  // 5 bots on player's side (more money)
+  for (let i = 0; i < 5; i++) {
+    const amt = 20 + Math.floor(Math.random() * 150); // 20-170
+    if (side === 'heads') botHeadsTotal += amt;
+    else botTailsTotal += amt;
+  }
+  // 3 bots on other side (less money)
+  for (let i = 0; i < 3; i++) {
+    const amt = 10 + Math.floor(Math.random() * 50); // 10-60
+    if (side === 'heads') botTailsTotal += amt;
+    else botHeadsTotal += amt;
   }
 }
 
-// Track real player side from myBid
 function updateRealPlayerSide() {
-  if (myBid) {
-    realPlayerSide = myBid.side; // 'heads' or 'tails'
-  } else {
-    realPlayerSide = null;
-  }
+  realPlayerSide = myBid ? myBid.side : null;
   simulateCoinFlipBots();
 }
 
