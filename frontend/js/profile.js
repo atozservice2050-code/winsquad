@@ -38,16 +38,17 @@ function buildAvatarGrid() {
 async function saveAvatar(emoji) {
   if (!currentUserId) { toast('Not signed in', true); return; }
   try {
-    const { error } = await supabase.from('profiles')
-      .update({ avatar: emoji })
-      .eq('id', currentUserId);
+    // Use the safe RPC (profiles has no client UPDATE policy)
+    const { data, error } = await supabase.rpc('update_avatar', { p_avatar: emoji });
     if (error) throw error;
+    const row = Array.isArray(data) ? data[0] : data;
+    if (row && row.ok === false) throw new Error(row.error || 'Avatar rejected');
     $('profile-avatar').textContent = emoji;
     $('avatar-picker').hidden = true;
     toast('Avatar updated! ' + emoji);
   } catch (e) {
     console.warn('avatar save failed', e);
-    toast('Could not save avatar', true);
+    toast(e.message || 'Could not save avatar', true);
   }
 }
 
@@ -57,16 +58,17 @@ async function saveName() {
   if (!name) { toast('Enter a name', true); return; }
   if (!currentUserId) { toast('Not signed in', true); return; }
   try {
-    const { error } = await supabase.from('profiles')
-      .update({ display_name: name })
-      .eq('id', currentUserId);
+    // Use the safe RPC (profiles has no client UPDATE policy)
+    const { data, error } = await supabase.rpc('update_display_name', { p_name: name });
     if (error) throw error;
+    const row = Array.isArray(data) ? data[0] : data;
+    if (row && row.ok === false) throw new Error(row.error || 'Name rejected');
     $('profile-name').textContent = name;
     $('name-edit-row').hidden = true;
     toast('Name updated!');
   } catch (e) {
     console.warn('name save failed', e);
-    toast('Could not save name', true);
+    toast(e.message || 'Could not save name', true);
   }
 }
 
