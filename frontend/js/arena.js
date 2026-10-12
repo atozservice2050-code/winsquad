@@ -228,17 +228,19 @@ function startChartLive() {
 
 /* Fallback: poll for round settlement (if realtime fails in WebView) */
 let settlePollTimer = null;
+let lastBidRoundId = null; // track which round the user bid in
 function startSettlePoll() {
   clearInterval(settlePollTimer);
   settlePollTimer = setInterval(async () => {
-    if (!round || !round.id || resultShownFor === round.id) return;
+    const checkId = lastBidRoundId || (round && round.id);
+    if (!checkId || resultShownFor === checkId) return;
     try {
       const { data } = await supabase.from('public_rounds')
         .select('id, status')
-        .eq('id', round.id)
+        .eq('id', checkId)
         .maybeSingle();
       if (data && data.status === 'closed') {
-        onRoundSettled(round.id);
+        onRoundSettled(checkId);
       }
     } catch (e) { /* silent */ }
   }, 3000);
@@ -329,6 +331,7 @@ async function placeBid(isFree) {
     if (row && row.ok === false) throw new Error(row.error || 'Bid rejected');
     sounds.click();
     toast(isFree ? '🎁 Free Rs 10 bid placed!' : '⚡ Bid of Rs ' + fmtRs(amount) + ' placed!');
+    lastBidRoundId = round.id; // track for result popup
     await loadMyBid(round.id);
     await loadStats(round.id);
   } catch (e) {
