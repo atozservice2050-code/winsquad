@@ -197,6 +197,26 @@
             <div class="round-players"><span id="pot-players">0</span> playing</div>
           </div>
 
+          <!-- ROULETTE WHEEL (visual only — synced to the 30s round timer) -->
+          <div class="ws-wheel-stage">
+            <div class="roulette-wheel" id="ws-wheel" aria-hidden="true">
+              <div class="roulette-wood-ring"></div>
+              <div class="roulette-numbers" id="ws-rotor"></div>
+              <div class="roulette-track" id="ws-ball-orbit">
+                <div class="roulette-ball" id="ws-ball"></div>
+              </div>
+              <div class="roulette-spindle">
+                <div class="spindle-arm a1"></div>
+                <div class="spindle-arm a2"></div>
+                <div class="spindle-dome"></div>
+              </div>
+            </div>
+            <div class="ws-result" id="ws-result" hidden>
+              <span class="ws-result-label">BALL LANDS ON</span>
+              <span class="ws-result-num" id="ws-result-num">–</span>
+            </div>
+          </div>
+
           <!-- HOW TO PLAY: 3 simple visual steps -->
           <div class="howto">
             <div class="howto-step">

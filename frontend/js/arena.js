@@ -62,6 +62,7 @@ async function loadRound() {
     if (isNewRound) {
       resultShownFor = null;
       renderWinnersPlaceholder();
+      wheelSpinUp(); // new round -> wheel spins up again
     }
     startCountdown();
   } catch (e) {
@@ -267,6 +268,7 @@ function startCountdown() {
     const ss = String(remain % 60).padStart(2, '0');
     if (clockEl) clockEl.textContent = mm + ':' + ss;
     if (clockWrap) clockWrap.classList.toggle('urgent', remain <= 10 && remain > 0);
+    wheelOnTick(remainMs); // roulette wheel: slow down in last 3s, land at 0
     // soft tick in the last 5 seconds
     if (remain <= 5 && remain > 0 && remain !== lastTickSecond) {
       lastTickSecond = remain;
@@ -281,6 +283,160 @@ function startCountdown() {
       setTimeout(loadRound, 1200); // next round should be open
     }
   }, 250);
+}
+
+/* ============================================================
+   ROULETTE WHEEL (VISUAL ONLY — synced to the 30s round timer)
+   The wheel + ball are a real-looking visual layer. They do NOT
+   affect Squad Stakes bidding, settlement or payouts in any way.
+
+   HOUSE CONTROL: where the ball lands is NOT truly random by
+   default. `setRouletteResult(number)` lets backend/game logic
+   dictate the landing pocket for the NEXT round end. If no result
+   is set, a random pocket is picked (one-shot: the forced value
+   is consumed after each landing).
+   ============================================================ */
+// American wheel order (clockwise from 0), 38 pockets: 0, 00, 1-36
+const WHEEL_ORDER = ['0','28','9','26','30','11','7','20','32','17','5','22','34','15','3','24','36','13','1','00','27','10','25','29','12','8','19','31','18','6','21','33','16','4','23','35','14','2'];
+const WHEEL_RED = new Set(['1','3','5','7','9','12','14','16','18','19','21','23','25','27','30','32','34','36']);
+const WHEEL_STEP = 360 / WHEEL_ORDER.length;
+const POCKET_INDEX = {};
+WHEEL_ORDER.forEach((n, i) => { POCKET_INDEX[n] = i; });
+function pocketColor(n) { return n === '0' || n === '00' ? 'green' : (WHEEL_RED.has(n) ? 'red' : 'black'); }
+
+const ROTOR_SPEED = 200;   // deg/sec, clockwise
+const BALL_SPEED = -780;   // deg/sec, counter-clockwise (opposite the wheel)
+const SLOW_MS = 3000;      // deceleration window before round end
+const LAND_MS = 1000;      // ball settle animation
+
+let wsRotor = null, wsOrbit = null, wsWheel = null, wsResultEl = null, wsResultNum = null;
+let wheelState = 'idle';   // idle | spin | slow | landing | stopped
+let rotorAngle = 0, ballAngle = 0;
+let wheelEndsAt = 0;
+let wheelRaf = null, wheelLastT = 0;
+let landFrom = 0, landDelta = 0, landStart = 0, landNumber = null;
+let forcedRouletteNumber = null; // house-controlled landing pocket (one-shot)
+let wheelBuilt = false;
+
+function mod360(a) { return ((a % 360) + 360) % 360; }
+function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
+
+/**
+ * HOUSE CONTROL API — call before the round ends to dictate where the
+ * ball lands. Accepts 0-36 (number) or '00'. Example:
+ *   setRouletteResult(7);   // ball will land on 7
+ *   setRouletteResult('00');// ball will land on 00
+ * One-shot: consumed at the next landing, then resets to random.
+ */
+export function setRouletteResult(number) {
+  const key = String(number);
+  forcedRouletteNumber = (key in POCKET_INDEX) ? key : null;
+  return forcedRouletteNumber;
+}
+
+function buildWheelPockets() {
+  if (wheelBuilt) return;
+  wsRotor = $('ws-rotor'); wsOrbit = $('ws-ball-orbit');
+  wsWheel = $('ws-wheel'); wsResultEl = $('ws-result'); wsResultNum = $('ws-result-num');
+  if (!wsRotor) return; // wheel HTML not present
+  const R = 76, C = 86; // radius + center of the 172px pockets ring
+  WHEEL_ORDER.forEach((n, i) => {
+    const a = (i * WHEEL_STEP) * Math.PI / 180;
+    const d = document.createElement('div');
+    d.className = 'roulette-pocket ' + pocketColor(n);
+    d.textContent = n;
+    d.style.left = (C + R * Math.sin(a)).toFixed(1) + 'px';
+    d.style.top = (C - R * Math.cos(a)).toFixed(1) + 'px';
+    wsRotor.appendChild(d);
+  });
+  wheelBuilt = true;
+}
+
+function pickLandingNumber() {
+  const forced = forcedRouletteNumber;
+  forcedRouletteNumber = null; // one-shot: consumed
+  if (forced && forced in POCKET_INDEX) return forced;
+  return WHEEL_ORDER[Math.floor(Math.random() * WHEEL_ORDER.length)];
+}
+
+function wheelSpinUp() {
+  if (!wheelBuilt) return;
+  wheelState = 'spin';
+  rotorAngle = mod360(rotorAngle);
+  ballAngle = mod360(ballAngle);
+  landNumber = null;
+  if (wsResultEl) wsResultEl.hidden = true;
+  if (wsWheel) wsWheel.classList.remove('landed');
+}
+
+/** Called every countdown tick with ms remaining in the round. */
+function wheelOnTick(remainMs) {
+  if (!wheelBuilt) return;
+  if (wheelState === 'spin' && remainMs <= SLOW_MS && remainMs > 0) {
+    wheelEndsAt = Date.now() + remainMs;
+    wheelState = 'slow';
+  } else if ((wheelState === 'slow' || wheelState === 'spin') && remainMs <= 0) {
+    wheelLand();
+  }
+}
+
+function wheelLand() {
+  if (!wheelBuilt || wheelState === 'landing' || wheelState === 'stopped') return;
+  wheelState = 'landing';
+  const num = pickLandingNumber();
+  landNumber = num;
+  const target = mod360(POCKET_INDEX[num] * WHEEL_STEP + rotorAngle);
+  const cur = mod360(ballAngle);
+  landFrom = cur;
+  landDelta = mod360(target - cur) + 360; // shortest path + one final sweep
+  landStart = performance.now();
+}
+
+function wheelShowResult(num) {
+  if (wsResultNum) {
+    wsResultNum.textContent = num;
+    wsResultNum.className = 'ws-result-num ' + pocketColor(num);
+  }
+  if (wsResultEl) wsResultEl.hidden = false;
+  if (wsWheel) wsWheel.classList.add('landed');
+}
+
+function wheelFrame(now) {
+  wheelRaf = requestAnimationFrame(wheelFrame);
+  const dt = Math.min(0.05, Math.max(0, (now - wheelLastT) / 1000));
+  wheelLastT = now;
+  if (wheelState === 'spin') {
+    rotorAngle = mod360(rotorAngle + ROTOR_SPEED * dt);
+    ballAngle = mod360(ballAngle + BALL_SPEED * dt);
+  } else if (wheelState === 'slow') {
+    const remainMs = Math.max(0, wheelEndsAt - Date.now());
+    const k = easeOutCubic(remainMs / SLOW_MS);
+    rotorAngle = mod360(rotorAngle + ROTOR_SPEED * k * dt);
+    ballAngle = mod360(ballAngle + BALL_SPEED * k * dt);
+    if (remainMs <= 0) wheelLand();
+  } else if (wheelState === 'landing') {
+    const t = Math.min(1, (now - landStart) / LAND_MS);
+    ballAngle = landFrom + landDelta * easeOutCubic(t);
+    if (t >= 1) {
+      wheelState = 'stopped';
+      wheelShowResult(landNumber);
+    }
+  }
+  if (wsRotor) wsRotor.style.transform = 'rotate(' + rotorAngle + 'deg)';
+  if (wsOrbit) wsOrbit.style.transform = 'rotate(' + ballAngle + 'deg)';
+}
+
+function startWheelLoop() {
+  buildWheelPockets();
+  if (wheelRaf || !wheelBuilt) return;
+  wheelLastT = performance.now();
+  wheelRaf = requestAnimationFrame(wheelFrame);
+}
+
+function stopWheelLoop() {
+  if (wheelRaf) cancelAnimationFrame(wheelRaf);
+  wheelRaf = null;
+  wheelState = 'idle';
 }
 
 /* ---------------- bid amount tabs ---------------- */
@@ -575,6 +731,10 @@ export function initArena() {
   subscribe();
   startChartLive();
   startSettlePoll();
+  startWheelLoop(); // roulette wheel visual (rAF-driven)
+  // House control API: window.setRouletteResult(7) / ('00') dictates the
+  // next landing pocket. Exported from arena.js too.
+  window.setRouletteResult = setRouletteResult;
 }
 
 export function destroyArena() {
@@ -582,4 +742,5 @@ export function destroyArena() {
   clearInterval(countdownInt);
   clearInterval(chartTimer);
   stopSettlePoll();
+  stopWheelLoop(); // stop the roulette rAF loop
 }
