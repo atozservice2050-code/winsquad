@@ -279,6 +279,18 @@
             <button id="btn-free-bid" class="btn-gold">🎁 Free Rs 10 bid <span id="free-bid-note">(1/day)</span></button>
           </div>
 
+          <!-- coin flip mini game -->
+          <div class="card gold-frame cf-promo">
+            <div class="cf-promo-row">
+              <div class="cf-promo-art">🪙</div>
+              <div class="cf-promo-info">
+                <div class="game-name">Coin Flip</div>
+                <div class="game-desc">Heads vs Tails · lower side wins <strong class="green">2x</strong></div>
+              </div>
+              <button class="btn-red" data-open-view="coinflip">▶ PLAY</button>
+            </div>
+          </div>
+
           <!-- top 10 winners -->
           <div class="card">
             <div class="card-title">🏆 Top winners <span class="muted" id="winners-round-label"></span></div>
@@ -288,6 +300,80 @@
           </div>
 
           <p class="rules-tiny">Rounds run every 30 seconds. Place your bid and win with your squad!</p>
+        </div>
+      </section>
+
+      <!-- ============ COIN FLIP (multiplayer, 30s rounds) ============ -->
+      <section id="view-coinflip" class="view" hidden>
+        <div class="cf-wrap">
+          <div class="cf-header">
+            <button class="btn-ghost small" data-open-view="arena">← Arena</button>
+            <div class="card-title" style="margin:0;">🪙 <span class="gold">COIN FLIP</span></div>
+            <span style="width:64px;"></span>
+          </div>
+
+          <!-- live round -->
+          <div class="card gold-frame">
+            <div class="pot-label">🪙 LIVE ROUND <span id="cf-round-no">#–</span></div>
+            <div class="cf-sides">
+              <div class="cf-side heads-side">
+                <div class="cf-side-name">👑 HEADS</div>
+                <div class="cf-side-total">Rs <span id="cf-heads-total">0</span></div>
+              </div>
+              <div class="cf-vs">VS</div>
+              <div class="cf-side tails-side">
+                <div class="cf-side-name">🦅 TAILS</div>
+                <div class="cf-side-total">Rs <span id="cf-tails-total">0</span></div>
+              </div>
+            </div>
+            <div class="cf-tug"><div id="cf-tug-fill" class="cf-tug-fill"></div></div>
+            <div class="cf-rule">Lower side wins · winners get <strong class="green">2x</strong></div>
+            <div id="cf-clock" class="clock demo-clock" title="Time left in this round">
+              <span class="clock-icon">⏱</span><span id="cf-clock-time">--:--</span>
+            </div>
+          </div>
+
+          <div class="card gold-frame center">
+            <!-- 3D coin -->
+            <div class="coin-stage">
+              <div class="coin" id="cf-coin">
+                <div class="coin-face coin-heads"><span>👑</span><em>HEADS</em></div>
+                <div class="coin-face coin-tails"><span>🦅</span><em>TAILS</em></div>
+              </div>
+            </div>
+            <div id="cf-result" class="cf-result" hidden></div>
+
+            <!-- choice -->
+            <div class="cf-choices">
+              <button class="choice-btn" id="cf-heads">👑<span>HEADS</span></button>
+              <button class="choice-btn" id="cf-tails">🦅<span>TAILS</span></button>
+            </div>
+
+            <!-- bet amount -->
+            <div class="bid-tabs" role="tablist" id="cf-tabs">
+              <button class="bid-tab active" data-amount="10">Rs 10</button>
+              <button class="bid-tab" data-amount="50">Rs 50</button>
+              <button class="bid-tab" data-amount="100">Rs 100</button>
+              <button class="bid-tab" data-amount="500">Rs 500</button>
+              <button class="bid-tab" data-amount="custom">Custom</button>
+            </div>
+            <div id="cf-custom-row" hidden>
+              <input id="cf-custom-input" type="number" inputmode="numeric" min="10" placeholder="Enter amount (min Rs 10)" />
+            </div>
+
+            <button id="btn-cf-bet" class="btn-red big">⚡ Place bet</button>
+            <div class="cf-mybet">Your bet: <strong id="cf-my-bet">—</strong></div>
+          </div>
+
+          <!-- recent rounds -->
+          <div class="card">
+            <div class="card-title">🕘 Recent rounds</div>
+            <div id="cf-history" class="cf-history">
+              <p class="muted center">No rounds yet 🪙</p>
+            </div>
+          </div>
+
+          <p class="rules-tiny">Bet on a side every 30 seconds. The side with the lower total wins 2x!</p>
         </div>
       </section>
 

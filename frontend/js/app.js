@@ -5,15 +5,16 @@
    owns its own logic. Realtime subscriptions live in the modules.
    ============================================================ */
 import { ENV_OK, ENV_ERROR, supabase } from './supabase-client.js';
-import { $, toast } from './util.js';
+import { $, toast, unlockAudio } from './util.js';
 import { initAuth, initSetup, loadProfile } from './auth.js';
 import { initArena, destroyArena, setUser as setArenaUser } from './arena.js';
 import { initPrivate, destroyPrivate, setUser as setPrivateUser } from './private.js';
 import { initWallet, refreshWallet, setUser as setWalletUser, initWalletTopbar } from './wallet.js';
 import { initRewards, refreshRewards, setUser as setRewardsUser } from './rewards.js';
 import { initProfile, renderProfile } from './profile.js';
+import { initCoinflip, setUser as setCoinflipUser, destroyCoinflip } from './coinflip.js';
 
-const VIEWS = ['auth', 'setup', 'home', 'arena', 'private', 'wallet', 'rewards', 'profile'];
+const VIEWS = ['auth', 'setup', 'home', 'arena', 'private', 'wallet', 'rewards', 'profile', 'coinflip'];
 const TAB_VIEWS = ['arena', 'private', 'wallet', 'rewards', 'profile'];
 let currentView = null;
 let currentProfile = null;
@@ -45,6 +46,7 @@ function showView(name) {
   if (name === 'wallet') refreshWallet();
   if (name === 'rewards') refreshRewards(currentProfile?.referral_id);
   if (name === 'profile') renderProfile(currentProfile);
+  if (name === 'coinflip' && !initialized.coinflip) { initCoinflip(); initialized.coinflip = true; }
   if (name === 'arena' && initialized.arena) { /* arena runs its own realtime loop */ }
 }
 
@@ -55,6 +57,7 @@ function enterApp(profile, phone) {
   setPrivateUser(uid, profile?.display_name);
   setWalletUser(uid);
   setRewardsUser(uid);
+  setCoinflipUser(uid);
   initWalletTopbar();
   $('app').hidden = false;
   showView('arena');
@@ -124,6 +127,7 @@ async function boot() {
     if (event === 'SIGNED_OUT') {
       destroyArena();
       destroyPrivate();
+      destroyCoinflip();
       location.reload();
     }
   });
@@ -131,6 +135,10 @@ async function boot() {
 
 document.querySelectorAll('.tab').forEach(t =>
   t.addEventListener('click', () => showView(t.dataset.view)));
+
+/* Generic in-app navigation: any element with data-open-view="x" opens view x. */
+document.querySelectorAll('[data-open-view]').forEach(b =>
+  b.addEventListener('click', () => { unlockAudio(); showView(b.dataset.openView); }));
 
 /* Games hub: Squad Stakes opens the arena; others are coming soon. */
 document.querySelectorAll('.game-card').forEach(c =>

@@ -1056,3 +1056,144 @@ button { font-family: inherit; cursor: pointer; border: none; border-radius: 12p
 .games-grid .game-desc { font-size: 11px; }
 .game-card.soon { cursor: default; }
 .game-card.soon .game-art { filter: grayscale(0.55); opacity: 0.75; }
+
+/* ============================================================
+   COIN FLIP — 3D coin game (dark b9-style theme)
+   ============================================================ */
+.cf-wrap { display: flex; flex-direction: column; gap: 12px; }
+.cf-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin: 4px 0 2px;
+}
+.cf-payout-note { font-size: 12px; color: var(--muted); margin-bottom: 12px; }
+.cf-payout-note .green, .green { color: var(--win-green); }
+
+/* 3D coin */
+.coin-stage {
+  perspective: 900px;
+  display: flex; justify-content: center;
+  margin: 6px 0 14px;
+  min-height: 150px;
+}
+.coin {
+  width: 140px; height: 140px;
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 2.4s cubic-bezier(0.15, 0.6, 0.25, 1);
+}
+.coin-face {
+  position: absolute; inset: 0;
+  border-radius: 50%;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 2px;
+  background:
+    radial-gradient(circle at 32% 28%, #ffe9a3 0%, #f5d76e 22%, #d4af37 55%, #9a7c24 82%, #6e5a18 100%);
+  border: 6px solid #8a6d1f;
+  box-shadow:
+    0 10px 26px rgba(0,0,0,0.65),
+    inset 0 3px 8px rgba(255,255,255,0.45),
+    inset 0 -6px 14px rgba(0,0,0,0.35);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+.coin-face span { font-size: 52px; line-height: 1; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.4)); }
+.coin-face em {
+  font-style: normal; font-size: 13px; font-weight: 900; letter-spacing: 2px;
+  color: #5e4a12; text-shadow: 0 1px 0 rgba(255,255,255,0.5);
+}
+.coin-tails { transform: rotateY(180deg); }
+/* thin ridged edge for depth */
+.coin::after {
+  content: ''; position: absolute; inset: 6px; border-radius: 50%;
+  border: 2px dashed rgba(94, 74, 18, 0.55);
+  transform: translateZ(-1px);
+  pointer-events: none;
+}
+
+/* result banner */
+.cf-result {
+  font-size: 16px; font-weight: 800;
+  padding: 12px; border-radius: 12px; margin-bottom: 12px;
+  border: 1px solid var(--card-border);
+}
+.cf-result.win { color: var(--win-green); background: rgba(46,224,111,0.08); border-color: rgba(46,224,111,0.4); }
+.cf-result.lose { color: #ff8f8f; background: rgba(210,31,44,0.08); border-color: rgba(210,31,44,0.4); }
+
+/* heads/tails choice */
+.cf-choices { display: flex; gap: 10px; margin-bottom: 14px; }
+.choice-btn {
+  flex: 1; cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  font-size: 30px; padding: 12px 8px;
+  color: var(--text); background: #1d1d2b;
+  border: 2px solid #ffffff1f; border-radius: var(--radius);
+  transition: transform 0.12s, border-color 0.15s, box-shadow 0.15s;
+}
+.choice-btn span { font-size: 12px; font-weight: 900; letter-spacing: 1.5px; color: var(--muted); }
+.choice-btn.selected {
+  border-color: var(--gold);
+  box-shadow: 0 0 16px rgba(212,175,55,0.35), inset 0 0 12px rgba(212,175,55,0.12);
+  transform: translateY(-2px);
+}
+.choice-btn.selected span { color: var(--gold-light); }
+.choice-btn:active { transform: scale(0.97); }
+
+/* bet tabs reuse .bid-tab; custom row */
+#cf-custom-row { margin: 10px 0; }
+#cf-custom-row input {
+  width: 100%; padding: 12px; font-size: 16px; text-align: center;
+  color: var(--text); background: #1d1d2b;
+  border: 2px solid var(--card-border); border-radius: var(--radius);
+}
+#btn-cf-bet { width: 100%; margin-top: 12px; }
+.cf-mybet { margin-top: 10px; font-size: 13px; color: var(--muted); }
+.cf-mybet strong { color: var(--gold-light); }
+
+/* live sides panel */
+.cf-sides { display: flex; align-items: stretch; gap: 8px; margin: 10px 0 8px; }
+.cf-side {
+  flex: 1; text-align: center; padding: 10px 6px;
+  border-radius: var(--radius); border: 2px solid #ffffff1a;
+  background: #1d1d2b;
+}
+.cf-side-name { font-size: 13px; font-weight: 900; letter-spacing: 1px; }
+.cf-side-total { font-size: 18px; font-weight: 900; color: var(--gold-light); margin-top: 4px; }
+.heads-side.winning { border-color: var(--win-green); box-shadow: 0 0 14px rgba(46,224,111,0.35); }
+.tails-side.winning { border-color: var(--win-green); box-shadow: 0 0 14px rgba(46,224,111,0.35); }
+.cf-vs {
+  display: flex; align-items: center;
+  font-size: 12px; font-weight: 900; color: var(--muted); letter-spacing: 1px;
+}
+/* tug-of-war bar: gold fill width = heads share of the pot */
+.cf-tug {
+  height: 10px; border-radius: 999px; overflow: hidden;
+  background: #2a2a3a; border: 1px solid #ffffff14; margin-bottom: 8px;
+}
+.cf-tug-fill {
+  height: 100%; width: 50%;
+  background: linear-gradient(90deg, var(--gold-dim), var(--gold-light));
+  border-radius: 999px;
+  transition: width 0.8s ease;
+}
+.cf-rule { font-size: 12px; color: var(--muted); margin-bottom: 10px; }
+
+/* recent flips history */
+.cf-history { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; min-height: 34px; }
+.flip-chip {
+  min-width: 40px; height: 40px; padding: 0 8px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 4px;
+  border-radius: 999px; font-size: 13px; font-weight: 900;
+  border: 1px solid #ffffff22; background: #1d1d2b; color: var(--text);
+}
+.flip-chip.won { border-color: rgba(46,224,111,0.55); box-shadow: 0 0 10px rgba(46,224,111,0.25); }
+.flip-chip.lost { border-color: rgba(210,31,44,0.55); opacity: 0.85; }
+.flip-chip small { font-size: 10px; font-weight: 700; color: var(--muted); }
+
+/* promo card inside arena */
+.cf-promo { padding: 12px 14px; }
+.cf-promo-row { display: flex; align-items: center; gap: 12px; }
+.cf-promo-art { font-size: 40px; }
+.cf-promo-info { flex: 1; }
+.cf-promo .game-name { font-size: 16px; font-weight: 900; color: var(--gold-light); }
+.cf-promo .game-desc { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.cf-promo .btn-red { padding: 10px 16px; font-size: 14px; white-space: nowrap; }
