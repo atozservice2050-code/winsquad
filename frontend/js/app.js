@@ -65,6 +65,8 @@ async function boot() {
     $('setup-error').hidden = false;
     return;
   }
+  // Config OK — make sure the setup card stays hidden.
+  $('setup-error').hidden = true;
 
   // 2. Existing session?
   let session = null;

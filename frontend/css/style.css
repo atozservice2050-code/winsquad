@@ -63,6 +63,7 @@ body {
   display: flex; align-items: center; justify-content: center;
   min-height: 100dvh; padding: 24px; max-width: 430px; margin: 0 auto;
 }
+#setup-error[hidden] { display: none !important; }
 .setup-card { text-align: left; }
 .setup-card h2 { color: var(--gold); }
 .setup-card code { background: #00000055; padding: 2px 6px; border-radius: 6px; color: var(--gold-light); }
