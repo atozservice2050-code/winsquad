@@ -99,7 +99,8 @@ async function submitDeposit() {
   const method = $('deposit-method').value;
   const amount = Number($('deposit-amount').value);
   const txnId = $('deposit-txn').value.trim();
-  if (!amount || amount < 10) { toast('Minimum deposit is Rs 10.', true); return; }
+  if (!amount || amount < 5000) { toast('Minimum deposit is Rs 5,000.', true); return; }
+  if (amount > 50000) { toast('Maximum deposit is Rs 50,000.', true); return; }
   if (!txnId) { toast('Paste the transaction ID from your payment app.', true); return; }
   $('btn-deposit-submit').disabled = true;
   try {
