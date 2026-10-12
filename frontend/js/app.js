@@ -15,9 +15,10 @@ import { initProfile, renderProfile } from './profile.js';
 import { initCoinflip, setUser as setCoinflipUser, destroyCoinflip } from './coinflip.js';
 import { initAndarBahar, setUser as setAndarBaharUser, destroyAndarBahar } from './ab.js';
 import { initDT, setUser as setDTUser, destroyDT } from './dt.js';
+import { initRoulette, setUser as setRouletteUser, destroyRoulette } from './roulette.js';
 import { initMissions, refreshMissions, setUser as setMissionsUser, recordMissionEvent } from './missions.js';
 
-const VIEWS = ['auth', 'setup', 'home', 'arena', 'private', 'wallet', 'rewards', 'missions', 'profile', 'coinflip', 'andarbahar', 'dt'];
+const VIEWS = ['auth', 'setup', 'home', 'arena', 'private', 'wallet', 'rewards', 'missions', 'profile', 'coinflip', 'andarbahar', 'dt', 'roulette'];
 const TAB_VIEWS = ['arena', 'private', 'wallet', 'rewards', 'missions', 'profile'];
 let currentView = null;
 let currentProfile = null;
@@ -54,6 +55,7 @@ function showView(name) {
   if (name === 'coinflip' && !initialized.coinflip) { initCoinflip(); initialized.coinflip = true; }
   if (name === 'andarbahar' && !initialized.andarbahar) { initAndarBahar(); initialized.andarbahar = true; }
   if (name === 'dt' && !initialized.dt) { initDT(); initialized.dt = true; }
+  if (name === 'roulette' && !initialized.roulette) { initRoulette(); initialized.roulette = true; }
   if (name === 'arena' && initialized.arena) { /* arena runs its own realtime loop */ }
 }
 
@@ -68,6 +70,7 @@ function enterApp(profile, phone) {
   setCoinflipUser(uid);
   setAndarBaharUser(uid);
   setDTUser(uid);
+  setRouletteUser(uid);
   initWalletTopbar();
   $('app').hidden = false;
   showView('arena');
@@ -142,6 +145,7 @@ async function boot() {
       destroyCoinflip();
       destroyAndarBahar();
       destroyDT();
+      destroyRoulette();
       location.reload();
     }
   });
@@ -165,6 +169,8 @@ document.querySelectorAll('.game-card').forEach(c =>
       showView('andarbahar');
     } else if (c.dataset.game === 'dragontiger') {
       showView('dt');
+    } else if (c.dataset.game === 'roulette') {
+      showView('roulette');
     } else {
       toast('Coming soon! 🎮');
     }

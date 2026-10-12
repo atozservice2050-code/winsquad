@@ -1744,3 +1744,158 @@ button { font-family: inherit; cursor: pointer; border: none; border-radius: 12p
 }
 .dt-chip.won { border-color: rgba(46,224,111,0.55); box-shadow: 0 0 10px rgba(46,224,111,0.25); }
 .dt-chip.lost { border-color: rgba(210,31,44,0.55); opacity: 0.85; }
+
+/* ============================================================
+   ROULETTE — American wheel, WinSquad green-gold casino style
+   ============================================================ */
+.rl-art { background: radial-gradient(circle at 50% 30%, #1a5a34 0%, #081c10 70%); }
+.rl-wrap { display: flex; flex-direction: column; gap: 12px; }
+.rl-header {
+  display: flex; align-items: center; justify-content: space-between;
+}
+.rl-meta {
+  display: flex; justify-content: space-between; gap: 8px;
+  font-size: 13px; color: var(--muted); margin-top: 6px;
+}
+.rl-meta span span { color: var(--gold-light); font-weight: 800; }
+
+/* ---- wheel ---- */
+.rl-wheel-stage {
+  position: relative; width: 250px; height: 250px; margin: 4px auto;
+}
+#rl-wheel { width: 100%; height: 100%; }
+.rl-svg { width: 100%; height: 100%; display: block; }
+.rl-rim { fill: #5a3a1a; stroke: var(--gold); stroke-width: 3; }
+.rl-rim-inner { fill: none; stroke: #d4af37aa; stroke-width: 1; }
+.rl-wedge { stroke: #f5e6c422; stroke-width: 0.5; }
+.rl-w-red { fill: #b3242e; }
+.rl-w-black { fill: #16161d; }
+.rl-w-green { fill: #0a7a3a; }
+.rl-wedge-label {
+  fill: #fff; font-size: 8.5px; font-weight: 800; text-anchor: middle;
+  dominant-baseline: central; pointer-events: none;
+}
+#rl-wheel-ring { transform-box: fill-box; transform-origin: center; }
+.rl-hub { fill: #2a1f10; stroke: var(--gold); stroke-width: 2; }
+.rl-turret { fill: #d4af37; opacity: 0.9; }
+.rl-knob { fill: #f5e6c4; stroke: #8a6a1a; stroke-width: 2; }
+
+.rl-ball-orbit {
+  position: absolute; inset: 0; pointer-events: none; z-index: 3;
+}
+.rl-ball-orbit.orbiting { animation: rl-orbit 5s linear infinite; }
+.rl-ball-orbit.settled .rl-ball { animation: rl-ball-settle 0.6s ease-out; }
+.rl-ball {
+  position: absolute; top: 2px; left: 50%; width: 13px; height: 13px;
+  margin-left: -6.5px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #ffffff 0%, #d9d9e6 55%, #8a8a9a 100%);
+  box-shadow: 0 0 6px #ffffff88, 0 2px 3px #00000088;
+}
+@keyframes rl-orbit { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+@keyframes rl-ball-settle {
+  0% { transform: translateY(-14px); }
+  55% { transform: translateY(2px); }
+  80% { transform: translateY(-3px); }
+  100% { transform: translateY(0); }
+}
+
+.rl-result {
+  margin-top: 10px; padding: 12px 14px; border-radius: var(--radius);
+  font-size: 15px; line-height: 1.5; text-align: center;
+  border: 2px solid var(--card-border); background: #14141f;
+}
+.rl-result.win { border-color: #2ee06f; box-shadow: 0 0 18px rgba(46,224,111,0.3); }
+.rl-result.lose { border-color: #d21f2c; }
+.rl-ticker { min-height: 20px; font-size: 12px; margin-top: 8px; text-align: center; }
+
+/* ---- chips ---- */
+.rl-chip-row {
+  display: flex; gap: 8px; justify-content: center; margin: 10px 0; flex-wrap: wrap;
+}
+.rl-chip {
+  min-width: 52px; height: 52px; border-radius: 50%;
+  font-size: 13px; font-weight: 900; color: #fff; cursor: pointer;
+  border: 3px dashed #ffffff88;
+  background: radial-gradient(circle at 50% 35%, #2e7d4f 0%, #14532d 70%);
+  box-shadow: 0 3px 8px #00000066;
+}
+.rl-chip:nth-child(2) { background: radial-gradient(circle at 50% 35%, #3b6fd4 0%, #1e3a8a 70%); }
+.rl-chip:nth-child(3) { background: radial-gradient(circle at 50% 35%, #8a2be2 0%, #4b0082 70%); }
+.rl-chip:nth-child(4) { background: radial-gradient(circle at 50% 35%, #d4af37 0%, #8a6a1a 70%); color: #1a1206; }
+.rl-chip:nth-child(5) { background: radial-gradient(circle at 50% 35%, #d21f2c 0%, #7a0f18 70%); }
+.rl-chip:nth-child(6) { background: radial-gradient(circle at 50% 35%, #555 0%, #222 70%); }
+.rl-chip.active {
+  outline: 3px solid var(--gold); outline-offset: 2px;
+  transform: scale(1.08);
+}
+#rl-custom-row { margin: 8px 0; }
+#rl-custom-row input {
+  width: 100%; padding: 12px; font-size: 16px; text-align: center;
+  color: var(--text); background: #1d1d2b;
+  border: 2px solid var(--card-border); border-radius: var(--radius);
+}
+
+/* ---- betting table (real American layout, mobile-adapted) ---- */
+.rl-table {
+  background: linear-gradient(160deg, #0e5a30 0%, #083a1e 60%, #062a16 100%);
+  border: 2px solid var(--gold); border-radius: var(--radius);
+  padding: 10px; margin-top: 8px;
+  box-shadow: inset 0 0 30px #00000055;
+}
+.rl-zero-row { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-bottom: 4px; }
+.rl-num-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px;
+  margin-bottom: 4px;
+}
+.rl-outside-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin-bottom: 4px; }
+.rl-outside-row.rl-six { grid-template-columns: repeat(6, 1fr); }
+.rl-cell {
+  position: relative; min-height: 40px; padding: 6px 2px;
+  border-radius: 6px; font-size: 14px; font-weight: 800; color: #fff;
+  cursor: pointer; border: 1px solid #ffffff2e;
+  display: flex; align-items: center; justify-content: center;
+  transition: transform 0.08s ease;
+}
+.rl-cell:active { transform: scale(0.94); }
+.rl-red { background: #b3242e; }
+.rl-black { background: #16161d; }
+.rl-green { background: #0a7a3a; }
+.rl-outside {
+  background: #0d2818; color: var(--gold-light); font-size: 12px;
+  min-height: 38px; border: 1px solid #d4af3755;
+}
+.rl-diamond-red { color: #ff5b66; font-size: 18px; }
+.rl-diamond-black { color: #cfcfd6; font-size: 18px; }
+.rl-chipbadge {
+  position: absolute; top: -7px; right: -5px; z-index: 2;
+  min-width: 22px; height: 22px; padding: 0 5px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 999px; font-size: 10px; font-weight: 900; color: #1a1206;
+  background: radial-gradient(circle at 50% 35%, #ffe9a8 0%, #d4af37 70%);
+  border: 2px solid #fff8;
+  box-shadow: 0 2px 6px #00000088;
+  animation: rl-badge-pop 0.18s ease-out;
+}
+@keyframes rl-badge-pop { from { transform: scale(0.4); } to { transform: scale(1); } }
+
+.rl-betbar {
+  display: flex; align-items: center; gap: 10px; margin-top: 12px;
+}
+.rl-betbar span { font-size: 13px; color: var(--muted); flex: 1; }
+.rl-betbar strong { color: var(--gold-light); }
+#btn-rl-bet { flex: 1.4; }
+#btn-rl-bet:disabled { opacity: 0.45; }
+.rl-mybet { margin-top: 10px; font-size: 12.5px; color: var(--muted); }
+.rl-mybet strong { color: var(--gold-light); }
+
+/* recent numbers */
+.rl-history { display: flex; flex-wrap: wrap; gap: 7px; justify-content: center; min-height: 34px; }
+.rl-hist {
+  width: 34px; height: 34px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 900; color: #fff;
+  border: 2px solid #ffffff33;
+}
+.rl-hist.rl-red { background: #b3242e; }
+.rl-hist.rl-black { background: #16161d; }
+.rl-hist.rl-green { background: #0a7a3a; }
