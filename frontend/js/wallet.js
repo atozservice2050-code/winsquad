@@ -133,6 +133,20 @@ async function submitWithdraw() {
   if (amount > 50000) { toast('Maximum withdrawal is Rs 50,000.', true); return; }
   if (amount > balance) { toast('Insufficient balance.', true); return; }
   if (!account) { toast('Enter the account number to receive the money.', true); return; }
+  // Once per day: check if user already withdrew today
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    const { data: todayWithdrawals } = await supabase.from('transactions')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('type', 'withdraw')
+      .gte('created_at', today + 'T00:00:00');
+    if (todayWithdrawals && todayWithdrawals.length > 0) {
+      toast('Only 1 withdrawal per day allowed. Try tomorrow! 📅', true);
+      $('btn-withdraw-submit').disabled = false;
+      return;
+    }
+  } catch (e) { console.warn('withdrawal limit check failed', e); }
   $('btn-withdraw-submit').disabled = true;
   try {
     const { error } = await supabase.from('transactions').insert({
