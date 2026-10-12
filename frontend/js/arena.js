@@ -305,7 +305,7 @@ async function showPersonalResult(settledRoundId) {
 
   const modal = $('result-modal');
   const card = modal.querySelector('.result-card');
-  if (won === true) {
+  if (won === true && payout > 0) {
     setStreak(getStreak() + 1);
     sounds.win();
     $('result-emoji').textContent = '🎉';
@@ -313,6 +313,9 @@ async function showPersonalResult(settledRoundId) {
     $('result-amount').textContent = 'Rs ' + fmtRs(payout);
     $('result-sub').textContent = 'You won this round! Winnings are in your wallet.';
     card.classList.remove('lost');
+  } else if (won === true) {
+    // Edge case: won but payout is 0 — don't pop a confusing modal.
+    return;
   } else if (won === false) {
     setStreak(0);
     sounds.lose();

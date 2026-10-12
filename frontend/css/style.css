@@ -393,6 +393,7 @@ button { font-family: inherit; cursor: pointer; border: none; border-radius: 12p
   background: rgba(0, 0, 0, 0.72);
   display: flex; align-items: center; justify-content: center; padding: 24px;
 }
+#result-modal[hidden] { display: none !important; }
 .result-card {
   width: min(360px, 100%); text-align: center;
   background: linear-gradient(180deg, #0e4f38, #071f16);
