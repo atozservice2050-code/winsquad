@@ -425,6 +425,11 @@ begin
                               'tiger_card', v_round.tiger_card);
   end if;
 
+  -- Security guard: cannot settle before round ends
+  if v_round.ends_at > now() then
+    return jsonb_build_object('ok', false, 'error', 'round not ended yet');
+  end if;
+
   update public.dt_rounds set status = 'resolving', updated_at = now()
   where id = p_round_id;
 
