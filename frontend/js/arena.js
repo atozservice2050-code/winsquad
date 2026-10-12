@@ -203,15 +203,31 @@ let chartTimer = null;
 let botBids = []; // visual-only, never sent to backend
 
 function simulateBotBids() {
-  // Generate 3-6 fake bot bids for visual liveliness
+  // 10 bots ALWAYS, amounts 10-500
+  // If real player bid, bots bid LOWER than player's bid
   botBids = [];
-  const count = 3 + Math.floor(Math.random() * 4);
-  const amounts = [10, 50, 100];
-  for (let i = 0; i < count; i++) {
+  const playerBid = myBidRow ? Number(myBidRow.amount || 0) : 0;
+
+  for (let i = 0; i < 10; i++) {
+    let amount;
+    if (playerBid > 10) {
+      // Bots bid lower than player (10 to playerBid-1, max 500)
+      const maxBot = Math.min(playerBid - 1, 500);
+      amount = 10 + Math.floor(Math.random() * (maxBot - 10 + 1));
+    } else {
+      // No player bid yet: random 10-500
+      amount = 10 + Math.floor(Math.random() * 491);
+    }
+    // Round to nice numbers sometimes
+    if (Math.random() < 0.3) {
+      const presets = [10, 20, 50, 100, 200, 500];
+      const valid = presets.filter(p => p <= (playerBid > 10 ? Math.min(playerBid - 1, 500) : 500));
+      if (valid.length > 0) amount = valid[Math.floor(Math.random() * valid.length)];
+    }
     botBids.push({
       emoji: SEAT_EMOJIS[Math.floor(Math.random() * SEAT_EMOJIS.length)],
       name: SEAT_NAMES[Math.floor(Math.random() * SEAT_NAMES.length)],
-      amount: amounts[Math.floor(Math.random() * amounts.length)],
+      amount: amount,
     });
   }
 }
@@ -405,6 +421,9 @@ async function placeBid(isFree) {
     lastBidRoundId = round.id; // track for result popup
     await loadMyBid(round.id);
     await loadStats(round.id);
+    // Refresh bots to bid LOWER than player's bid
+    simulateBotBids();
+    renderPlayers();
     // Refresh wallet immediately (bid amount deducted)
     try { await refreshWallet(); } catch (e) { console.warn('wallet refresh failed', e); }
   } catch (e) {
