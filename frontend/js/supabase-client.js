@@ -26,7 +26,14 @@ export const ENV_ERROR = ENV_OK
   ? null
   : 'Missing Supabase credentials: js/env.js has placeholder values.';
 
-export const supabase = ENV_OK ? createClient(url, key) : null;
+export const supabase = ENV_OK ? createClient(url, key, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+    storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+  }
+}) : null;
 
 /** Unwrap an RPC result: { data, error } -> row object (handles array-or-object). */
 export function unwrapRow(data) {
