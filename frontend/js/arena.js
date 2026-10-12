@@ -187,6 +187,13 @@ async function loadMyBid(roundId) {
 }
 
 /* ---------------- live stats + countdown ---------------- */
+// Update real player count from round stats
+function updateRealPlayerCount(count) {
+  realPlayerCount = count || 0;
+  simulateBotBids(); // re-generate bots based on new count
+  renderPlayers();
+}
+
 function renderStats() {
   const total = Number(stats?.total_bids ?? round?.total_bids ?? 0);
   const realPlayers = Number(stats?.player_count ?? round?.player_count ?? 0);
@@ -219,48 +226,45 @@ let chartTimer = null;
 let botBids = []; // visual-only, never sent to backend
 let realPlayerCount = 0; // track real players in current round
 
+// POOL OF 100 BOTS with Pakistani names
+const BOT_POOL = [
+  'Ali', 'Ahmed', 'Sara', 'Fatima', 'Usman', 'Ayesha', 'Bilal', 'Zara', 'Omar', 'Maryam',
+  'Hassan', 'Sana', 'Imran', 'Nadia', 'Faisal', 'Rabia', 'Kamran', 'Sadia', 'Tariq', 'Asma',
+  'Junaid', 'Hina', 'Waqas', 'Farah', 'Adnan', 'Shazia', 'Rizwan', 'Mehwish', 'Salman', 'Amina',
+  'Danish', 'Kiran', 'Fahad', 'Samina', 'Arslan', 'Tania', 'Shahid', 'Rukhsana', 'Noman', 'Shabana',
+  'Yasir', 'Nasreen', 'Hamza', 'Uzma', 'Sajid', 'Parveen', 'Asif', 'Noreen', 'Kashif', 'Shaista',
+  'Irfan', 'Bushra', 'Tahir', 'Saba', 'Javed', 'Anum', 'Rashid', 'Hafsa', 'Azhar', 'Iqra',
+  'Mudassir', 'Laiba', 'Shafiq', 'Mahnoor', 'Naveed', 'Areeba', 'Pervez', 'Dania', 'Sohail', 'Eman',
+  'Akram', 'Fiza', 'Zahid', 'Alina', 'Mansoor', 'Hira', 'Rafiq', 'Sanaullah', 'Taimoor', 'Kinza',
+  'Shahzad', 'Madiha', 'Waseem', 'Sidra', 'Farhan', 'Areej', 'Nadeem', 'Zunaira', 'Khalid', 'Maheen',
+  'Saqib', 'Iram', 'Jibran', 'Sehrish', 'Umair', 'Tooba', 'Fawad', 'Aiman', 'Haris', 'Minahil',
+].map((name, i) => ({
+  name: name,
+  emoji: ['😎','🤠','🧑‍💼','👩‍💼','🧔','👱‍♀️','👨‍🦰','👩','🧑','👴','👵','🤴','👸','👷','🕵️'][i % 15],
+  baseBid: 10 + Math.floor(Math.random() * 491), // 10-500 fixed per bot
+}));
+
 function simulateBotBids() {
-  // Bots DECREASE as real players join
-  // 0 real → 10 bots, 1 real → 9 bots, ..., 10+ real → 0 bots
-  const targetBots = Math.max(0, 10 - realPlayerCount);
-  botBids = [];
+  // Select 10 bots from the 100-bot pool
+  // If real player bid, only bots with LOWER bids than player
   const playerBid = myBidRow ? Number(myBidRow.amount || 0) : 0;
+  const targetBots = Math.max(0, 10 - realPlayerCount);
 
-  const usedNames = new Set();
-  for (let i = 0; i < targetBots; i++) {
-    let amount;
-    if (playerBid > 10) {
-      // Bots bid lower than player (10 to playerBid-1, max 500)
-      const maxBot = Math.min(playerBid - 1, 500);
-      amount = 10 + Math.floor(Math.random() * (maxBot - 10 + 1));
-    } else {
-      // No player bid yet: random 10-500
-      amount = 10 + Math.floor(Math.random() * 491);
-    }
-    // Round to nice numbers sometimes
-    if (Math.random() < 0.3) {
-      const presets = [10, 20, 50, 100, 200, 500];
-      const valid = presets.filter(p => p <= (playerBid > 10 ? Math.min(playerBid - 1, 500) : 500));
-      if (valid.length > 0) amount = valid[Math.floor(Math.random() * valid.length)];
-    }
-    let name;
-    do {
-      name = SEAT_NAMES[Math.floor(Math.random() * SEAT_NAMES.length)];
-    } while (usedNames.has(name));
-    usedNames.add(name);
-    botBids.push({
-      emoji: SEAT_EMOJIS[Math.floor(Math.random() * SEAT_EMOJIS.length)],
-      name: name,
-      amount: amount,
-    });
+  // Filter pool: bots with bid < playerBid (or all if no player bid)
+  let eligible = BOT_POOL;
+  if (playerBid > 10) {
+    eligible = BOT_POOL.filter(b => b.baseBid < playerBid);
   }
-}
+  // If not enough eligible, use all
+  if (eligible.length < targetBots) eligible = BOT_POOL;
 
-// Update real player count from round stats
-function updateRealPlayerCount(count) {
-  realPlayerCount = count || 0;
-  simulateBotBids(); // re-generate bots based on new count
-  renderPlayers();
+  // Randomly pick 10 (shuffled)
+  const shuffled = [...eligible].sort(() => Math.random() - 0.5);
+  botBids = shuffled.slice(0, targetBots).map(b => ({
+    emoji: b.emoji,
+    name: b.name,
+    amount: b.baseBid,
+  }));
 }
 
 function renderPlayers() {
