@@ -101,6 +101,45 @@ body {
 .clock.urgent { color: #ff6b6b; border-color: #ff6b6b; animation: pulse 1s infinite; }
 .clock.big { font-size: 20px; justify-content: center; margin: 8px 0; }
 
+/* Demo-style casino clock (in pot card) */
+.demo-clock {
+  margin: 10px auto 0;
+  font-size: 26px; font-weight: 900;
+  padding: 10px 24px;
+  background: radial-gradient(ellipse at center, #1a5c3f 0%, #0a2e20 100%);
+  border: 2px solid var(--gold);
+  box-shadow: 0 0 20px rgba(212, 175, 55, 0.4), inset 0 0 15px rgba(0,0,0,0.5);
+  letter-spacing: 2px;
+}
+.demo-clock .clock-icon { font-size: 28px; animation: tick 1s ease-in-out infinite; }
+@keyframes tick {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(15deg); }
+}
+.demo-clock.urgent {
+  border-color: #ff4444;
+  background: radial-gradient(ellipse at center, #5c1a1a 0%, #2e0a0a 100%);
+  box-shadow: 0 0 25px rgba(255, 60, 60, 0.6);
+  animation: urgent-shake 0.5s ease-in-out infinite;
+}
+@keyframes urgent-shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-3px); }
+  75% { transform: translateX(3px); }
+}
+
+/* Wallet pill in topbar (replaces clock) */
+.wallet-pill {
+  display: flex; align-items: center; gap: 6px;
+  background: linear-gradient(135deg, #0d4d33 0%, #071f16 100%);
+  border: 1px solid var(--gold);
+  border-radius: 999px; padding: 6px 12px;
+  color: var(--win-green); font-weight: 800; font-size: 14px;
+  cursor: pointer;
+}
+.wallet-pill .eye-toggle { font-size: 16px; opacity: 0.8; }
+.wallet-pill .eye-toggle:hover { opacity: 1; }
+
 /* ---------- views ---------- */
 .view { padding: 14px 14px 20px; animation: fadeIn 0.25s ease; }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; } }

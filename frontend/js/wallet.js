@@ -25,6 +25,33 @@ async function loadBalance() {
     balance = Number(unwrapRow(data)?.balance ?? 0);
   } catch (e) { console.warn('wallet read failed', e); }
   $('wallet-balance').textContent = fmtRs(balance);
+  updateTopbarBalance();
+}
+
+/* Topbar wallet pill with eye toggle (hide/show) */
+let balanceHidden = false;
+function updateTopbarBalance() {
+  const el = $('topbar-balance');
+  if (!el) return;
+  el.textContent = balanceHidden ? 'Rs ••••' : 'Rs ' + fmtRs(balance);
+}
+export function initWalletTopbar() {
+  const pill = $('wallet-pill');
+  const eye = $('eye-toggle');
+  if (!pill || !eye) return;
+  // Eye toggles hide/show; pill (excluding eye) could go to wallet view
+  eye.addEventListener('click', (e) => {
+    e.stopPropagation();
+    balanceHidden = !balanceHidden;
+    eye.textContent = balanceHidden ? '🙈' : '👁️';
+    updateTopbarBalance();
+  });
+  pill.addEventListener('click', () => {
+    // Switch to wallet view
+    document.querySelectorAll('.tab').forEach(t => {
+      if (t.dataset.view === 'wallet') t.click();
+    });
+  });
 }
 
 async function loadHistory() {

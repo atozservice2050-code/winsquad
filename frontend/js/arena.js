@@ -115,9 +115,11 @@ async function loadMyBid(roundId) {
 /* ---------------- live stats + countdown ---------------- */
 function renderStats() {
   const total = Number(stats?.total_bids ?? round?.total_bids ?? 0);
-  const players = Number(stats?.player_count ?? round?.player_count ?? 0);
+  const realPlayers = Number(stats?.player_count ?? round?.player_count ?? 0);
+  // Show bots in the live count to look lively (visual only)
+  const displayPlayers = realPlayers + botBids.length;
   $('pot-total').textContent = fmtRs(total);
-  $('pot-players').textContent = fmtRs(players);
+  $('pot-players').textContent = fmtRs(displayPlayers);
   updateBidEstimates();
   renderPlayers();
   renderChart();
@@ -222,6 +224,27 @@ function startChartLive() {
     renderPlayers();
     renderChart(true);
   }, 5000);
+}
+
+/* Fallback: poll for round settlement (if realtime fails in WebView) */
+let settlePollTimer = null;
+function startSettlePoll() {
+  clearInterval(settlePollTimer);
+  settlePollTimer = setInterval(async () => {
+    if (!round || !round.id || resultShownFor === round.id) return;
+    try {
+      const { data } = await supabase.from('public_rounds')
+        .select('id, status')
+        .eq('id', round.id)
+        .maybeSingle();
+      if (data && data.status === 'closed') {
+        onRoundSettled(round.id);
+      }
+    } catch (e) { /* silent */ }
+  }, 3000);
+}
+function stopSettlePoll() {
+  clearInterval(settlePollTimer);
 }
 
 function startCountdown() {
@@ -498,10 +521,12 @@ export function initArena() {
   loadRound();
   subscribe();
   startChartLive();
+  startSettlePoll();
 }
 
 export function destroyArena() {
   unsubscribe();
   clearInterval(countdownInt);
   clearInterval(chartTimer);
+  stopSettlePoll();
 }

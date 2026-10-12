@@ -9,7 +9,7 @@ import { $, toast } from './util.js';
 import { initAuth, initSetup, loadProfile } from './auth.js';
 import { initArena, destroyArena, setUser as setArenaUser } from './arena.js';
 import { initPrivate, destroyPrivate, setUser as setPrivateUser } from './private.js';
-import { initWallet, refreshWallet, setUser as setWalletUser } from './wallet.js';
+import { initWallet, refreshWallet, setUser as setWalletUser, initWalletTopbar } from './wallet.js';
 import { initRewards, refreshRewards, setUser as setRewardsUser } from './rewards.js';
 import { initProfile, renderProfile } from './profile.js';
 
@@ -53,6 +53,7 @@ function enterApp(profile, phone) {
   setPrivateUser(uid, profile?.display_name);
   setWalletUser(uid);
   setRewardsUser(uid);
+  initWalletTopbar();
   $('app').hidden = false;
   showView('arena');
 }

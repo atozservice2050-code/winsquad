@@ -51,9 +51,10 @@
         <span class="dot"></span><span id="activity-label">NORMAL</span>
       </div>
       <div class="brand-mini">♛ WinSquad</div>
-      <div id="round-clock" class="clock" title="Time left in this round">
-        <span class="clock-icon">⏱</span><span id="clock-time">--:--</span>
-      </div>
+      <button id="wallet-pill" class="wallet-pill" title="Tap eye to hide/show balance">
+        <span class="wallet-icon">💰</span><span id="topbar-balance">Rs 0</span>
+        <span id="eye-toggle" class="eye-toggle">👁️</span>
+      </button>
     </header>
 
     <main id="views">
@@ -115,6 +116,10 @@
             <div class="pot-label">🔥 LIVE ROUND <span id="round-no">#–</span></div>
             <div class="pot-total">Rs <span id="pot-total">0</span></div>
             <div class="pot-sub"><span id="pot-players">0</span> players in this round</div>
+            <!-- demo-style casino countdown clock -->
+            <div id="round-clock" class="clock demo-clock" title="Time left in this round">
+              <span class="clock-icon">⏱</span><span id="clock-time">--:--</span>
+            </div>
           </div>
 
           <!-- cinematic game visual: 4 players + live bar chart -->
@@ -172,7 +177,7 @@
             </div>
           </div>
 
-          <p class="rules-tiny">Top 2 highest bids lose each round. All other players split the prize proportionally to their stake. Rounds run every 30 seconds.</p>
+          <p class="rules-tiny">Rounds run every 30 seconds. Place your bid and win with your squad!</p>
         </div>
       </section>
 
