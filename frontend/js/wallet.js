@@ -131,6 +131,8 @@ async function submitWithdraw() {
   const account = $('withdraw-account').value.trim();
   if (!amount || amount < 10000) { toast('Minimum withdrawal is Rs 10,000.', true); return; }
   if (amount > 50000) { toast('Maximum withdrawal is Rs 50,000.', true); return; }
+  const maxWithdraw = Math.floor(balance * 0.5);
+  if (amount > maxWithdraw) { toast('Max 50% of balance (Rs ' + fmtRs(maxWithdraw) + ').', true); return; }
   if (amount > balance) { toast('Insufficient balance.', true); return; }
   if (!account) { toast('Enter the account number to receive the money.', true); return; }
   // Once per day: check if user already withdrew today
