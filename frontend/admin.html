@@ -240,31 +240,25 @@
 
       <!-- TRANSACTIONS -->
       <div id="tab-transactions" class="admin-view" hidden>
-        <div class="search-row">
-          <select id="txn-type-filter">
-            <option value="">All types</option>
-            <option value="deposit">Deposits</option>
-            <option value="withdraw">Withdrawals</option>
-            <option value="transfer_in">Transfers in</option>
-            <option value="transfer_out">Transfers out</option>
-            <option value="stake">Stakes</option>
-            <option value="payout">Payouts</option>
-            <option value="bonus">Bonuses</option>
-          </select>
-          <select id="txn-status-filter">
-            <option value="">All statuses</option>
-            <option value="pending" selected>Pending</option>
-            <option value="completed">Completed</option>
-            <option value="rejected">Rejected</option>
-          </select>
+        <div id="txn-users-view">
+          <div class="refresh-row"><button class="btn-refresh" data-refresh="transactions">↻ Refresh</button></div>
+          <div id="txn-loading" class="loading">Loading users…</div>
+          <div id="txn-users-content" class="table-wrap" hidden>
+            <table class="data-table">
+              <thead><tr><th>User</th><th>Phone</th><th>Transactions</th><th>Total Volume</th><th></th></tr></thead>
+              <tbody id="txn-users-tbody"></tbody>
+            </table>
+          </div>
         </div>
-        <div class="refresh-row"><button class="btn-refresh" data-refresh="transactions">↻ Refresh</button></div>
-        <div id="txn-loading" class="loading">Loading transactions…</div>
-        <div id="txn-content" class="table-wrap" hidden>
-          <table class="data-table">
-            <thead><tr><th>User</th><th>Type</th><th>Amount</th><th>Detail</th><th>Status</th><th>Action</th></tr></thead>
-            <tbody id="txn-tbody"></tbody>
-          </table>
+        <div id="txn-detail-view" hidden>
+          <button id="btn-back-users" class="btn-ghost">← All users</button>
+          <h3 id="txn-detail-title" class="gold"></h3>
+          <div id="txn-detail-content" class="table-wrap">
+            <table class="data-table">
+              <thead><tr><th>Type</th><th>Amount</th><th>Detail</th><th>Status</th><th>Action</th></tr></thead>
+              <tbody id="txn-detail-tbody"></tbody>
+            </table>
+          </div>
         </div>
       </div>
 
@@ -531,33 +525,71 @@ async function loadUsers() {
 TAB_LOADERS.users = loadUsers;
 
 /* ================= transactions ================= */
+// Shows unique REAL users (each once, no bots). Click a user to see all their transactions.
 async function loadTransactions() {
   $('txn-loading').hidden = false;
-  $('txn-content').hidden = true;
+  $('txn-users-content').hidden = true;
+  $('txn-users-view').hidden = false;
+  $('txn-detail-view').hidden = true;
   try {
-    const typeF = $('txn-type-filter').value;
-    const statusF = $('txn-status-filter').value;
-    let query = supabase.from('transactions')
-      .select('id, user_id, type, amount, status, method, external_txn_id, note, created_at')
-      .order('created_at', { ascending: false })
-      .limit(100);
-    if (typeF) query = query.eq('type', typeF);
-    if (statusF) query = query.eq('status', statusF);
-    const { data, error } = await query;
+    // Get all transactions grouped by user (real users only - bots never write to DB)
+    const { data, error } = await supabase.from('transactions')
+      .select('user_id, amount')
+      .order('created_at', { ascending: false });
     if (error) throw error;
 
-    const txns = data || [];
-    await hydrateProfiles(txns.map(t => t.user_id));
+    // Group by user_id (unique users, no repeats)
+    const userMap = {};
+    (data || []).forEach(t => {
+      if (!userMap[t.user_id]) userMap[t.user_id] = { count: 0, volume: 0 };
+      userMap[t.user_id].count++;
+      userMap[t.user_id].volume += Number(t.amount) || 0;
+    });
 
-    $('txn-tbody').innerHTML = txns.map(t => {
+    const userIds = Object.keys(userMap);
+    await hydrateProfiles(userIds);
+
+    $('txn-users-tbody').innerHTML = userIds.map(uid => `
+      <tr data-user="${uid}" style="cursor:pointer;">
+        <td><strong>${pname(uid)}</strong></td>
+        <td class="muted mono">${pphone(uid)}</td>
+        <td><strong>${userMap[uid].count}</strong></td>
+        <td><strong>Rs ${fmtRs(userMap[uid].volume)}</strong></td>
+        <td><button class="btn-ghost" data-view-user="${uid}">View →</button></td>
+      </tr>`).join('') || '<tr><td colspan="5" class="muted center">No transactions found.</td></tr>';
+
+    // Click handler for user rows
+    $('txn-users-tbody').querySelectorAll('[data-view-user]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        loadUserTransactions(btn.getAttribute('data-view-user'));
+      });
+    });
+    $('txn-loading').hidden = true;
+    $('txn-users-content').hidden = false;
+  } catch (e) {
+    $('txn-loading').textContent = 'Error: ' + e.message;
+  }
+}
+
+// Show all transactions for a specific user
+async function loadUserTransactions(userId) {
+  $('txn-users-view').hidden = true;
+  $('txn-detail-view').hidden = false;
+  $('txn-detail-title').textContent = pname(userId) + ' (' + pphone(userId) + ')';
+  try {
+    const { data, error } = await supabase.from('transactions')
+      .select('id, type, amount, status, method, note, created_at')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+
+    $('txn-detail-tbody').innerHTML = (data || []).map(t => {
       const canAct = t.status === 'pending' && (t.type === 'deposit' || t.type === 'withdraw');
-      const detail = t.type === 'deposit'
-        ? `${esc(t.method || '')} · <span class="mono">${esc(t.external_txn_id || '')}</span>`
-        : esc(t.note || t.method || '–');
+      const detail = esc(t.note || t.method || '–');
       return `
       <tr data-txn="${t.id}" data-type="${t.type}">
-        <td><strong>${pname(t.user_id)}</strong><br /><span class="muted mono">${pphone(t.user_id)}</span></td>
-        <td><span class="pill ${t.type === 'deposit' ? 'completed' : t.type === 'withdraw' ? 'pending' : ''}">${esc(t.type)}</span></td>
+        <td><span class="pill">${esc(t.type)}</span></td>
         <td><strong>Rs ${fmtRs(t.amount)}</strong></td>
         <td class="muted">${detail}</td>
         <td><span class="pill ${t.status}">${esc(t.status)}</span><br /><span class="muted">${fmtDate(t.created_at)}</span></td>
@@ -566,17 +598,24 @@ async function loadTransactions() {
           <button class="btn-reject" data-act="reject">Reject</button>` : '<span class="muted">–</span>'}
         </td>
       </tr>`;
-    }).join('') || '<tr><td colspan="6" class="muted center">No transactions found.</td></tr>';
+    }).join('') || '<tr><td colspan="5" class="muted center">No transactions.</td></tr>';
 
-    $('txn-tbody').querySelectorAll('button[data-act]').forEach(btn => {
-      btn.addEventListener('click', () => handleTxnAction(btn));
-    });
-
-    $('txn-loading').hidden = true;
-    $('txn-content').hidden = false;
+    bindTxnActions($('txn-detail-tbody'));
   } catch (e) {
-    $('txn-loading').textContent = 'Failed to load: ' + friendlyError(e);
+    $('txn-detail-tbody').innerHTML = '<tr><td colspan="5" class="muted center">Error: ' + esc(e.message) + '</td></tr>';
   }
+}
+
+$('btn-back-users')?.addEventListener('click', () => {
+  $('txn-detail-view').hidden = true;
+  $('txn-users-view').hidden = false;
+});
+
+// Bind approve/reject buttons in transaction tables
+function bindTxnActions(tbody) {
+  tbody.querySelectorAll('button[data-act]').forEach(btn => {
+    btn.addEventListener('click', () => handleTxnAction(btn));
+  });
 }
 
 async function handleTxnAction(btn) {
