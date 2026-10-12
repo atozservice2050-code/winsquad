@@ -7,8 +7,12 @@
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
 
 const env = (typeof window !== 'undefined' && window.__WINSQUAD_ENV__) || {};
-const url = (env.SUPABASE_URL || '').trim();
-const key = (env.SUPABASE_ANON_KEY || '').trim();
+// Fallback defaults (public values) if js/env.js is missing — e.g. when the
+// Pages build command hasn't generated it yet. The anon key is public by design.
+const FALLBACK_URL = 'https://kzjkvhtakwohxxuysuto.supabase.co';
+const FALLBACK_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt6amt2aHRha3dvaHh4dXlzdXRvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE3MzUxNTgsImV4cCI6MjEwNzMxMTE1OH0.uPzzMNKm0FaqjDwZ_0iMotS2rGXx0J9lBNqYXm7G02I';
+const url = (env.SUPABASE_URL || '').trim() || FALLBACK_URL;
+const key = (env.SUPABASE_ANON_KEY || '').trim() || FALLBACK_KEY;
 
 function looksPlaceholder(v) {
   return !v || /YOUR_|PLACEHOLDER|example/i.test(v);
