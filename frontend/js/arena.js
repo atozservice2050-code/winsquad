@@ -45,10 +45,14 @@ function renderStreakBars() {
   const n = getStreak();
   const pct = Math.min(n, 10) * 10;
   // Bars rise as the streak builds; on a loss they collapse (reset look).
-  $('streak-fill-left').style.height = Math.max(4, pct) + '%';
-  $('streak-fill-right').style.height = Math.max(4, pct) + '%';
-  $('streak-fill-left').style.opacity = n > 0 ? '1' : '0.35';
-  $('streak-fill-right').style.opacity = n > 0 ? '1' : '0.35';
+  // Higher streak = hotter colors to increase greed (demo-style).
+  ['streak-fill-left', 'streak-fill-right'].forEach(id => {
+    const el = $(id);
+    if (!el) return;
+    el.style.height = Math.max(4, pct) + '%';
+    el.style.opacity = n > 0 ? '1' : '0.35';
+    el.classList.toggle('hot', n >= 3); // 3+ wins = intense fire mode
+  });
 }
 
 /* ---------------- activity signal (Fear & Greed style) ---------------- */
