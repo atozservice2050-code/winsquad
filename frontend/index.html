@@ -188,27 +188,56 @@
             </div>
             <div class="arena-text">SQUAD STAKES</div>
             <div class="arena-sub">Play together. Win together.</div>
-            <!-- 3D ROULETTE TABLE (real casino style) -->
+            <!-- 3D ROULETTE TABLE (premium casino style) -->
             <div class="casino-table-3d">
-              <div class="table-felt">
-                <!-- Roulette wheel on left -->
-                <div class="roulette-wrap">
-                  <div class="roulette-wheel" id="roulette-wheel">
-                    <div class="roulette-numbers" id="roulette-numbers">
-                      <!-- numbered pockets injected by JS -->
+              <div class="table-wood">
+                <div class="table-felt">
+                  <!-- Roulette wheel on top -->
+                  <div class="roulette-wrap">
+                    <div class="chip-rack left" aria-hidden="true">
+                      <div class="chip-stack"><i class="chip c-blue"></i><i class="chip c-blue"></i><i class="chip c-blue"></i></div>
+                      <div class="chip-stack"><i class="chip c-red"></i><i class="chip c-red"></i><i class="chip c-red"></i></div>
+                      <div class="chip-stack"><i class="chip c-yellow"></i><i class="chip c-yellow"></i><i class="chip c-yellow"></i></div>
                     </div>
-                    <div class="roulette-track" id="roulette-track">
-                      <div class="roulette-ball"></div>
+                    <div class="roulette-wheel" id="roulette-wheel">
+                      <div class="roulette-wood-ring"></div>
+                      <div class="roulette-numbers" id="roulette-numbers">
+                        <!-- numbered pockets injected by JS -->
+                      </div>
+                      <div class="roulette-track" id="roulette-track">
+                        <div class="roulette-ball"></div>
+                      </div>
+                      <div class="roulette-spindle">
+                        <span class="spindle-arm a1"></span>
+                        <span class="spindle-arm a2"></span>
+                        <span class="spindle-dome"></span>
+                      </div>
                     </div>
-                    <div class="roulette-center">🎰</div>
+                    <div class="chip-rack right" aria-hidden="true">
+                      <div class="chip-stack"><i class="chip c-green"></i><i class="chip c-green"></i><i class="chip c-green"></i></div>
+                      <div class="chip-stack"><i class="chip c-orange"></i><i class="chip c-orange"></i><i class="chip c-orange"></i></div>
+                      <div class="chip-stack"><i class="chip c-purple"></i><i class="chip c-purple"></i><i class="chip c-purple"></i></div>
+                    </div>
                   </div>
                   <div class="roulette-status" id="roulette-status">Spinning... 🎰</div>
-                </div>
-                <!-- Betting layout on right (3D) -->
-                <div class="betting-layout" id="betting-layout">
-                  <div class="layout-zero">0</div>
-                  <div class="layout-numbers" id="layout-numbers">
-                    <!-- 1-36 injected by JS -->
+                  <!-- Proper roulette betting layout (visual only) -->
+                  <div class="betting-layout" id="betting-layout">
+                    <div class="layout-main" id="layout-main">
+                      <!-- 0 + 3x12 numbers + 2:1 injected by JS -->
+                    </div>
+                    <div class="layout-dozens">
+                      <div class="layout-cell dozen">1st 12</div>
+                      <div class="layout-cell dozen">2nd 12</div>
+                      <div class="layout-cell dozen">3rd 12</div>
+                    </div>
+                    <div class="layout-outside">
+                      <div class="layout-cell outside">1 to 18</div>
+                      <div class="layout-cell outside">Even</div>
+                      <div class="layout-cell outside"><span class="diamond red-dia"></span></div>
+                      <div class="layout-cell outside"><span class="diamond black-dia"></span></div>
+                      <div class="layout-cell outside">Odd</div>
+                      <div class="layout-cell outside">19 to 36</div>
+                    </div>
                   </div>
                 </div>
               </div>
