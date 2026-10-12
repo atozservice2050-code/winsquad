@@ -457,6 +457,8 @@ async function showPersonalResult(settledRoundId) {
   if (won === true && payout > 0) {
     setStreak(getStreak() + 1);
     sounds.win();
+    // Vibrate: celebratory pattern (short-long-short)
+    if (navigator.vibrate) navigator.vibrate([100, 50, 200, 50, 300]);
     $('result-emoji').textContent = '🎉';
     $('result-title').textContent = 'Congratulations!';
     $('result-amount').textContent = 'Rs ' + fmtRs(payout);
@@ -468,6 +470,8 @@ async function showPersonalResult(settledRoundId) {
   } else if (won === false) {
     setStreak(0);
     sounds.lose();
+    // Vibrate: sad pattern (long buzz)
+    if (navigator.vibrate) navigator.vibrate([400]);
     $('result-emoji').textContent = '😭';
     $('result-title').textContent = 'Better luck next time';
     $('result-amount').textContent = '';
