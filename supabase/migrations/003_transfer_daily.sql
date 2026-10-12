@@ -19,8 +19,11 @@ begin
   if p_to_transfer_id is null or p_to_transfer_id !~ '^\d{14}$' then
     return jsonb_build_object('ok', false, 'error', 'invalid transfer ID (must be 14 digits)');
   end if;
-  if p_amount is null or p_amount < 10 then
-    return jsonb_build_object('ok', false, 'error', 'minimum transfer is Rs 10');
+  if p_amount is null or p_amount < 500 then
+    return jsonb_build_object('ok', false, 'error', 'minimum transfer is Rs 500');
+  end if;
+  if p_amount > 10000 then
+    return jsonb_build_object('ok', false, 'error', 'maximum transfer is Rs 10,000');
   end if;
 
   select id into v_recipient from public.profiles where transfer_id = p_to_transfer_id;
