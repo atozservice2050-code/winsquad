@@ -369,40 +369,79 @@ button { font-family: inherit; cursor: pointer; border: none; border-radius: 12p
 .arena-text { position: relative; color: var(--gold); font-weight: 900; letter-spacing: 3px; font-size: 20px; margin-top: 6px; }
 .arena-sub { position: relative; color: var(--muted); font-size: 12px; margin-top: 4px; }
 
-/* 4 players row */
+/* 4 players row — demo-style cinematic poker table */
 .players-row {
-  position: relative; display: flex; justify-content: center; gap: 10px;
-  margin: 12px 0 8px; z-index: 1;
+  position: relative; display: flex; justify-content: center; gap: 8px;
+  margin: 16px 0 12px; z-index: 1;
+  padding: 14px 8px;
+  background: radial-gradient(ellipse at center, rgba(20, 90, 60, 0.4) 0%, transparent 70%);
+  border-radius: 50%;
 }
 .player-seat {
-  flex: 1; max-width: 78px; text-align: center;
-  background: rgba(0,0,0,0.35); border: 1px solid var(--gold);
-  border-radius: 12px; padding: 8px 4px;
+  flex: 1; max-width: 86px; text-align: center;
+  background: linear-gradient(180deg, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.3) 100%);
+  border: 2px solid var(--gold);
+  border-radius: 16px; padding: 10px 4px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1);
+  transform: perspective(300px) rotateX(5deg);
+  transition: transform 0.3s ease;
 }
-.player-avatar { font-size: 28px; }
-.player-name { font-size: 10px; color: var(--gold-light); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.player-bid { font-size: 11px; color: var(--win-green); font-weight: 700; margin-top: 2px; }
+.player-seat:hover { transform: perspective(300px) rotateX(0deg) scale(1.05); }
+.player-avatar {
+  font-size: 36px;
+  filter: drop-shadow(0 3px 6px rgba(0,0,0,0.6));
+}
+.player-name {
+  font-size: 11px; color: var(--gold-light); margin-top: 4px;
+  font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.player-bid {
+  font-size: 12px; color: var(--win-green); font-weight: 900; margin-top: 3px;
+  text-shadow: 0 0 8px rgba(0, 255, 150, 0.4);
+}
 .player-seat.empty { opacity: 0.45; border-style: dashed; }
-.player-seat.you { border-color: var(--win-green); box-shadow: 0 0 10px rgba(0,255,150,0.25); }
+.player-seat.you {
+  border-color: var(--win-green);
+  box-shadow: 0 0 16px rgba(0,255,150,0.4), 0 4px 12px rgba(0,0,0,0.5);
+}
 
-/* live bar chart */
-.chart-wrap { position: relative; margin-top: 10px; z-index: 1; }
-.chart-title { font-size: 12px; color: var(--gold); margin-bottom: 6px; }
+/* live bar chart — demo-style large trading view */
+.chart-wrap { position: relative; margin-top: 12px; z-index: 1; }
+.chart-title {
+  font-size: 13px; color: var(--gold); margin-bottom: 8px;
+  font-weight: 800; letter-spacing: 1px;
+}
 .bar-chart {
   display: flex; align-items: flex-end; justify-content: center;
-  gap: 6px; height: 90px; padding: 8px;
-  background: rgba(0,0,0,0.3); border-radius: 10px;
-  border: 1px solid var(--card-border);
+  gap: 8px; height: 140px; padding: 12px;
+  background:
+    linear-gradient(180deg, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.2) 100%),
+    repeating-linear-gradient(0deg, transparent 0px, transparent 19px, rgba(255,255,255,0.03) 20px);
+  border-radius: 12px;
+  border: 1px solid var(--gold);
+  box-shadow: inset 0 0 20px rgba(0,0,0,0.5), 0 0 15px rgba(212, 175, 55, 0.2);
 }
-.bar-col { flex: 1; max-width: 44px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; }
+.bar-col {
+  flex: 1; max-width: 52px; display: flex; flex-direction: column;
+  align-items: center; justify-content: flex-end; height: 100%;
+}
 .bar {
-  width: 100%; border-radius: 4px 4px 0 0;
-  background: linear-gradient(180deg, var(--gold) 0%, #8a6d1f 100%);
-  transition: height 0.6s ease;
-  min-height: 4px;
+  width: 100%; border-radius: 6px 6px 0 0;
+  background: linear-gradient(180deg, #ffd94d 0%, var(--gold) 50%, #8a6d1f 100%);
+  box-shadow: 0 -2px 8px rgba(212, 175, 55, 0.5);
+  transition: height 0.8s cubic-bezier(0.2, 0.8, 0.3, 1.2);
+  min-height: 6px;
+  position: relative;
 }
-.bar.hot { background: linear-gradient(180deg, #ff5a5a 0%, #a02020 100%); }
-.bar-label { font-size: 9px; color: var(--muted); margin-top: 3px; }
+.bar::after {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  background: rgba(255, 255, 255, 0.4); border-radius: 6px 6px 0 0;
+}
+.bar.hot {
+  background: linear-gradient(180deg, #ff6b6b 0%, #ff3d3d 50%, #a02020 100%);
+  box-shadow: 0 -2px 12px rgba(255, 60, 60, 0.7);
+}
+.bar-label { font-size: 10px; color: var(--gold-light); margin-top: 4px; font-weight: 700; }
 
 .bid-tabs { display: flex; gap: 8px; margin: 6px 0 12px; }
 .bid-tab, .pbid-tab {
