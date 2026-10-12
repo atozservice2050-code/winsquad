@@ -113,6 +113,20 @@ export async function loadProfile() {
     await new Promise(r => setTimeout(r, 400));
   }
   if (!user) return { user: null, profile: null };
+  
+  // Use secure RPC to fetch profile (bypasses RLS issues)
+  try {
+    const { data, error } = await supabase.rpc('get_my_profile');
+    if (error) throw error;
+    const result = unwrapRow(data);
+    if (result?.ok && result?.profile) {
+      return { user, profile: result.profile };
+    }
+  } catch (e) {
+    console.warn('get_my_profile RPC failed, falling back to direct query', e);
+  }
+  
+  // Fallback: direct query (original method)
   const { data, error } = await supabase
     .from('profiles')
     .select('*')
