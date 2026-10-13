@@ -170,10 +170,18 @@ async function boot() {
         enterApp({ ...profile, id: user.id }, user.phone);
       }
     } catch (e) {
-      console.warn('profile load failed', e);
-      toast('Could not load your profile. Check your connection and reload.', true);
-      $('app').hidden = false;
-      showView('auth');
+      console.warn('boot profile load failed, entering with minimal profile', e);
+      // Don't bounce the user to login — enter with minimal data, retry in background.
+      const user = session.user;
+      enterApp({ id: user.id, display_name: 'Player' }, user.phone || '');
+      const msg = e?.message || e?.error_description || 'unknown';
+      toast('Profile sync issue (' + String(msg).slice(0, 80) + ') — retrying…', true);
+      setTimeout(async () => {
+        try {
+          const { profile } = await loadProfile();
+          if (profile?.display_name) location.reload();
+        } catch (_) {}
+      }, 4000);
     }
   } else {
     $('app').hidden = false;
