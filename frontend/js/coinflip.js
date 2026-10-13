@@ -252,7 +252,7 @@ async function onSettled(closedRoundId) {
     try { recordMissionEvent('win'); } catch (e) {}
     setResult(
       '🎉 <strong>' + String(winningSide).toUpperCase() + ' WINS!</strong> ' +
-      'You won <strong>Rs ' + fmtRs(myBid.payout) + '</strong>' +
+      '<strong style="color:#22c55e">+Rs ' + fmtRs(myBid.payout) + '</strong> added to wallet!' +
       (Math.abs(Number(myBid.payout) - 2 * Number(myBid.amount)) < 0.01 ? ' (2x)!' : '!'),
       true
     );
@@ -261,7 +261,7 @@ async function onSettled(closedRoundId) {
     if (navigator.vibrate) navigator.vibrate(150);
     setResult(
       '😞 <strong>' + String(winningSide).toUpperCase() + '</strong> had the lower total. ' +
-      'Lost Rs ' + fmtRs(myBid.amount) + ' — better luck next round!',
+      '<strong style="color:#ef4444">-Rs ' + fmtRs(myBid.amount) + '</strong> deducted from wallet.',
       false
     );
   }

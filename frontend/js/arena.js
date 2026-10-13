@@ -641,14 +641,17 @@ async function showPersonalResult(settledRoundId) {
 
   const modal = $('result-modal');
   const card = modal.querySelector('.result-card');
+  // Refresh wallet FIRST so the balance shown is current.
+  try { await refreshWallet(); } catch (e) { console.warn('wallet refresh failed', e); }
   if (won === true && payout > 0) {
     sounds.win();
     // Vibrate: celebratory pattern (short-long-short)
     if (navigator.vibrate) navigator.vibrate([100, 50, 200, 50, 300]);
     $('result-emoji').textContent = '🎉';
-    $('result-title').textContent = 'Congratulations!';
-    $('result-amount').textContent = 'Rs ' + fmtRs(payout);
-    $('result-sub').textContent = 'You won this round! Winnings are in your wallet.';
+    $('result-title').textContent = 'You Won!';
+    $('result-amount').textContent = '+Rs ' + fmtRs(payout);
+    $('result-amount').style.color = '#22c55e';
+    $('result-sub').textContent = '+Rs ' + fmtRs(payout) + ' added to your wallet! 🎉';
     card.classList.remove('lost');
     // Mission progress: win
     try { recordMissionEvent('win'); } catch (e) {}
@@ -659,10 +662,14 @@ async function showPersonalResult(settledRoundId) {
     sounds.lose();
     // Vibrate: sad pattern (long buzz)
     if (navigator.vibrate) navigator.vibrate([400]);
+    const lostAmt = myBidAmount != null ? myBidAmount : 0;
     $('result-emoji').textContent = '😭';
-    $('result-title').textContent = 'Better luck next time';
-    $('result-amount').textContent = '';
-    $('result-sub').textContent = 'Try a different bid amount next round!';
+    $('result-title').textContent = 'You Lost';
+    $('result-amount').textContent = lostAmt > 0 ? '-Rs ' + fmtRs(lostAmt) : '';
+    $('result-amount').style.color = '#ef4444';
+    $('result-sub').textContent = lostAmt > 0
+      ? '-Rs ' + fmtRs(lostAmt) + ' deducted from your wallet.'
+      : 'Better luck next round!';
     card.classList.add('lost');
   } else {
     return; // result not determinable — don't pop anything
