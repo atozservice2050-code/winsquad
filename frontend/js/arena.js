@@ -550,49 +550,17 @@ function renderWinners(winners, settledRoundId) {
   const list = $('winners-list');
   $('winners-round-label').textContent = '· round #' + (round?.round_no ?? '–');
 
-  /* FAKE RESULTS for show: if no real winners (no real players),
-     generate fake winners to make the game look alive */
-  let displayWinners = [...(winners || [])];
-  const botNames = ['Ali 🏆', 'Sara ⭐', 'Usman 💰', 'Fatima 🎯', 'Bilal 👑', 'Ayesha 💎', 'Omar 🚀', 'Zara 🌟', 'Hassan 🎲', 'Maryam 💫'];
-
-  if (displayWinners.length === 0) {
-    // No real players: generate fake winners for display
-    const usedNames = new Set();
-    while (displayWinners.length < 10) {
-      const name = botNames[Math.floor(Math.random() * botNames.length)];
-      if (usedNames.has(name)) continue;
-      usedNames.add(name);
-      const fakeBid = 10 + Math.floor(Math.random() * 491); // 10-500
-      const fakePayout = Math.round(fakeBid * (1.1 + Math.random() * 0.8)); // 110%-190% of bid
-      displayWinners.push({
-        display_name: name,
-        name: name,
-        bid_amount: fakeBid,
-        payout_amount: fakePayout,
-        amount: fakePayout,
-        isBot: true,
-        isFake: true,
-      });
-    }
-    // Sort by payout descending
-    displayWinners.sort((a, b) => b.payout_amount - a.payout_amount);
-  } else {
-    // Real winners exist: mix in bots to reach 10 (as before)
-    const usedNames = new Set(displayWinners.map(w => w.display_name || w.name));
-    while (displayWinners.length < 10) {
-      const name = botNames[Math.floor(Math.random() * botNames.length)];
-      if (usedNames.has(name)) continue;
-      usedNames.add(name);
-      const botPayout = 15 + Math.floor(Math.random() * 200);
-      displayWinners.push({ display_name: name, payout_amount: botPayout, isBot: true });
-    }
-    displayWinners.sort((a, b) => (b.payout_amount ?? b.amount ?? 0) - (a.payout_amount ?? a.amount ?? 0));
-  }
-
-  const allWinners = displayWinners;
+  // Show ONLY real winners — no fake bots. If no real winners, show a message.
+  const displayWinners = [...(winners || [])];
+  // Sort by payout descending
+  displayWinners.sort((a, b) => (b.payout_amount ?? b.amount ?? 0) - (a.payout_amount ?? a.amount ?? 0));
 
   list.innerHTML = '';
-  allWinners.slice(0, 10).forEach((w, i) => {
+  if (!displayWinners.length) {
+    list.innerHTML = '<p class="muted center">No winners this round.</p>';
+    return;
+  }
+  displayWinners.slice(0, 10).forEach((w, i) => {
     const name = w.display_name || w.name || 'Player';
     const amt = w.payout_amount ?? w.amount ?? 0;
     const div = document.createElement('div');
