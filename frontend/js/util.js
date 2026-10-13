@@ -45,12 +45,21 @@ function tone(freq, startAt, dur, type = 'sine', vol = 0.18) {
 /** Call once inside a real click handler so mobile browsers allow audio. */
 export function unlockAudio() { ctx(); }
 
+/* ---------- sound on/off (persisted) ---------- */
+const SOUND_KEY = 'winsquad_sound_on';
+export function isSoundOn() {
+  try { return localStorage.getItem(SOUND_KEY) !== 'off'; } catch { return true; }
+}
+export function setSoundOn(on) {
+  try { localStorage.setItem(SOUND_KEY, on ? 'on' : 'off'); } catch {}
+}
+
 export const sounds = {
-  win()  { [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => tone(f, i * 0.11, 0.28, 'triangle')); },
-  lose() { [392, 311.13, 233.08].forEach((f, i) => tone(f, i * 0.16, 0.3, 'sawtooth', 0.1)); },
-  tick() { tone(1200, 0, 0.12, 'square', 0.14); },
-  click(){ tone(660, 0, 0.05, 'sine', 0.08); },
-  alarm(){ [740, 740, 740].forEach((f, i) => tone(f, i * 0.18, 0.14, 'square', 0.09)); },
+  win()  { if (!isSoundOn()) return; [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => tone(f, i * 0.11, 0.28, 'triangle')); },
+  lose() { if (!isSoundOn()) return; [392, 311.13, 233.08].forEach((f, i) => tone(f, i * 0.16, 0.3, 'sawtooth', 0.1)); },
+  tick() { if (!isSoundOn()) return; tone(1200, 0, 0.12, 'square', 0.14); },
+  click(){ if (!isSoundOn()) return; tone(660, 0, 0.05, 'sine', 0.08); },
+  alarm(){ if (!isSoundOn()) return; [740, 740, 740].forEach((f, i) => tone(f, i * 0.18, 0.14, 'square', 0.09)); },
 };
 
 /* ---------- formatting ---------- */

@@ -3,7 +3,7 @@
    center grid, betting record, profit/loss. Keeps display name,
    phone, referral ID, 14-digit transfer ID, copy, logout, admin.
    ============================================================ */
-import { $, copyText, unlockAudio, toast, fmtRs } from './util.js';
+import { $, copyText, unlockAudio, toast, fmtRs, isSoundOn, setSoundOn } from './util.js';
 import { logout } from './auth.js';
 import { supabase } from './supabase-client.js';
 import { refreshWallet } from './wallet.js';
@@ -211,6 +211,21 @@ export function initProfile() {
       if (target) copyText(target.textContent.trim(), 'Copied!');
     });
   });
+
+  // Sound on/off toggle
+  const updateSoundBtn = () => {
+    const on = isSoundOn();
+    const icon = $('sound-icon'), label = $('sound-label');
+    if (icon) icon.textContent = on ? '🔊' : '🔇';
+    if (label) label.textContent = on ? 'Sound On' : 'Sound Off';
+  };
+  on('btn-sound-toggle', () => {
+    unlockAudio();
+    setSoundOn(!isSoundOn());
+    updateSoundBtn();
+    toast(isSoundOn() ? 'Sound on 🔊' : 'Sound off 🔇');
+  });
+  updateSoundBtn();
 
   // Switch account = logout (no confirm() — JS dialogs don't work in all WebViews)
   on('btn-logout', async () => {
