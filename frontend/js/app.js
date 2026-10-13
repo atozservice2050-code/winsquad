@@ -19,7 +19,7 @@ import { initRoulette, setUser as setRouletteUser, destroyRoulette } from './rou
 import { initMissions, refreshMissions, setUser as setMissionsUser, recordMissionEvent } from './missions.js';
 
 const VIEWS = ['auth', 'setup', 'resetpw', 'home', 'arena', 'private', 'wallet', 'rewards', 'missions', 'profile', 'coinflip', 'andarbahar', 'dt', 'roulette'];
-const TAB_VIEWS = ['arena', 'private', 'wallet', 'rewards', 'missions', 'profile'];
+const TAB_VIEWS = ['home', 'arena', 'private', 'wallet', 'rewards', 'missions', 'profile'];
 let currentView = null;
 let currentProfile = null;
 let initialized = {};
