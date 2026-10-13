@@ -235,6 +235,12 @@ export function initSetup(onDone) {
 }
 
 export async function logout() {
-  await supabase.auth.signOut();
+  try { await supabase.auth.signOut(); } catch (_) {}
+  try {
+    // Belt-and-suspenders: clear any leftover Supabase session keys.
+    Object.keys(localStorage).forEach(k => {
+      if (k.startsWith('sb-')) localStorage.removeItem(k);
+    });
+  } catch (_) {}
   location.reload();
 }

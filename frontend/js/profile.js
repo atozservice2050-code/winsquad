@@ -203,9 +203,9 @@ export function initProfile() {
     });
   });
 
-  // Switch account = logout
+  // Switch account = logout (no confirm() — JS dialogs don't work in all WebViews)
   $('btn-logout').addEventListener('click', async () => {
-    if (confirm('Log out of WinSquad?')) await logout();
+    await logout();
   });
 
   // Admin portal button (only for admins) — member grid item
