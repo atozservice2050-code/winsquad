@@ -280,7 +280,8 @@ function startCountdown() {
     }
     if (remainMs <= 0) {
       clearInterval(countdownInt);
-      setTimeout(loadRound, 1200); // next round should be open
+      // Let the result display for 10s before loading the next round's bidding UI.
+      setTimeout(loadRound, 10000);
     }
   }, 250);
 }

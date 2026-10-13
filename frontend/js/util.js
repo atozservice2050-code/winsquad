@@ -48,7 +48,7 @@ export function unlockAudio() { ctx(); }
 export const sounds = {
   win()  { [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => tone(f, i * 0.11, 0.28, 'triangle')); },
   lose() { [392, 311.13, 233.08].forEach((f, i) => tone(f, i * 0.16, 0.3, 'sawtooth', 0.1)); },
-  tick() { tone(880, 0, 0.07, 'square', 0.06); },
+  tick() { tone(1200, 0, 0.12, 'square', 0.14); },
   click(){ tone(660, 0, 0.05, 'sine', 0.08); },
   alarm(){ [740, 740, 740].forEach((f, i) => tone(f, i * 0.18, 0.14, 'square', 0.09)); },
 };
