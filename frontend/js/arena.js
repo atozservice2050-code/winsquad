@@ -280,8 +280,7 @@ function startCountdown() {
     }
     if (remainMs <= 0) {
       clearInterval(countdownInt);
-      // Let the result display for 10s before loading the next round's bidding UI.
-      setTimeout(loadRound, 10000);
+      setTimeout(loadRound, 1200); // next round should be open
     }
   }, 250);
 }
@@ -623,7 +622,7 @@ async function showPersonalResult(settledRoundId) {
       $('result-sub').textContent = 'Not enough players. Your bid has been refunded to your wallet.';
       card.classList.add('lost');
       modal.hidden = false;
-      setTimeout(() => { modal.hidden = true; }, 10000);
+      setTimeout(() => { modal.hidden = true; }, 5000);
       try { await refreshWallet(); } catch (e) {}
       return;
     }
@@ -670,7 +669,7 @@ async function showPersonalResult(settledRoundId) {
   }
   modal.hidden = false;
   // Results stay ~10 seconds, then auto-dismiss.
-  setTimeout(() => { modal.hidden = true; }, 10000);
+  setTimeout(() => { modal.hidden = true; }, 5000);
 }
 
 /* ---------------- realtime ---------------- */
