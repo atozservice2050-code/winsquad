@@ -195,6 +195,15 @@ async function saveName() {
 }
 
 export function initProfile() {
+  // Null-safe handler attachment: every button must work even if others are missing.
+  const on = (id, handler) => {
+    try {
+      const el = $(id);
+      if (el) el.addEventListener('click', handler);
+      else console.warn('initProfile: missing element #' + id);
+    } catch (e) { console.warn('initProfile handler failed for #' + id, e); }
+  };
+
   document.querySelectorAll('[data-copy]').forEach(btn => {
     btn.addEventListener('click', () => {
       unlockAudio();
@@ -204,20 +213,21 @@ export function initProfile() {
   });
 
   // Switch account = logout (no confirm() — JS dialogs don't work in all WebViews)
-  $('btn-logout').addEventListener('click', async () => {
+  on('btn-logout', async () => {
     await logout();
   });
 
   // Change password panel
   const pwPanel = $('pw-panel');
-  $('btn-change-pw').addEventListener('click', () => {
+  on('btn-change-pw', () => {
     unlockAudio();
+    if (!pwPanel) return;
     $('pw-error').hidden = true;
     $('pw-ok').hidden = true;
     pwPanel.hidden = !pwPanel.hidden;
   });
-  $('btn-pw-close').addEventListener('click', () => { pwPanel.hidden = true; });
-  $('btn-pw-save').addEventListener('click', async () => {
+  on('btn-pw-close', () => { if (pwPanel) pwPanel.hidden = true; });
+  on('btn-pw-save', async () => {
     const errEl = $('pw-error'), okEl = $('pw-ok');
     errEl.hidden = true; okEl.hidden = true;
     const pw1 = $('pw-new').value, pw2 = $('pw-confirm').value;
