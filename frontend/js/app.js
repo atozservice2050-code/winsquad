@@ -89,6 +89,20 @@ async function boot() {
   // Config OK — make sure the setup card stays hidden.
   $('setup-error').hidden = true;
 
+  // 1b. Forced logout? (?logout=1 clears the session — escape hatch)
+  try {
+    if (new URLSearchParams(location.search).has('logout')) {
+      try { await supabase.auth.signOut(); } catch (_) {}
+      try {
+        Object.keys(localStorage).forEach(k => {
+          if (k.startsWith('sb-')) localStorage.removeItem(k);
+        });
+      } catch (_) {}
+      location.href = location.pathname;
+      return;
+    }
+  } catch (_) {}
+
   // 2. Password-recovery link? (user tapped the email link)
   // detectSessionInUrl exchanges the ?code= automatically inside getSession().
   if (isRecoveryUrl()) {
@@ -208,6 +222,20 @@ document.querySelectorAll('.tab').forEach(t =>
 /* Generic in-app navigation: any element with data-open-view="x" opens view x. */
 document.querySelectorAll('[data-open-view]').forEach(b =>
   b.addEventListener('click', () => { unlockAudio(); showView(b.dataset.openView); }));
+
+/* Global logout: attached at startup (not in initProfile) so it always works. */
+document.addEventListener('click', async (e) => {
+  const btn = e.target?.closest?.('#btn-logout');
+  if (!btn) return;
+  e.preventDefault();
+  try {
+    const { logout } = await import('./auth.js');
+    await logout();
+  } catch (err) {
+    console.warn('global logout failed', err);
+    try { location.href = location.pathname + '?logout=1'; } catch (_) {}
+  }
+});
 
 /* Games hub: playable games open their views; others are coming soon. */
 document.querySelectorAll('.game-card').forEach(c =>
