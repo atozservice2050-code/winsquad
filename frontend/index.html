@@ -883,7 +883,23 @@
           <button class="member-item" data-open-view="wallet"><span class="member-icon">💰</span><span>My Wallet</span></button>
           <button class="member-item" id="btn-my-bids"><span class="member-icon">🧾</span><span>My Bids</span></button>
           <button class="member-item" id="btn-admin-portal" hidden><span class="member-icon">🔐</span><span>Admin</span></button>
+          <button class="member-item" id="btn-change-pw"><span class="member-icon">🔑</span><span>Change Password</span></button>
           <button class="member-item" id="btn-logout"><span class="member-icon">🚪</span><span>Switch Account</span></button>
+        </div>
+
+        <!-- Change password panel (hidden by default) -->
+        <div class="card gold-frame" id="pw-panel" hidden>
+          <div class="card-title">🔑 Change Password</div>
+          <label class="field-label" for="pw-new">New password</label>
+          <input id="pw-new" type="password" placeholder="Min 6 characters" autocomplete="new-password" />
+          <label class="field-label" for="pw-confirm">Confirm new password</label>
+          <input id="pw-confirm" type="password" placeholder="Repeat new password" autocomplete="new-password" />
+          <p class="error" id="pw-error" hidden></p>
+          <p class="hint" id="pw-ok" hidden></p>
+          <div style="display:flex;gap:8px;margin-top:8px;">
+            <button class="btn-red" id="btn-pw-save">Save password</button>
+            <button class="btn-ghost small" id="btn-pw-close">Close</button>
+          </div>
         </div>
 
         <!-- IDs -->

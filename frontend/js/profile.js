@@ -208,6 +208,36 @@ export function initProfile() {
     await logout();
   });
 
+  // Change password panel
+  const pwPanel = $('pw-panel');
+  $('btn-change-pw').addEventListener('click', () => {
+    unlockAudio();
+    $('pw-error').hidden = true;
+    $('pw-ok').hidden = true;
+    pwPanel.hidden = !pwPanel.hidden;
+  });
+  $('btn-pw-close').addEventListener('click', () => { pwPanel.hidden = true; });
+  $('btn-pw-save').addEventListener('click', async () => {
+    const errEl = $('pw-error'), okEl = $('pw-ok');
+    errEl.hidden = true; okEl.hidden = true;
+    const pw1 = $('pw-new').value, pw2 = $('pw-confirm').value;
+    if (!pw1 || pw1.length < 6) { errEl.textContent = 'Password must be at least 6 characters.'; errEl.hidden = false; return; }
+    if (pw1 !== pw2) { errEl.textContent = 'Passwords do not match.'; errEl.hidden = false; return; }
+    $('btn-pw-save').disabled = true;
+    try {
+      const { error } = await supabase.auth.updateUser({ password: pw1 });
+      if (error) throw error;
+      $('pw-new').value = ''; $('pw-confirm').value = '';
+      okEl.textContent = 'Password changed successfully!';
+      okEl.hidden = false;
+    } catch (e) {
+      errEl.textContent = e?.message || 'Could not change password. Try again.';
+      errEl.hidden = false;
+    } finally {
+      $('btn-pw-save').disabled = false;
+    }
+  });
+
   // Admin portal button (only for admins) — member grid item
   const adminBtn = $('btn-admin-portal');
   if (adminBtn) adminBtn.addEventListener('click', () => {
