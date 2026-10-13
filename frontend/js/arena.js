@@ -452,6 +452,12 @@ function currentStake() {
 async function placeBid(isFree) {
   unlockAudio();
   if (!round?.id) { toast('Round is loading — wait a second…', true); return; }
+  // Don't allow bids when no real players are online (min 3 required).
+  const players = Number(stats?.player_count ?? 0);
+  if (players < 3) {
+    toast('Not enough players online. Wait for more players to join!', true);
+    return;
+  }
   let amount;
   if (isFree) {
     amount = 10;
