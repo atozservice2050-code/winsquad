@@ -602,7 +602,11 @@ function renderWinners(winners, settledRoundId) {
  *  Determined from the winners-only round_results table: if the user has a
  *  row for this round they won, otherwise (they bid) they lost. */
 async function showPersonalResult(settledRoundId) {
-  if (!myBidRow) return; // user didn't play this round
+  // If bid row not loaded yet, try once more before giving up.
+  if (!myBidRow) {
+    try { await loadMyBid(settledRoundId); } catch (_) {}
+    if (!myBidRow) return; // user didn't play this round
+  }
 
   // Check if round was cancelled (fewer than 3 players) — bids refunded
   try {
@@ -637,7 +641,11 @@ async function showPersonalResult(settledRoundId) {
     const row = unwrapRow(data);
     if (row) { won = true; payout = Number(row.payout || 0); }
     else { won = false; } // bid exists but no winners row -> lost
-  } catch (e) { console.warn('personal result lookup failed', e); return; }
+  } catch (e) {
+    console.warn('personal result lookup failed', e);
+    // Don't leave the user hanging — assume lost (no winners row found).
+    won = false;
+  }
 
   const modal = $('result-modal');
   const card = modal.querySelector('.result-card');
@@ -656,8 +664,15 @@ async function showPersonalResult(settledRoundId) {
     // Mission progress: win
     try { recordMissionEvent('win'); } catch (e) {}
   } else if (won === true) {
-    // Edge case: won but payout is 0 — don't pop a confusing modal.
-    return;
+    // Edge case: won but payout is 0 — show a generic win popup anyway.
+    sounds.win();
+    $('result-emoji').textContent = '🎉';
+    $('result-title').textContent = 'You Won!';
+    $('result-amount').textContent = '';
+    $('result-amount').style.color = '#22c55e';
+    $('result-sub').textContent = 'Winnings added to your wallet! 🎉';
+    card.classList.remove('lost');
+    try { recordMissionEvent('win'); } catch (e) {}
   } else if (won === false) {
     sounds.lose();
     // Vibrate: sad pattern (long buzz)
@@ -672,11 +687,18 @@ async function showPersonalResult(settledRoundId) {
       : 'Better luck next round!';
     card.classList.add('lost');
   } else {
-    return; // result not determinable — don't pop anything
+    // Fallback: result not determinable — show a generic round-ended popup.
+    $('result-emoji').textContent = '🏁';
+    $('result-title').textContent = 'Round Ended';
+    $('result-amount').textContent = '';
+    $('result-sub').textContent = 'Check your wallet for the updated balance.';
+    card.classList.remove('lost');
   }
+  // Force the modal visible (override any CSS/display issues).
   modal.hidden = false;
-  // Results stay ~10 seconds, then auto-dismiss.
-  setTimeout(() => { modal.hidden = true; }, 5000);
+  modal.style.display = 'flex';
+  // Results stay 8 seconds, then auto-dismiss.
+  setTimeout(() => { modal.hidden = true; modal.style.display = ''; }, 8000);
 }
 
 /* ---------------- realtime ---------------- */
@@ -729,9 +751,9 @@ export function initArena() {
 
   $('btn-place-bid').addEventListener('click', () => placeBid(false));
   $('btn-free-bid').addEventListener('click', () => placeBid(true));
-  $('btn-result-close').addEventListener('click', () => { $('result-modal').hidden = true; });
+  $('btn-result-close').addEventListener('click', () => { const m = $('result-modal'); m.hidden = true; m.style.display = ''; });
   $('result-modal').addEventListener('click', (e) => {
-    if (e.target.id === 'result-modal') $('result-modal').hidden = true;
+    if (e.target.id === 'result-modal') { const m = $('result-modal'); m.hidden = true; m.style.display = ''; }
   });
 
   loadRound();
