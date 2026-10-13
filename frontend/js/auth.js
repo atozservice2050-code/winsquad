@@ -46,6 +46,43 @@ function setMode(next) {
     ? 'Enter your mobile number and password.'
     : 'Choose a password (min 6 characters).';
   $('auth-error').hidden = true;
+  const forgot = $('btn-forgot');
+  if (forgot) forgot.hidden = mode !== 'login';
+}
+
+/** True when the URL carries a Supabase recovery token (?code= PKCE or #type=recovery). */
+export function isRecoveryUrl() {
+  try {
+    if (new URLSearchParams(location.search).has('code')) return true;
+  } catch (_) {}
+  return (location.hash || '').includes('type=recovery');
+}
+
+/** Wire the "Set new password" view shown after tapping the recovery email link. */
+export function initResetPassword() {
+  const go = $('btn-resetpw-go');
+  if (!go || go.dataset.wired) return;
+  go.dataset.wired = '1';
+  const errEl = $('resetpw-error');
+  const okEl = $('resetpw-ok');
+  const showErr = (m) => { errEl.textContent = m; errEl.hidden = false; };
+  go.addEventListener('click', async () => {
+    errEl.hidden = true; okEl.hidden = true;
+    const pw = $('resetpw-input').value;
+    if (!pw || pw.length < 6) { showErr('Password must be at least 6 characters.'); return; }
+    go.disabled = true;
+    try {
+      const { error } = await supabase.auth.updateUser({ password: pw });
+      if (error) throw error;
+      okEl.textContent = 'Password updated! Redirecting to login…';
+      okEl.hidden = false;
+      setTimeout(() => { location.href = location.pathname; }, 1500);
+    } catch (e) {
+      showErr(e?.message || 'Could not update password. The link may have expired.');
+    } finally {
+      go.disabled = false;
+    }
+  });
 }
 
 export function initAuth(onAuthed) {
@@ -101,6 +138,28 @@ export function initAuth(onAuthed) {
   $('password-input').addEventListener('keydown', (e) => {
     if (e.key === 'Enter') $('btn-auth-go').click();
   });
+
+  // Forgot password? — email a recovery link to the account's login email.
+  const forgot = $('btn-forgot');
+  if (forgot) {
+    forgot.addEventListener('click', async () => {
+      const phone = normalizePhone($('phone-input').value);
+      if (!phone) { showError('Enter your mobile number first, then tap Forgot password?'); return; }
+      forgot.disabled = true;
+      try {
+        const email = phoneToEmail(phone);
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: location.origin + location.pathname,
+        });
+        if (error) throw error;
+        toast('Recovery email sent! Check your inbox and tap the link.', false);
+      } catch (e) {
+        showError(e?.message || 'Could not send recovery email. Try again.');
+      } finally {
+        forgot.disabled = false;
+      }
+    });
+  }
 }
 
 /** Load the current user's profile row (created by backend trigger on signup). */

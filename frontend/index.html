@@ -83,9 +83,26 @@
             </div>
             <p class="hint" id="auth-hint">Enter your mobile number and password.</p>
             <button id="btn-auth-go" class="btn-red">Login &amp; play</button>
+            <button id="btn-forgot" class="linklike" type="button">Forgot password?</button>
           </div>
 
           <p id="auth-error" class="error" hidden></p>
+        </div>
+      </section>
+
+      <!-- ============ PASSWORD RESET (via email link) ============ -->
+      <section id="view-resetpw" class="view" hidden>
+        <div class="auth-card premium">
+          <div class="auth-crown">♛</div>
+          <h1 class="gold auth-title">New password</h1>
+          <p class="tagline">Choose a new password for your account.</p>
+          <div class="auth-divider"><span>✦</span></div>
+          <label class="field-label" for="resetpw-input">New password</label>
+          <input id="resetpw-input" type="password" placeholder="Min 6 characters" autocomplete="new-password" />
+          <p class="hint">Min 6 characters.</p>
+          <button id="btn-resetpw-go" class="btn-red">Set new password</button>
+          <p id="resetpw-error" class="error" hidden></p>
+          <p id="resetpw-ok" class="hint" hidden></p>
         </div>
       </section>
 

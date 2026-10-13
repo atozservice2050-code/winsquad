@@ -1899,3 +1899,16 @@ button { font-family: inherit; cursor: pointer; border: none; border-radius: 12p
 .rl-hist.rl-red { background: #b3242e; }
 .rl-hist.rl-black { background: #16161d; }
 .rl-hist.rl-green { background: #0a7a3a; }
+
+/* Forgot-password link + reset view */
+.linklike {
+  background: none;
+  border: none;
+  color: #d4af37;
+  text-decoration: underline;
+  font-size: 14px;
+  margin-top: 10px;
+  cursor: pointer;
+  padding: 6px;
+}
+.linklike:active { opacity: 0.7; }

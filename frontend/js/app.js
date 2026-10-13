@@ -6,7 +6,7 @@
    ============================================================ */
 import { ENV_OK, ENV_ERROR, supabase } from './supabase-client.js';
 import { $, toast, unlockAudio } from './util.js';
-import { initAuth, initSetup, loadProfile } from './auth.js';
+import { initAuth, initSetup, initResetPassword, isRecoveryUrl, loadProfile } from './auth.js';
 import { initArena, destroyArena, setUser as setArenaUser } from './arena.js';
 import { initPrivate, destroyPrivate, setUser as setPrivateUser } from './private.js';
 import { initWallet, refreshWallet, setUser as setWalletUser, initWalletTopbar } from './wallet.js';
@@ -18,7 +18,7 @@ import { initDT, setUser as setDTUser, destroyDT } from './dt.js';
 import { initRoulette, setUser as setRouletteUser, destroyRoulette } from './roulette.js';
 import { initMissions, refreshMissions, setUser as setMissionsUser, recordMissionEvent } from './missions.js';
 
-const VIEWS = ['auth', 'setup', 'home', 'arena', 'private', 'wallet', 'rewards', 'missions', 'profile', 'coinflip', 'andarbahar', 'dt', 'roulette'];
+const VIEWS = ['auth', 'setup', 'resetpw', 'home', 'arena', 'private', 'wallet', 'rewards', 'missions', 'profile', 'coinflip', 'andarbahar', 'dt', 'roulette'];
 const TAB_VIEWS = ['arena', 'private', 'wallet', 'rewards', 'missions', 'profile'];
 let currentView = null;
 let currentProfile = null;
@@ -89,7 +89,27 @@ async function boot() {
   // Config OK — make sure the setup card stays hidden.
   $('setup-error').hidden = true;
 
-  // 2. Existing session?
+  // 2. Password-recovery link? (user tapped the email link)
+  // detectSessionInUrl exchanges the ?code= automatically inside getSession().
+  if (isRecoveryUrl()) {
+    try {
+      const { data } = await supabase.auth.getSession();
+      if (data.session) {
+        $('app').hidden = false;
+        // Clean the recovery params out of the address bar.
+        try { history.replaceState(null, '', location.pathname); } catch (_) {}
+        showView('resetpw');
+        initResetPassword();
+        return;
+      }
+    } catch (e) {
+      console.warn('recovery session failed', e);
+    }
+    // Recovery link invalid/expired — fall through to normal login.
+    toast('Recovery link expired. Request a new one below.', true);
+  }
+
+  // 3. Existing session?
   let session = null;
   try {
     const { data } = await supabase.auth.getSession();
