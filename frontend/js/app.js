@@ -28,7 +28,12 @@ let initialized = {};
 function showView(name) {
   if (!VIEWS.includes(name)) name = 'home';
   currentView = name;
-  VIEWS.forEach(v => { $('view-' + v).hidden = v !== name; });
+  // Null-safe: skip views whose section is missing from the DOM (never crash).
+  VIEWS.forEach(v => {
+    const el = $('view-' + v);
+    if (el) el.hidden = v !== name;
+    else if (v === name) console.warn('showView: missing section for view "' + v + '"');
+  });
 
   // Arena is reached from the Games hub; tabbar stays visible with Games active.
   const inTabs = TAB_VIEWS.includes(name) || name === 'arena';
