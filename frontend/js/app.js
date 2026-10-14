@@ -6,6 +6,7 @@
    ============================================================ */
 import { ENV_OK, ENV_ERROR, supabase } from './supabase-client.js';
 import { $, toast, unlockAudio } from './util.js';
+import { initNotifications } from './notifications.js';
 import { initAuth, initSetup, initResetPassword, isRecoveryUrl, loadProfile } from './auth.js';
 import { initArena, destroyArena, setUser as setArenaUser } from './arena.js';
 import { initPrivate, destroyPrivate, setUser as setPrivateUser } from './private.js';
@@ -91,6 +92,7 @@ function enterApp(profile, phone) {
 
 /* ---------------- boot ---------------- */
 async function boot() {
+  initNotifications();
   // 1. Backend config present?
   if (!ENV_OK) {
     console.error(ENV_ERROR);

@@ -16,6 +16,7 @@
    ============================================================ */
 import { supabase, unwrapRow, friendlyError } from './supabase-client.js';
 import { $, $$, toast, fmtRs, activityLevel, sounds, unlockAudio, isSoundOn, setSoundOn } from './util.js';
+import { addNotification } from './notifications.js';
 import { refreshWallet } from './wallet.js';
 import { recordMissionEvent } from './missions.js';
 
@@ -635,6 +636,7 @@ async function showPersonalResult(settledRoundId) {
     $('result-amount').style.color = '#22c55e';
     $('result-sub').textContent = '+Rs ' + fmtRs(payout) + ' added to your wallet! 🎉';
     card.classList.remove('lost');
+    addNotification({ title: '🎉 You Won!', body: '+Rs ' + fmtRs(payout) + ' added to wallet', icon: '🎉', type: 'win' });
     // Mission progress: win
     try { recordMissionEvent('win'); } catch (e) {}
   } else if (won === true) {
@@ -660,6 +662,7 @@ async function showPersonalResult(settledRoundId) {
       ? '-Rs ' + fmtRs(lostAmt) + ' deducted from your wallet.'
       : 'Better luck next round!';
     card.classList.add('lost');
+    if (lostAmt > 0) addNotification({ title: '😭 You Lost', body: '-Rs ' + fmtRs(lostAmt) + ' deducted from wallet', icon: '😭', type: 'loss' });
   } else {
     // Fallback: result not determinable — show a generic round-ended popup.
     $('result-emoji').textContent = '🏁';
