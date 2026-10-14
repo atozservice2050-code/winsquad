@@ -17,9 +17,11 @@ import { initCoinflip, setUser as setCoinflipUser, destroyCoinflip } from './coi
 import { initAndarBahar, setUser as setAndarBaharUser, destroyAndarBahar } from './ab.js';
 import { initDT, setUser as setDTUser, destroyDT } from './dt.js';
 import { initRoulette, setUser as setRouletteUser, destroyRoulette } from './roulette.js';
+import { initCashvault, setUser as setCashvaultUser, destroyCashvault } from './cashvault.js';
+import { initDisclaimer, maybeShowDisclaimer } from './disclaimer.js';
 import { initMissions, refreshMissions, setUser as setMissionsUser, recordMissionEvent } from './missions.js';
 
-const VIEWS = ['auth', 'setup', 'resetpw', 'home', 'arena', 'private', 'wallet', 'rewards', 'missions', 'profile', 'coinflip', 'andarbahar', 'dt', 'roulette'];
+const VIEWS = ['auth', 'setup', 'resetpw', 'home', 'arena', 'private', 'wallet', 'rewards', 'missions', 'profile', 'coinflip', 'andarbahar', 'dt', 'roulette', 'cashvault'];
 const TAB_VIEWS = ['home', 'arena', 'private', 'wallet', 'rewards', 'missions', 'profile'];
 let currentView = null;
 let currentProfile = null;
@@ -68,6 +70,7 @@ function showView(name) {
   if (name === 'andarbahar' && !initialized.andarbahar) { initAndarBahar(); initialized.andarbahar = true; }
   if (name === 'dt' && !initialized.dt) { initDT(); initialized.dt = true; }
   if (name === 'roulette' && !initialized.roulette) { initRoulette(); initialized.roulette = true; }
+  if (name === 'cashvault' && !initialized.cashvault) { initCashvault(); initialized.cashvault = true; }
   if (name === 'arena' && initialized.arena) { /* arena runs its own realtime loop */ }
 }
 
@@ -83,9 +86,12 @@ function enterApp(profile, phone) {
   setAndarBaharUser(uid);
   setDTUser(uid);
   setRouletteUser(uid);
+  setCashvaultUser(uid);
   initWalletTopbar();
   $('app').hidden = false;
   showView('arena');
+  // Disclaimer: shown once on first login.
+  try { maybeShowDisclaimer(); } catch (e) {}
   // Mission progress: daily visit
   try { recordMissionEvent('daily_visit'); } catch (e) {}
 }
@@ -93,6 +99,7 @@ function enterApp(profile, phone) {
 /* ---------------- boot ---------------- */
 async function boot() {
   initNotifications();
+  initDisclaimer();
   // 1. Backend config present?
   if (!ENV_OK) {
     console.error(ENV_ERROR);
@@ -263,6 +270,8 @@ document.querySelectorAll('.game-card').forEach(c =>
       showView('dt');
     } else if (c.dataset.game === 'roulette') {
       showView('roulette');
+    } else if (c.dataset.game === 'cashvault') {
+      showView('cashvault');
     } else {
       toast('Coming soon! 🎮');
     }

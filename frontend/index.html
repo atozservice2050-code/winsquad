@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <meta name="theme-color" content="#0a0a14" />
   <title>WinSquad — Play together. Win together.</title>
-  <link rel="stylesheet" href="css/style.css?v=24" />
+  <link rel="stylesheet" href="css/style.css?v=25" />
   <!-- Runtime config: inline fallback (public anon key by design).
        js/env.js is preferred when present (generated at build time). -->
   <script>
@@ -14,8 +14,8 @@
       SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt6amt2aHRha3dvaHh4dXlzdXRvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE3MzUxNTgsImV4cCI6MjEwNzMxMTE1OH0.uPzzMNKm0FaqjDwZ_0iMotS2rGXx0J9lBNqYXm7G02I"
     };
   </script>
-  <script src="js/env.js?v=24"></script>
-  <script src="js/supabase-js.js?v=24"></script>
+  <script src="js/env.js?v=25"></script>
+  <script src="js/supabase-js.js?v=25"></script>
 </head>
 <body>
 
@@ -149,6 +149,15 @@
         </div>
 
         <div class="games-grid">
+          <div class="game-card playable" data-game="cashvault">
+            <div class="live-strip"><span class="live-dot"></span> LIVE</div>
+            <div class="game-badge play">▶ PLAY</div>
+            <div class="game-art cv-art">💰</div>
+            <div class="game-info">
+              <div class="game-name">Cash Vault</div>
+              <div class="game-desc">Money wheel · pick a vault</div>
+            </div>
+          </div>
           <div class="game-card" data-game="andarbahar-soon">
             <div class="live-strip"><span class="live-dot"></span> SOON</div>
             <div class="game-badge">⏳ SOON</div>
@@ -365,6 +374,60 @@
           </div>
 
           <p class="rules-tiny">Bet on a side every 30 seconds. The side with the lower total wins 2x!</p>
+        </div>
+      </section>
+
+      <!-- ============ CASH VAULT ============ -->
+      <section id="view-cashvault" class="view" hidden>
+        <div class="cv-wrap">
+          <div class="cf-header">
+            <button class="btn-ghost small" data-open-view="home">← Games</button>
+            <div class="card-title" style="margin:0;">💰 <span class="gold">CASH VAULT</span></div>
+            <button id="btn-sound-cv" class="sound-arena-btn" title="Sound on/off">🔊</button>
+          </div>
+
+          <!-- live round: vault wheel -->
+          <div class="card gold-frame">
+            <div class="pot-label">💰 LIVE ROUND <span id="cv-round-no">#–</span></div>
+            <div class="cv-wheel-stage">
+              <div class="cv-pointer">🔻</div>
+              <div class="cv-wheel" id="cv-wheel"></div>
+              <div class="cv-hub">💰</div>
+            </div>
+            <div id="cv-clock" class="clock demo-clock" title="Time left in this round">
+              <span class="clock-icon">⏱</span><span id="cv-clock-time">--:--</span>
+            </div>
+          </div>
+
+          <div class="card gold-frame center">
+            <div id="cv-result" class="cf-result" hidden></div>
+
+            <!-- vault segment picks (live totals) -->
+            <div class="cv-seg-grid" id="cv-segments"></div>
+
+            <!-- bet amount -->
+            <div class="bid-tabs" role="tablist" id="cv-tabs">
+              <button class="bid-tab active" data-amount="10">Rs 10</button>
+              <button class="bid-tab" data-amount="50">Rs 50</button>
+              <button class="bid-tab" data-amount="100">Rs 100</button>
+              <button class="bid-tab" data-amount="500">Rs 500</button>
+              <button class="bid-tab" data-amount="custom">Custom</button>
+            </div>
+            <div id="cv-custom-row" hidden>
+              <input id="cv-custom-input" type="number" inputmode="numeric" min="10" placeholder="Enter amount (min Rs 10)" />
+            </div>
+
+            <button id="btn-cv-bet" class="btn-red big">⚡ Place bet</button>
+            <div class="cf-mybet">Your bet: <strong id="cv-my-bet">—</strong></div>
+          </div>
+
+          <!-- recent rounds -->
+          <div class="card">
+            <div class="card-title">🕘 Recent rounds</div>
+            <div id="cv-history" class="cf-history">
+              <p class="muted center">No rounds yet 💰</p>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -929,6 +992,25 @@
     </div>
   </div>
 
-  <script type="module" src="js/app.js?v=24"></script>
+  <!-- Disclaimer: shown once on first login -->
+  <div id="disclaimer-modal" hidden>
+    <div class="result-card disclaimer-card">
+      <div class="result-emoji">⚠️</div>
+      <h2 class="gold">Disclaimer</h2>
+      <p class="disclaimer-sub gold">Please Read Carefully</p>
+      <ul class="disclaimer-list">
+        <li>WinSquad is for users <strong>18 years and older</strong> only.</li>
+        <li>All games involve <strong>real money</strong>. You can win or lose money.</li>
+        <li>Play responsibly — only play with money you can afford to lose.</li>
+        <li>Game outcomes are final. <strong>No refunds</strong> on lost bets.</li>
+        <li>WinSquad is not responsible for user-to-user transfers.</li>
+        <li>If gaming stops being fun, take a break.</li>
+      </ul>
+      <p class="disclaimer-agree">By tapping "I Agree", you confirm you are 18+ and accept these terms.</p>
+      <button id="btn-disclaimer-agree" class="btn-red big">I Agree</button>
+    </div>
+  </div>
+
+  <script type="module" src="js/app.js?v=25"></script>
 </body>
 </html>

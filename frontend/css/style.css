@@ -1992,3 +1992,103 @@ button { font-family: inherit; cursor: pointer; border: none; border-radius: 12p
   padding: 6px;
 }
 .linklike:active { opacity: 0.7; }
+
+/* ================= CASH VAULT ================= */
+.cv-art { background: radial-gradient(circle at 50% 30%, #3d2f07 0%, #141002 70%); }
+.cv-wrap { display: flex; flex-direction: column; gap: 12px; }
+
+.cv-wheel-stage {
+  position: relative;
+  width: 250px; height: 250px;
+  margin: 10px auto 4px;
+}
+.cv-wheel {
+  width: 100%; height: 100%;
+  border-radius: 50%;
+  border: 6px solid var(--gold);
+  box-shadow: 0 0 30px rgba(212, 175, 55, 0.35), inset 0 0 20px rgba(0,0,0,0.5);
+  background: conic-gradient(from -30deg,
+    #e11d48 0deg 60deg,
+    #2563eb 60deg 120deg,
+    #d4af37 120deg 180deg,
+    #16a34a 180deg 240deg,
+    #9333ea 240deg 300deg,
+    #94a3b8 300deg 360deg);
+  transition: transform 2.5s cubic-bezier(0.15, 0.85, 0.25, 1);
+  position: relative;
+}
+.cv-wheel-label {
+  position: absolute; inset: 0;
+  display: flex; justify-content: center;
+  pointer-events: none;
+}
+.cv-wheel-label span {
+  margin-top: 14px;
+  font-size: 26px;
+  filter: drop-shadow(0 2px 3px rgba(0,0,0,0.6));
+}
+.cv-hub {
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 64px; height: 64px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 30%, #3a2c08 0%, #0d0a04 70%);
+  border: 3px solid var(--gold);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 30px;
+  box-shadow: 0 0 18px rgba(212, 175, 55, 0.5);
+  pointer-events: none;
+}
+.cv-pointer {
+  position: absolute; top: -14px; left: 50%;
+  transform: translateX(-50%);
+  font-size: 28px; z-index: 2;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.6));
+}
+
+.cv-seg-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin: 10px 0;
+}
+.cv-seg-btn {
+  background: rgba(255,255,255,0.04);
+  border: 2px solid rgba(212, 175, 55, 0.25);
+  border-radius: 12px;
+  padding: 10px 4px;
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  color: #fff; cursor: pointer;
+  transition: transform 0.12s, border-color 0.12s, box-shadow 0.12s;
+}
+.cv-seg-btn:active { transform: scale(0.96); }
+.cv-seg-btn.selected {
+  border-color: var(--gold);
+  box-shadow: 0 0 14px rgba(212, 175, 55, 0.5);
+  background: rgba(212, 175, 55, 0.12);
+}
+.cv-seg-emoji { font-size: 24px; line-height: 1; }
+.cv-seg-name { font-size: 11px; font-weight: 700; letter-spacing: 0.5px; color: var(--gold); }
+.cv-seg-total { font-size: 12px; color: #cbd5e1; }
+
+/* ================= DISCLAIMER ================= */
+#disclaimer-modal {
+  position: fixed; inset: 0; z-index: 400;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex; align-items: center; justify-content: center; padding: 24px;
+}
+#disclaimer-modal[hidden] { display: none !important; }
+.disclaimer-card { max-height: 85dvh; overflow-y: auto; }
+.disclaimer-sub { margin: 0 0 12px; font-size: 14px; }
+.disclaimer-list {
+  text-align: left;
+  margin: 0 0 12px; padding-left: 20px;
+  font-size: 14px; line-height: 1.65; color: #e2e8f0;
+}
+.disclaimer-list li { margin-bottom: 6px; }
+.disclaimer-list strong { color: var(--gold); }
+.disclaimer-agree {
+  font-size: 13px; color: #94a3b8; font-style: italic;
+  margin: 0 0 16px;
+}
+.disclaimer-card .btn-red.big { width: 100%; }
