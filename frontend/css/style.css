@@ -41,6 +41,42 @@ body {
   background-attachment: fixed;
 }
 
+/* ---------- splash screen ---------- */
+#splash {
+  position: fixed; inset: 0; z-index: 9999;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  background:
+    radial-gradient(1200px 600px at 50% -10%, #1c1030 0%, transparent 60%),
+    linear-gradient(180deg, #0d5c2e 0%, #084422 55%, #063a1e 100%);
+  transition: opacity 0.5s ease;
+}
+#splash.hide { opacity: 0; pointer-events: none; }
+.splash-logo {
+  font-size: 72px; line-height: 1;
+  background: linear-gradient(180deg, #ffe9a3 0%, #d4af37 50%, #b8860b 100%);
+  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 4px 12px rgba(212, 175, 55, 0.4));
+  animation: splashPulse 2s ease-in-out infinite;
+}
+.splash-name {
+  font-size: 42px; font-weight: 800; letter-spacing: 2px; margin-top: 12px;
+  background: linear-gradient(180deg, #fff3c4 0%, #ffd700 40%, #d4af37 70%, #a67c00 100%);
+  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.5));
+}
+.splash-tagline {
+  margin-top: 8px; font-size: 14px; color: rgba(255, 255, 255, 0.7); letter-spacing: 1px;
+}
+.splash-loader { display: flex; gap: 6px; margin-top: 28px; }
+.splash-loader span {
+  width: 10px; height: 10px; border-radius: 50%; background: #d4af37;
+  animation: splashBounce 1.2s ease-in-out infinite;
+}
+.splash-loader span:nth-child(2) { animation-delay: 0.15s; }
+.splash-loader span:nth-child(3) { animation-delay: 0.3s; }
+@keyframes splashPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.08); } }
+@keyframes splashBounce { 0%, 100% { transform: translateY(0); opacity: 0.5; } 50% { transform: translateY(-8px); opacity: 1; } }
+
 /* ---------- responsive: mobile-first, desktop-friendly ---------- */
 #desktop-notice { display: none; }
 #app { max-width: 430px; margin: 0 auto; min-height: 100dvh; position: relative; padding-bottom: 84px; }
