@@ -72,11 +72,14 @@ async function loadHistory() {
       const type = String(t.type || t.kind || 'transaction');
       const date = fmtTime(t.created_at);
       const status = String(t.status || 'completed').toLowerCase();
+      // Amounts are stored positive in the DB; the sign comes from the type.
+      // Debits (money leaves the wallet): bets, withdrawals, transfers out, losses.
+      const debit = /^(stake|.*_bet|withdraw|transfer_out|.*_loss)$/.test(type);
       div.innerHTML =
         '<div class="txn-type"></div>' +
         '<span class="txn-status ' + status + '">' + status + '</span>' +
-        '<span class="txn-amt ' + (amt >= 0 ? 'pos' : 'neg') + '">' +
-          (amt >= 0 ? '+' : '−') + ' Rs ' + fmtRs(Math.abs(amt)) + '</span>';
+        '<span class="txn-amt ' + (debit ? 'neg' : 'pos') + '">' +
+          (debit ? '−' : '+') + ' Rs ' + fmtRs(Math.abs(amt)) + '</span>';
       const typeEl = div.querySelector('.txn-type');
       typeEl.textContent = type.replace(/_/g, ' ');
       const d = document.createElement('span');
