@@ -89,7 +89,7 @@ function enterApp(profile, phone) {
   setCashvaultUser(uid);
   initWalletTopbar();
   $('app').hidden = false;
-  showView('arena');
+  showView('home');
   // Disclaimer: shown once on first login.
   try { maybeShowDisclaimer(); } catch (e) {}
   // Mission progress: daily visit
