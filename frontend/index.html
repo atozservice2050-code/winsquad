@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <meta name="theme-color" content="#0a0a14" />
   <title>WinSquad — Play together. Win together.</title>
-  <link rel="stylesheet" href="css/style.css?v=28" />
+  <link rel="stylesheet" href="css/style.css?v=29" />
   <!-- Runtime config: inline fallback (public anon key by design).
        js/env.js is preferred when present (generated at build time). -->
   <script>
@@ -14,8 +14,8 @@
       SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt6amt2aHRha3dvaHh4dXlzdXRvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE3MzUxNTgsImV4cCI6MjEwNzMxMTE1OH0.uPzzMNKm0FaqjDwZ_0iMotS2rGXx0J9lBNqYXm7G02I"
     };
   </script>
-  <script src="js/env.js?v=28"></script>
-  <script src="js/supabase-js.js?v=28"></script>
+  <script src="js/env.js?v=29"></script>
+  <script src="js/supabase-js.js?v=29"></script>
 </head>
 <body>
 
@@ -185,12 +185,13 @@
               <div class="game-desc">Card battle · lower wins 2x</div>
             </div>
           </div>
-          <div class="game-card soon" data-game="dice">
-            <div class="game-badge soon">SOON</div>
+          <div class="game-card playable" data-game="dice">
+            <div class="live-strip"><span class="live-dot"></span> LIVE</div>
+            <div class="game-badge play">▶ PLAY</div>
             <div class="game-art dice-art">🎲</div>
             <div class="game-info">
               <div class="game-name">Dice</div>
-              <div class="game-desc">Roll the dice</div>
+              <div class="game-desc">7 Up Down · roll the dice</div>
             </div>
           </div>
           <div class="game-card soon" data-game="blackjack">
@@ -654,6 +655,61 @@
         </div>
       </section>
 
+      <!-- ============ DICE (7 UP DOWN) ============ -->
+      <section id="view-dice" class="view" hidden>
+        <div class="d7-wrap">
+          <div class="cf-header">
+            <button class="btn-ghost small" data-open-view="home">← Games</button>
+            <div class="card-title" style="margin:0;">🎲 <span class="gold">DICE</span></div>
+            <button id="btn-sound-d7" class="sound-arena-btn" title="Sound on/off">🔊</button>
+          </div>
+
+          <!-- live round: dice roll -->
+          <div class="card gold-frame">
+            <div class="pot-label">🎲 LIVE ROUND <span id="d7-round-no">#–</span></div>
+            <div class="d7-dice-stage">
+              <div class="d7-die" id="d7-dice1"></div>
+              <div class="d7-die" id="d7-dice2"></div>
+            </div>
+            <div class="d7-total-label">Total: <strong id="d7-dice-total">–</strong></div>
+            <div id="d7-clock" class="clock demo-clock" title="Time left in this round">
+              <span class="clock-icon">⏱</span><span id="d7-clock-time">--:--</span>
+            </div>
+          </div>
+
+          <div class="card gold-frame center">
+            <div id="d7-result" class="cf-result" hidden></div>
+
+            <!-- betting options (live totals) -->
+            <div class="d7-opt-grid" id="d7-options"></div>
+
+            <!-- bet amount -->
+            <div class="bid-tabs" role="tablist" id="d7-tabs">
+              <button class="bid-tab active" data-amount="10">Rs 10</button>
+              <button class="bid-tab" data-amount="50">Rs 50</button>
+              <button class="bid-tab" data-amount="100">Rs 100</button>
+              <button class="bid-tab" data-amount="250">Rs 250</button>
+              <button class="bid-tab" data-amount="500">Rs 500</button>
+              <button class="bid-tab" data-amount="custom">Custom</button>
+            </div>
+            <div id="d7-custom-row" hidden>
+              <input id="d7-custom-input" type="number" inputmode="numeric" min="10" placeholder="Enter amount (min Rs 10)" />
+            </div>
+
+            <button id="btn-d7-bet" class="btn-red big">⚡ Place bet</button>
+            <div class="cf-mybet">Your bet: <strong id="d7-my-bet">—</strong></div>
+          </div>
+
+          <!-- recent rounds -->
+          <div class="card">
+            <div class="card-title">🕘 Recent rounds</div>
+            <div id="d7-history" class="cf-history">
+              <p class="muted center">No rounds yet 🎲</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <!-- ============ PRIVATE TABLES ============ -->
       <section id="view-private" class="view" hidden>
         <div id="private-lobby">
@@ -1001,6 +1057,6 @@
     </div>
   </div>
 
-  <script type="module" src="js/app.js?v=28"></script>
+  <script type="module" src="js/app.js?v=29"></script>
 </body>
 </html>

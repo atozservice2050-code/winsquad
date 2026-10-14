@@ -18,10 +18,11 @@ import { initAndarBahar, setUser as setAndarBaharUser, destroyAndarBahar } from 
 import { initDT, setUser as setDTUser, destroyDT } from './dt.js';
 import { initRoulette, setUser as setRouletteUser, destroyRoulette } from './roulette.js';
 import { initCashvault, setUser as setCashvaultUser, destroyCashvault } from './cashvault.js';
+import { initDice, setUser as setDiceUser, destroyDice } from './dice.js';
 import { initDisclaimer, maybeShowDisclaimer } from './disclaimer.js';
 import { initMissions, refreshMissions, setUser as setMissionsUser, recordMissionEvent } from './missions.js';
 
-const VIEWS = ['auth', 'setup', 'resetpw', 'home', 'arena', 'private', 'wallet', 'rewards', 'missions', 'profile', 'coinflip', 'andarbahar', 'dt', 'roulette', 'cashvault'];
+const VIEWS = ['auth', 'setup', 'resetpw', 'home', 'arena', 'private', 'wallet', 'rewards', 'missions', 'profile', 'coinflip', 'andarbahar', 'dt', 'roulette', 'cashvault', 'dice'];
 const TAB_VIEWS = ['home', 'arena', 'private', 'wallet', 'rewards', 'missions', 'profile'];
 let currentView = null;
 let currentProfile = null;
@@ -71,6 +72,7 @@ function showView(name) {
   if (name === 'dt' && !initialized.dt) { initDT(); initialized.dt = true; }
   if (name === 'roulette' && !initialized.roulette) { initRoulette(); initialized.roulette = true; }
   if (name === 'cashvault' && !initialized.cashvault) { initCashvault(); initialized.cashvault = true; }
+  if (name === 'dice' && !initialized.dice) { initDice(); initialized.dice = true; }
   if (name === 'arena' && initialized.arena) { /* arena runs its own realtime loop */ }
 }
 
@@ -87,6 +89,7 @@ function enterApp(profile, phone) {
   setDTUser(uid);
   setRouletteUser(uid);
   setCashvaultUser(uid);
+  setDiceUser(uid);
   initWalletTopbar();
   $('app').hidden = false;
   showView('home');
@@ -272,6 +275,8 @@ document.querySelectorAll('.game-card').forEach(c =>
       showView('roulette');
     } else if (c.dataset.game === 'cashvault') {
       showView('cashvault');
+    } else if (c.dataset.game === 'dice') {
+      showView('dice');
     } else {
       toast('Coming soon! 🎮');
     }
