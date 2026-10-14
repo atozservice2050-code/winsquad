@@ -453,6 +453,15 @@ async function placeBets() {
   unlockAudio();
   if (!round?.id) { toast('Round is loading — wait a second…', true); return; }
   if (!pending.length) { toast('Tap the table to place chips first! 🎡', true); return; }
+  // Same rule as all games: min 3 real players
+  try {
+    const { data: bidRows } = await supabase.from('roulette_bids').select('user_id').eq('round_id', round.id);
+    const uniquePlayers = new Set((bidRows || []).map(b => b.user_id)).size;
+    if (uniquePlayers < 2) { // <2 existing + you = <3 total
+      toast('Round is full! Place your bid in the next round.', true);
+      return;
+    }
+  } catch (e) { /* allow bid if check fails */ }
 
   placing = true;
   $('btn-rl-bet').disabled = true;

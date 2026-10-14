@@ -303,6 +303,15 @@ async function placeBet() {
   unlockAudio();
   if (!round?.id) { toast('Round is loading — wait a second…', true); return; }
   if (!choice) { toast('Pick HEADS or TAILS first! 🪙', true); return; }
+  // Same rule as all games: min 3 real players
+  try {
+    const { data: bidRows } = await supabase.from('cf_bids').select('user_id').eq('round_id', round.id);
+    const uniquePlayers = new Set((bidRows || []).map(b => b.user_id)).size;
+    if (uniquePlayers < 2) { // <2 existing + you = <3 total
+      toast('Round is full! Place your bid in the next round.', true);
+      return;
+    }
+  } catch (e) { /* allow bid if check fails */ }
   const amount = currentAmount();
   if (!amount || amount < 10) { toast('Minimum bet is Rs 10.', true); return; }
   if (amount > 100000) { toast('Maximum bet is Rs 100,000.', true); return; }

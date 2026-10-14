@@ -455,7 +455,7 @@ async function placeBid(isFree) {
   // Don't allow bids when fewer than 3 real players are online.
   const players = Number(stats?.player_count ?? 0);
   if (players < 3) {
-    toast('Not enough live players in this round. Place a bid in the next round!', true);
+    toast('Round is full! Place your bid in the next round.', true);
     return;
   }
   let amount;
