@@ -15,7 +15,7 @@
      they lost.
    ============================================================ */
 import { supabase, unwrapRow, friendlyError } from './supabase-client.js';
-import { $, $$, toast, fmtRs, activityLevel, sounds, unlockAudio } from './util.js';
+import { $, $$, toast, fmtRs, activityLevel, sounds, unlockAudio, isSoundOn, setSoundOn } from './util.js';
 import { refreshWallet } from './wallet.js';
 import { recordMissionEvent } from './missions.js';
 
@@ -712,6 +712,20 @@ function unsubscribe() {
 export function initArena() {
   renderActivity();
   setInterval(renderActivity, 60000); // refresh the signal each minute
+
+  // Game-side sound toggle (synced with Member Center setting)
+  const updateArenaSoundBtn = () => {
+    const btn = $('btn-sound-arena');
+    if (btn) btn.textContent = isSoundOn() ? '🔊' : '🔇';
+  };
+  const soundBtn = $('btn-sound-arena');
+  if (soundBtn) soundBtn.addEventListener('click', () => {
+    unlockAudio();
+    setSoundOn(!isSoundOn());
+    updateArenaSoundBtn();
+    toast(isSoundOn() ? 'Sound on 🔊' : 'Sound off 🔇');
+  });
+  updateArenaSoundBtn();
 
   $$('.bid-tab').forEach(tab => tab.addEventListener('click', () => {
     unlockAudio(); sounds.click();

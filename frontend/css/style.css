@@ -1313,6 +1313,12 @@ button { font-family: inherit; cursor: pointer; border: none; border-radius: 12p
 }
 .round-timer.urgent { color: #ff5a5a; text-shadow: 0 0 24px rgba(255, 60, 60, 0.5); }
 .round-players { font-size: 13px; color: var(--muted); }
+.sound-arena-btn {
+  background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 8px; font-size: 16px; padding: 4px 8px; cursor: pointer;
+  line-height: 1; color: #fff;
+}
+.sound-arena-btn:active { transform: scale(0.92); }
 
 /* HOW TO PLAY: 3 visual steps */
 .howto {
