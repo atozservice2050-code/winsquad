@@ -1,20 +1,21 @@
 /* ============================================================
-   ANDAR BAHAR — multiplayer, 30-second rounds (like Coin Flip).
-   - ab_get_current_round() -> open round (30s, daily round_no reset)
+   ANDAR BAHAR — multiplayer, 15-second rounds (like all games).
+   - ab_get_current_round() -> open round (15s, daily round_no reset)
    - Live side totals via ab_round_stats (polled)
    - ab_place_bid(p_round_id, p_side, p_amount) -> bet on andar/bahar
    - Settlement (server-side ab_resolve_round):
        lower-total side WINS; winners get 2x from the losers' pool;
        the remainder is the hidden company fee.
-       One side empty -> ALL on the other side LOSE (same-side rule).
+       All players on one side -> they ALL LOSE (same-side rule).
        Exact tie -> round cancelled, bids refunded.
    - Personal result: own ab_bids row (is_winner / payout / refunded).
    - The dealer card flips to reveal the winning side at settlement.
    ============================================================ */
 import { supabase, unwrapRow, friendlyError } from './supabase-client.js';
-import { $, $$, toast, fmtRs, unlockAudio, sounds } from './util.js';
+import { $, $$, toast, fmtRs, unlockAudio, sounds, isSoundOn, setSoundOn } from './util.js';
 import { refreshWallet } from './wallet.js';
 import { recordMissionEvent } from './missions.js';
+import { addNotification } from './notifications.js';
 
 let userId = null;
 let round = null;            // current open round row
@@ -24,6 +25,10 @@ let syncTimer = null;
 let clockTimer = null;
 let resultShownFor = null;   // round id we already settled in UI
 let placing = false;
+let realAndarTotal = 0;
+let realBaharTotal = 0;
+let botAndarTotal = 0;
+let botBaharTotal = 0;
 
 export function setUser(id) { userId = id; }
 
@@ -50,28 +55,30 @@ function setResult(html, won) {
   el.hidden = false;
 }
 
-function renderTotals(a, b) {
+function sideLabel(side) {
+  return side === 'andar' ? '🃏 ANDAR' : '🎴 BAHAR';
+}
+
+function renderTotals() {
   // Store real totals for bot refresh
-  $('ab-andar-total').dataset.real = a;
-  $('ab-bahar-total').dataset.real = b;
+  $('ab-andar-total').dataset.real = realAndarTotal;
+  $('ab-bahar-total').dataset.real = realBaharTotal;
   // Add bot amounts for visual liveliness (display only, not in backend)
-  const displayA = a + botAndarTotal;
-  const displayB = b + botBaharTotal;
+  const displayA = realAndarTotal + botAndarTotal;
+  const displayB = realBaharTotal + botBaharTotal;
   $('ab-andar-total').textContent = fmtRs(displayA);
   $('ab-bahar-total').textContent = fmtRs(displayB);
   const total = displayA + displayB;
   $('ab-tug-fill').style.width = total > 0 ? (displayA / total * 100).toFixed(1) + '%' : '50%';
 }
 
-/* BOT SIMULATION (display-only): Simple rule.
+/* BOT SIMULATION (display-only): same rule as other games.
    - Player bets on Side A.
    - Bots put MORE on Side A (same side as player).
    - Bots put LESS on Side B.
    - Lower side wins -> player loses.
+   - Bot amounts stay realistic: within 5-50 Rs of the player's bid.
 */
-let botAndarTotal = 0;
-let botBaharTotal = 0;
-
 function simulateAndarBaharBots() {
   botAndarTotal = 0;
   botBaharTotal = 0;
@@ -83,38 +90,40 @@ function simulateAndarBaharBots() {
       if (Math.random() < 0.5) botAndarTotal += amt;
       else botBaharTotal += amt;
     }
+    renderTotals();
     return;
   }
 
-  // Player exists: bots put MORE on player's side, LESS on other side
+  // Player exists: bots put amounts CLOSE to player's bid (5-50 Rs diff, realistic)
   const side = myBid.side; // 'andar' or 'bahar'
-  // 5 bots on player's side (more money)
+  const pAmt = Number(myBid.amount || 100);
+  // 5 bots on player's side: each within 5-50 of player's amount (split)
   for (let i = 0; i < 5; i++) {
-    const amt = 20 + Math.floor(Math.random() * 150); // 20-170
-    if (side === 'andar') botAndarTotal += amt;
-    else botBaharTotal += amt;
+    const diff = 5 + Math.floor(Math.random() * 46); // 5-50
+    const amt = Math.max(10, Math.floor(pAmt / 5) + (Math.random() < 0.5 ? -diff : diff) / 2);
+    if (side === 'andar') botAndarTotal += Math.max(10, amt);
+    else botBaharTotal += Math.max(10, amt);
   }
-  // 3 bots on other side (less money)
+  // 3 bots on other side: slightly less, still realistic (5-50 diff from player's side total)
   for (let i = 0; i < 3; i++) {
-    const amt = 10 + Math.floor(Math.random() * 50); // 10-60
-    if (side === 'andar') botBaharTotal += amt;
-    else botAndarTotal += amt;
+    const diff = 5 + Math.floor(Math.random() * 46); // 5-50
+    const amt = Math.max(10, Math.floor(pAmt / 4) - diff / 3);
+    if (side === 'andar') botBaharTotal += Math.max(10, amt);
+    else botAndarTotal += Math.max(10, amt);
   }
+  renderTotals();
 }
 
 // Refresh bots periodically
 setInterval(() => {
   if (round && !document.hidden) {
     simulateAndarBaharBots();
-    const a = Number($('ab-andar-total').dataset.real || 0);
-    const b = Number($('ab-bahar-total').dataset.real || 0);
-    renderTotals(a, b);
   }
 }, 5000);
 
 function renderMyBet() {
   $('ab-my-bet').textContent = myBid
-    ? (myBid.side === 'andar' ? '🃏 ANDAR' : '🎴 BAHAR') + ' · Rs ' + fmtRs(myBid.amount)
+    ? sideLabel(myBid.side) + ' · Rs ' + fmtRs(myBid.amount)
     : '—';
 }
 
@@ -149,7 +158,9 @@ async function loadStats(roundId) {
       .select('*').eq('round_id', roundId).maybeSingle();
     const s = unwrapRow(data);
     if (s && (!round || s.round_id === round.id)) {
-      renderTotals(Number(s.andar_total || 0), Number(s.bahar_total || 0));
+      realAndarTotal = Number(s.andar_total || 0);
+      realBaharTotal = Number(s.bahar_total || 0);
+      renderTotals();
     }
   } catch (e) { console.warn('ab_round_stats read failed', e); }
 }
@@ -207,7 +218,9 @@ function onNewRound(r) {
     if (back) back.innerHTML = '<span>🂠</span><em>?</em>';
   }
   $('ab-round-no').textContent = '#' + (r.round_no ?? '–');
-  renderTotals(Number(r.andar_total || 0), Number(r.bahar_total || 0));
+  realAndarTotal = Number(r.andar_total || 0);
+  realBaharTotal = Number(r.bahar_total || 0);
+  simulateAndarBaharBots();
   renderMyBet();
   $('btn-ab-bet').disabled = false;
   loadMyBid(r.id);
@@ -228,10 +241,19 @@ async function onSettled(closedRoundId) {
   } catch (e) { console.warn('ab final round read failed', e); }
 
   const winningSide = fin?.winning_side || null;
-  renderTotals(Number(fin?.andar_total || 0), Number(fin?.bahar_total || 0));
+  realAndarTotal = Number(fin?.andar_total || 0);
+  realBaharTotal = Number(fin?.bahar_total || 0);
 
   // Re-read my bid row — after settlement it carries is_winner/payout/refunded.
   await loadMyBid(closedRoundId);
+
+  // Zero display bots for the settled round — show final real totals only.
+  botAndarTotal = 0;
+  botBaharTotal = 0;
+  renderTotals();
+
+  // Refresh wallet FIRST so the balance shown is current.
+  try { await refreshWallet(); } catch (e) { console.warn('wallet refresh failed', e); }
 
   await revealCardsTo(winningSide);
 
@@ -239,6 +261,9 @@ async function onSettled(closedRoundId) {
     document.querySelector(winningSide === 'andar' ? '.andar-side' : '.bahar-side')
       ?.classList.add('winning');
   }
+
+  // Same-side rule: one side had zero bids -> everyone on the other side loses.
+  const sameSideLoss = (realAndarTotal === 0 || realBaharTotal === 0) && myBid && !myBid.refunded;
 
   if (!myBid) {
     // Spectator: nothing personal to show.
@@ -248,23 +273,32 @@ async function onSettled(closedRoundId) {
     sounds.win();
     if (navigator.vibrate) navigator.vibrate([80, 40, 80]);
     try { recordMissionEvent('win'); } catch (e) {}
+    addNotification({ title: '🎉 You Won!', body: '+Rs ' + fmtRs(myBid.payout) + ' added to wallet', icon: '🎉', type: 'win' });
     setResult(
       '🎉 <strong>' + String(winningSide).toUpperCase() + ' WINS!</strong> ' +
-      'You won <strong>Rs ' + fmtRs(myBid.payout) + '</strong>' +
+      '<strong style="color:#22c55e">+Rs ' + fmtRs(myBid.payout) + '</strong> added to wallet!' +
       (Math.abs(Number(myBid.payout) - 2 * Number(myBid.amount)) < 0.01 ? ' (2x)!' : '!'),
       true
+    );
+  } else if (sameSideLoss) {
+    sounds.lose();
+    if (navigator.vibrate) navigator.vibrate(150);
+    addNotification({ title: '😭 You Lost', body: '-Rs ' + fmtRs(myBid.amount) + ' deducted from wallet', icon: '😭', type: 'loss' });
+    setResult(
+      '😞 Everyone bet on one side — <strong style="color:#ef4444">-Rs ' + fmtRs(myBid.amount) + '</strong> deducted from wallet.',
+      false
     );
   } else {
     sounds.lose();
     if (navigator.vibrate) navigator.vibrate(150);
+    addNotification({ title: '😭 You Lost', body: '-Rs ' + fmtRs(myBid.amount) + ' deducted from wallet', icon: '😭', type: 'loss' });
     setResult(
       '😞 <strong>' + String(winningSide).toUpperCase() + '</strong> had the lower total. ' +
-      'Lost Rs ' + fmtRs(myBid.amount) + ' — better luck next round!',
+      '<strong style="color:#ef4444">-Rs ' + fmtRs(myBid.amount) + '</strong> deducted from wallet.',
       false
     );
   }
 
-  try { await refreshWallet(); } catch (e) { console.warn('wallet refresh failed', e); }
   loadHistory();
 }
 
@@ -279,7 +313,9 @@ async function sync() {
       if (prevId && prevId !== r.id) onSettled(prevId);
     } else {
       // Same round: keep totals fresh.
-      renderTotals(Number(r.andar_total || 0), Number(r.bahar_total || 0));
+      realAndarTotal = Number(r.andar_total || 0);
+      realBaharTotal = Number(r.bahar_total || 0);
+      renderTotals();
     }
   } catch (e) { console.warn('ab sync failed', e); }
 }
@@ -298,6 +334,15 @@ async function placeBet() {
   unlockAudio();
   if (!round?.id) { toast('Round is loading — wait a second…', true); return; }
   if (!choice) { toast('Pick ANDAR or BAHAR first! 🃏', true); return; }
+  // Same rule as all games: min 3 real players
+  try {
+    const { data: bidRows } = await supabase.from('ab_bids').select('user_id').eq('round_id', round.id);
+    const uniquePlayers = new Set((bidRows || []).map(b => b.user_id)).size;
+    if (uniquePlayers < 2) { // <2 existing + you = <3 total
+      toast('Round is full! Place your bid in the next round.', true);
+      return;
+    }
+  } catch (e) { /* allow bid if check fails */ }
   const amount = currentAmount();
   if (!amount || amount < 10) { toast('Minimum bet is Rs 10.', true); return; }
   if (amount > 100000) { toast('Maximum bet is Rs 100,000.', true); return; }
@@ -348,6 +393,20 @@ export function initAndarBahar() {
   }));
 
   $('btn-ab-bet').addEventListener('click', placeBet);
+
+  // Game-side sound toggle (synced with Member Center setting)
+  const updateAbSoundBtn = () => {
+    const btn = $('btn-sound-ab');
+    if (btn) btn.textContent = isSoundOn() ? '🔊' : '🔇';
+  };
+  const soundBtn = $('btn-sound-ab');
+  if (soundBtn) soundBtn.addEventListener('click', () => {
+    unlockAudio();
+    setSoundOn(!isSoundOn());
+    updateAbSoundBtn();
+    toast(isSoundOn() ? 'Sound on 🔊' : 'Sound off 🔇');
+  });
+  updateAbSoundBtn();
 
   clearInterval(syncTimer);
   clearInterval(clockTimer);
