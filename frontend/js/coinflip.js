@@ -89,19 +89,22 @@ function simulateCoinFlipBots() {
     return;
   }
 
-  // Player exists: bots put MORE on player's side, LESS on other side
+  // Player exists: bots put amounts CLOSE to player's bid (5-50 Rs diff, realistic)
   const side = myBid.side; // 'heads' or 'tails'
-  // 5 bots on player's side (more money)
+  const pAmt = Number(myBid.amount || 100);
+  // 5 bots on player's side: each within 5-50 of player's amount (split)
   for (let i = 0; i < 5; i++) {
-    const amt = 20 + Math.floor(Math.random() * 150); // 20-170
-    if (side === 'heads') botHeadsTotal += amt;
-    else botTailsTotal += amt;
+    const diff = 5 + Math.floor(Math.random() * 46); // 5-50
+    const amt = Math.max(10, Math.floor(pAmt / 5) + (Math.random() < 0.5 ? -diff : diff) / 2);
+    if (side === 'heads') botHeadsTotal += Math.max(10, amt);
+    else botTailsTotal += Math.max(10, amt);
   }
-  // 3 bots on other side (less money)
+  // 3 bots on other side: slightly less, still realistic (5-50 diff from player's side total)
   for (let i = 0; i < 3; i++) {
-    const amt = 10 + Math.floor(Math.random() * 50); // 10-60
-    if (side === 'heads') botTailsTotal += amt;
-    else botHeadsTotal += amt;
+    const diff = 5 + Math.floor(Math.random() * 46); // 5-50
+    const amt = Math.max(10, Math.floor(pAmt / 4) - diff / 3);
+    if (side === 'heads') botTailsTotal += Math.max(10, amt);
+    else botHeadsTotal += Math.max(10, amt);
   }
 }
 

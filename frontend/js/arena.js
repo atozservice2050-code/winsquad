@@ -150,25 +150,24 @@ const BOT_POOL = [
 
 function simulateBotBids() {
   // Select up to 10 bots from the 100-bot pool
-  // If real player bid, only bots with LOWER bids than player
+  // REALISTIC: bot amounts stay within 5-50 Rs of the real player's bid
   const playerBid = myBidRow ? Number(myBidRow.amount || 0) : 0;
   const targetBots = Math.max(0, 10 - realPlayerCount);
 
-  // Filter pool: bots with bid < playerBid (or all if no player bid)
-  let eligible = BOT_POOL;
-  if (playerBid > 10) {
-    eligible = BOT_POOL.filter(b => b.baseBid < playerBid);
-  }
-  // If not enough eligible, use all
-  if (eligible.length < targetBots) eligible = BOT_POOL;
-
   // Randomly pick (shuffled)
-  const shuffled = [...eligible].sort(() => Math.random() - 0.5);
-  botBids = shuffled.slice(0, targetBots).map(b => ({
-    emoji: b.emoji,
-    name: b.name,
-    amount: b.baseBid,
-  }));
+  const shuffled = [...BOT_POOL].sort(() => Math.random() - 0.5);
+  botBids = shuffled.slice(0, targetBots).map(b => {
+    let amount;
+    if (playerBid > 10) {
+      // Keep bot bid within 5-50 Rs BELOW player's bid (realistic, player stays on top)
+      const diff = 5 + Math.floor(Math.random() * 46); // 5-50
+      amount = Math.max(10, playerBid - diff);
+    } else {
+      // No player bid yet: small realistic amounts 10-60
+      amount = 10 + Math.floor(Math.random() * 51);
+    }
+    return { emoji: b.emoji, name: b.name, amount };
+  });
 }
 
 function renderPlayers() {
