@@ -42,6 +42,7 @@ function setMode(next) {
   $('tab-login').classList.toggle('active', mode === 'login');
   $('tab-signup').classList.toggle('active', mode === 'signup');
   $('signup-email-wrap').hidden = mode !== 'signup';
+  $('signup-referral-wrap').hidden = mode !== 'signup';
   $('btn-auth-go').textContent = mode === 'login' ? 'Login & play' : 'Create account';
   $('auth-hint').textContent = mode === 'login'
     ? 'Enter your mobile number and password.'
@@ -103,6 +104,7 @@ export function initAuth(onAuthed) {
       const email = phoneToEmail(phone);
       if (mode === 'signup') {
         const recoveryEmail = $('email-input').value.trim();
+        const signupReferral = $('signup-referral-input').value.trim().toUpperCase();
         const { error } = await supabase.auth.signUp({
           email,
           password,
@@ -118,6 +120,11 @@ export function initAuth(onAuthed) {
             { id: user.id, phone },
             { onConflict: 'id' }
           );
+        }
+        // Carry an invite-link / typed referral code into the welcome screen
+        // so the existing setup flow applies the bonus.
+        if (signupReferral) {
+          try { $('setup-referral').value = signupReferral; } catch (_) {}
         }
         toast('Account created — welcome!');
       } else {
@@ -164,6 +171,15 @@ export function initAuth(onAuthed) {
       }
     });
   }
+
+  // Invite link (?ref=WS-XXXXXX): jump straight to signup with the code pre-filled.
+  try {
+    const ref = new URLSearchParams(location.search).get('ref');
+    if (ref && ref.trim()) {
+      setMode('signup');
+      $('signup-referral-input').value = ref.trim().toUpperCase();
+    }
+  } catch (_) {}
 }
 
 /** Load the current user's profile row (created by backend trigger on signup). */

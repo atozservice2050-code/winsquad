@@ -126,6 +126,12 @@ async function loadFreeBidStatus() {
 export function initRewards() {
   $('btn-copy-referral').addEventListener('click', () =>
     copyText($('referral-code').textContent.trim(), 'Referral code copied!'));
+  $('btn-copy-invite-link').addEventListener('click', () => {
+    const code = $('referral-code').textContent.trim();
+    if (!code || code.includes('•')) { toast('Your referral code is still loading.', true); return; }
+    const link = location.origin + location.pathname + '?ref=' + encodeURIComponent(code);
+    copyText(link, 'Invite link copied! Share it anywhere.');
+  });
   $('btn-apply-referral').addEventListener('click', applyReferral);
   $('btn-claim-streak').addEventListener('click', claimStreak);
   // Mission Vault uses data-open-view="missions" (wired in app.js).
