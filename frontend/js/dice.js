@@ -5,7 +5,8 @@
    - dice_place_bid(p_round_id, p_option, p_amount) -> bet on an option
    - Options: UNDER 7 (total 2-6) · EXACTLY 7 · OVER 7 (total 8-12)
    - Settlement (server-side dice_resolve_round):
-       lowest-total option WINS; winners get 1.9x from the losers' pool;
+       lowest-total option WINS; winners get 2x (UNDER/OVER) or 5x (EXACTLY 7)
+       from the losers' pool (proportional split if the pool is too small);
        the remainder is the hidden company fee.
        Single option with all bids -> everyone loses (money to company).
        Fewer than 3 bids -> round cancelled, bids refunded.
@@ -295,9 +296,14 @@ async function onSettled(closedRoundId) {
     if (navigator.vibrate) navigator.vibrate([80, 40, 80]);
     try { recordMissionEvent('win'); } catch (e) {}
     addNotification({ title: '🎉 You Won!', body: '+Rs ' + fmtRs(myBid.payout) + ' added to wallet', icon: '🎉', type: 'win' });
+    // Effective multiplier from the real payout (approved 2x/5x; proportional when pool is small)
+    const dAmt = Number(myBid.amount) || 0;
+    const dPay = Number(myBid.payout) || 0;
+    const dEff = dAmt > 0 ? dPay / dAmt : 0;
+    const dMult = Math.abs(dEff - 2) < 0.06 ? '2x' : Math.abs(dEff - 5) < 0.06 ? '5x' : dEff.toFixed(1) + 'x';
     setResult(
       '🎉 <strong>' + (wo ? wo.emoji + ' ' + wo.name : '') + ' WINS!</strong> ' +
-      '<strong style="color:#22c55e">+Rs ' + fmtRs(myBid.payout) + '</strong> added to wallet! (1.9x)',
+      '<strong style="color:#22c55e">+Rs ' + fmtRs(dPay) + '</strong> added to wallet! (' + dMult + ')',
       true
     );
   } else {
