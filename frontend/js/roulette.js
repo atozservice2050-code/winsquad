@@ -421,6 +421,10 @@ async function onSettled(closedRoundId) {
 
   try { await refreshWallet(); } catch (e) { console.warn('wallet refresh failed', e); }
   loadHistory();
+  // Settlement animation done — re-open betting for the current round.
+  // The <3-player check in placeBet shows "Round is full! Place your bid in
+  // the next round." when tapped.
+  settling = false;
 }
 
 async function sync() {
@@ -492,6 +496,7 @@ async function placeBets() {
 
 /* ---------------- init ---------------- */
 export function initRoulette() {
+  try { refreshWallet().catch(() => {}); } catch (e) {}
   buildWheel();
   buildTable();
 

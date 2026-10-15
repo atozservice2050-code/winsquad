@@ -222,7 +222,8 @@ function onNewRound(r) {
 async function onSettled(closedRoundId) {
   if (resultShownFor === closedRoundId) return;
   resultShownFor = closedRoundId;
-  $('btn-cf-bet').disabled = true;
+  // Note: bet button stays enabled — the <3-player check in placeBet shows
+  // "Round is full! Place your bid in the next round." when tapped.
 
   // Final authoritative state of the settled round.
   let fin = null;
@@ -341,6 +342,7 @@ async function placeBet() {
 
 /* ---------------- init ---------------- */
 export function initCoinflip() {
+  try { refreshWallet().catch(() => {}); } catch (e) {}
   $('cf-heads').addEventListener('click', () => {
     unlockAudio(); sounds.click();
     choice = 'heads';
