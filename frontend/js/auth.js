@@ -11,6 +11,7 @@
    ============================================================ */
 import { supabase, unwrapRow, friendlyError } from './supabase-client.js';
 import { $, toast, normalizePhone, unlockAudio } from './util.js';
+import { backupSession } from './session-backup.js';
 
 let mode = 'login'; // 'login' | 'signup'
 
@@ -126,6 +127,9 @@ export function initAuth(onAuthed) {
         // (avoids race where getUser() runs before auth state updates).
         await supabase.auth.getSession();
       }
+      // Backup the session so the user stays logged in even if the
+      // WebView/APK wrapper later wipes localStorage.
+      try { backupSession(); } catch (_) {}
       onAuthed();
     } catch (e) {
       showError(friendlyError(e, mode === 'signup' ? 'Could not create account. Try again.' : 'Login failed. Check your number and password.'));

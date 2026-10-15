@@ -21,6 +21,7 @@ import { initCashvault, setUser as setCashvaultUser, destroyCashvault } from './
 import { initDice, setUser as setDiceUser, destroyDice } from './dice.js';
 import { initDisclaimer, maybeShowDisclaimer } from './disclaimer.js';
 import { initMissions, refreshMissions, setUser as setMissionsUser, recordMissionEvent } from './missions.js';
+import { restoreSession, initSessionBackup } from './session-backup.js';
 
 const VIEWS = ['auth', 'setup', 'resetpw', 'home', 'arena', 'private', 'wallet', 'rewards', 'missions', 'profile', 'coinflip', 'andarbahar', 'dt', 'roulette', 'cashvault', 'dice'];
 const TAB_VIEWS = ['home', 'arena', 'private', 'wallet', 'rewards', 'missions', 'profile'];
@@ -103,6 +104,11 @@ function enterApp(profile, phone) {
 async function boot() {
   initNotifications();
   initDisclaimer();
+  // 0. Session backup: restore a wiped session BEFORE the first
+  // getSession(), and keep the backup fresh on token refresh.
+  // (The APK WebView can clear localStorage between launches.)
+  try { restoreSession(); } catch (_) {}
+  try { initSessionBackup(); } catch (_) {}
   // 1. Backend config present?
   if (!ENV_OK) {
     console.error(ENV_ERROR);
