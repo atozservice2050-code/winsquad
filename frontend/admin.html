@@ -130,6 +130,33 @@
       background: transparent; color: var(--gold); border: 1px solid var(--gold);
       border-radius: 8px; padding: 6px 14px; font-size: 12px; font-weight: 700; cursor: pointer;
     }
+    .btn-mini {
+      background: transparent; color: var(--gold-light); border: 1px solid var(--card-border);
+      border-radius: 6px; padding: 4px 10px; font-size: 11px; font-weight: 700; cursor: pointer;
+      margin: 2px; white-space: nowrap;
+    }
+    .btn-mini.btn-danger { color: #ff8080; border-color: #5a2020; }
+    .nowrap { white-space: nowrap; }
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 9999;
+      display: flex; align-items: center; justify-content: center; padding: 20px;
+    }
+    .modal-overlay[hidden] { display: none; }
+    .modal-box {
+      background: #0a2b1f; border: 2px solid var(--gold); border-radius: 14px;
+      padding: 22px; max-width: 380px; width: 100%; text-align: center;
+    }
+    .modal-box h3 { color: var(--gold); margin: 0 0 10px; font-size: 17px; }
+    .modal-box p { font-size: 13px; line-height: 1.6; margin: 0 0 18px; }
+    .modal-actions { display: flex; gap: 10px; justify-content: center; }
+    .btn-modal-cancel {
+      background: transparent; color: var(--muted); border: 1px solid var(--card-border);
+      border-radius: 8px; padding: 10px 22px; font-size: 13px; font-weight: 700; cursor: pointer;
+    }
+    .btn-modal-danger {
+      background: #8f1420; color: #fff; border: none;
+      border-radius: 8px; padding: 10px 22px; font-size: 13px; font-weight: 700; cursor: pointer;
+    }
     .fee-note {
       background: #d4af3712; border: 1px dashed var(--gold-dim);
       border-radius: 8px; padding: 10px 12px; font-size: 11px;
@@ -233,11 +260,23 @@
         <div id="users-loading" class="loading">Loading users…</div>
         <div id="users-content" class="table-wrap" hidden>
           <table class="data-table">
-            <thead><tr><th>Name</th><th>Phone</th><th>IDs</th><th>Source</th><th>Balance</th><th>Joined</th></tr></thead>
+            <thead><tr><th>Name</th><th>Phone</th><th>IDs</th><th>Source</th><th>Balance</th><th>Joined</th><th>Actions</th></tr></thead>
             <tbody id="users-tbody"></tbody>
           </table>
         </div>
         <p class="hint center" id="users-more" hidden></p>
+      </div>
+
+      <!-- User action confirmation modal -->
+      <div id="user-action-modal" class="modal-overlay" hidden>
+        <div class="modal-box">
+          <h3 id="user-action-title">Confirm</h3>
+          <p id="user-action-text" class="muted"></p>
+          <div class="modal-actions">
+            <button class="btn-modal-cancel" id="user-action-cancel">Cancel</button>
+            <button class="btn-modal-danger" id="user-action-confirm">Confirm</button>
+          </div>
+        </div>
       </div>
 
       <!-- TRANSACTIONS -->
@@ -516,14 +555,14 @@ async function loadUsers() {
     let profiles;
     try {
       const r = await supabase.from('profiles')
-        .select('id, phone, display_name, referral_id, transfer_id, signup_source, created_at')
+        .select('id, phone, display_name, referral_id, transfer_id, signup_source, created_at, is_blocked')
         .order('created_at', { ascending: false })
         .limit(50);
       if (r.error) throw r.error;
       profiles = r.data;
     } catch (e) {
       const r = await supabase.from('profiles')
-        .select('id, phone, display_name, referral_id, transfer_id, created_at')
+        .select('id, phone, display_name, referral_id, transfer_id, created_at, is_blocked')
         .order('created_at', { ascending: false })
         .limit(50);
       if (r.error) throw r.error;
@@ -550,14 +589,18 @@ async function loadUsers() {
 
     const srcLabel = (s) => s === 'apk' ? '📱 APK' : s === 'mobile-web' ? '🌐 Mobile web' : s === 'desktop-web' ? '💻 Desktop' : '–';
     $('users-tbody').innerHTML = rows.map(p => `
-      <tr>
-        <td><strong>${esc(p.display_name)}</strong></td>
+      <tr style="${p.is_blocked ? 'opacity:0.55;' : ''}">
+        <td><strong>${esc(p.display_name)}</strong>${p.is_blocked ? ' <span class="pill" style="background:#5a1010;color:#ff8080;">BLOCKED</span>' : ''}</td>
         <td class="mono">${esc(p.phone || '–')}</td>
         <td><span class="mono">${esc(p.referral_id || '')}</span><br /><span class="muted mono">${esc(p.transfer_id || '')}</span></td>
         <td class="muted">${srcLabel(p.signup_source)}</td>
         <td class="green"><strong>Rs ${fmtRs(balances[p.id])}</strong></td>
         <td class="muted">${fmtDate(p.created_at)}</td>
-      </tr>`).join('') || '<tr><td colspan="6" class="muted center">No users found.</td></tr>';
+        <td class="nowrap">
+          <button class="btn-mini" data-block-user="${p.id}" data-blocked="${p.is_blocked ? 1 : 0}" data-name="${esc(p.display_name || p.phone || '')}">${p.is_blocked ? '🔓 Unblock' : '🚫 Block'}</button>
+          <button class="btn-mini btn-danger" data-delete-user="${p.id}" data-name="${esc(p.display_name || p.phone || '')}">🗑 Delete</button>
+        </td>
+      </tr>`).join('') || '<tr><td colspan="7" class="muted center">No users found.</td></tr>';
 
     // Platform summary: how many users came from each source.
     try {
@@ -571,11 +614,75 @@ async function loadUsers() {
 
     $('users-loading').hidden = true;
     $('users-content').hidden = false;
+
+    // Wire up block/delete buttons
+    $('users-tbody').querySelectorAll('[data-block-user]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const uid = btn.getAttribute('data-block-user');
+        const isBlocked = btn.getAttribute('data-blocked') === '1';
+        const name = btn.getAttribute('data-name') || 'this user';
+        showUserActionModal(
+          isBlocked ? '🔓 Unblock User' : '🚫 Block User',
+          isBlocked
+            ? `Unblock <strong>${esc(name)}</strong>? They will be able to log in again.`
+            : `Block <strong>${esc(name)}</strong>? They will be signed out and unable to log in until unblocked.`,
+          isBlocked ? 'Unblock' : 'Block',
+          async () => {
+            const { error } = await supabase.rpc('admin_block_user', { target_user_id: uid, blocked: !isBlocked });
+            if (error) throw error;
+            toast(isBlocked ? 'User unblocked.' : 'User blocked.', false);
+            loadUsers();
+          }
+        );
+      });
+    });
+    $('users-tbody').querySelectorAll('[data-delete-user]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const uid = btn.getAttribute('data-delete-user');
+        const name = btn.getAttribute('data-name') || 'this user';
+        showUserActionModal(
+          '🗑 Delete User',
+          `Permanently delete <strong>${esc(name)}</strong>?<br />This removes their account, wallet and all history. <strong>This cannot be undone.</strong>`,
+          'Delete Forever',
+          async () => {
+            const { error } = await supabase.rpc('admin_delete_user', { target_user_id: uid });
+            if (error) throw error;
+            toast('User deleted.', false);
+            loadUsers();
+          }
+        );
+      });
+    });
   } catch (e) {
     $('users-loading').textContent = 'Failed to load: ' + friendlyError(e);
   }
 }
 TAB_LOADERS.users = loadUsers;
+
+/* ================= user block/delete modal ================= */
+let _userActionFn = null;
+function showUserActionModal(title, html, confirmLabel, onConfirm) {
+  $('user-action-title').innerHTML = title;
+  $('user-action-text').innerHTML = html;
+  $('user-action-confirm').textContent = confirmLabel;
+  _userActionFn = onConfirm;
+  $('user-action-modal').hidden = false;
+}
+function hideUserActionModal() {
+  $('user-action-modal').hidden = true;
+  _userActionFn = null;
+}
+$('user-action-cancel').addEventListener('click', hideUserActionModal);
+$('user-action-modal').addEventListener('click', (e) => {
+  if (e.target === $('user-action-modal')) hideUserActionModal();
+});
+$('user-action-confirm').addEventListener('click', async () => {
+  const fn = _userActionFn;
+  hideUserActionModal();
+  if (!fn) return;
+  try { await fn(); }
+  catch (e) { toast(friendlyError(e), true); }
+});
 
 /* ================= transactions ================= */
 // Shows unique REAL users (each once, no bots). Click a user to see all their transactions.

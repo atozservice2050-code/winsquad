@@ -165,6 +165,14 @@ async function boot() {
     // Called after successful login.
     try {
       const { user, profile } = await loadProfile();
+      // Blocked by admin? Sign out immediately.
+      if (profile && profile.is_blocked) {
+        try { await supabase.auth.signOut(); } catch (_) {}
+        $('app').hidden = false;
+        showView('login');
+        toast('Your account has been blocked. Contact support.', true);
+        return;
+      }
       if (!profile || !profile.display_name) {
         $('app').hidden = false;
         showView('setup');
@@ -205,6 +213,14 @@ async function boot() {
   if (session?.user) {
     try {
       const { user, profile } = await loadProfile();
+      // Blocked by admin? Sign out immediately.
+      if (profile && profile.is_blocked) {
+        try { await supabase.auth.signOut(); } catch (_) {}
+        $('app').hidden = false;
+        showView('login');
+        toast('Your account has been blocked. Contact support.', true);
+        return;
+      }
       if (!profile || !profile.display_name) {
         $('app').hidden = false;
         showView('setup');
