@@ -826,7 +826,7 @@ async function loadLiveBids() {
 
     // Get all bids for this round, sorted HIGH to LOW
     const { data: bids, error } = await supabase.from('bids')
-      .select('user_id, amount, created_at')
+      .select('user_id, amount, placed_at')
       .eq('round_id', round.id)
       .order('amount', { ascending: false });
     if (error) throw error;
@@ -839,7 +839,7 @@ async function loadLiveBids() {
         <td><strong>${pname(b.user_id)}</strong></td>
         <td class="muted mono">${pphone(b.user_id)}</td>
         <td><strong style="color:${i < 2 ? '#ff6666' : '#00ff96'};">Rs ${fmtRs(b.amount)}</strong></td>
-        <td class="muted">${fmtDate(b.created_at)}</td>
+        <td class="muted">${fmtDate(b.placed_at)}</td>
       </tr>`).join('') || '<tr><td colspan="5" class="muted center">No bids yet this round.</td></tr>';
 
     $('livebids-loading').hidden = true;
