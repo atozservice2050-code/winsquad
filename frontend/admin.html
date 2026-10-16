@@ -457,8 +457,8 @@ function initTabs() {
   });
   $('btn-user-search').addEventListener('click', () => loadUsers());
   $('user-search').addEventListener('keydown', (e) => { if (e.key === 'Enter') loadUsers(); });
-  $('txn-type-filter').addEventListener('change', () => loadTransactions());
-  $('txn-status-filter').addEventListener('change', () => loadTransactions());
+  $('txn-type-filter')?.addEventListener('change', () => loadTransactions());
+  $('txn-status-filter')?.addEventListener('change', () => loadTransactions());
 }
 
 /* ================= dashboard ================= */
