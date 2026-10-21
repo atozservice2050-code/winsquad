@@ -216,6 +216,195 @@ async function submitTransfer() {
   }
 }
 
+/* ---------------- payment accounts (Add Account) ----------------
+   Saved Easypaisa / JazzCash / Bank accounts (table payment_accounts,
+   migration 022). Own rows only (RLS). The primary account auto-fills
+   the withdraw form; saved accounts can also be picked there. */
+let myAccounts = [];
+let editingAccountId = null;
+
+const ACCOUNT_TYPE_LABEL = { easypaisa: 'Easypaisa', jazzcash: 'JazzCash', bank: 'Bank' };
+
+function renderAccounts() {
+  const list = $('account-list');
+  if (!list) return;
+  if (!myAccounts.length) {
+    list.innerHTML = '<p class="muted center">No saved accounts yet. Add your Easypaisa, JazzCash or bank account below.</p>';
+  } else {
+    list.innerHTML = '';
+    myAccounts.forEach(acc => {
+      const row = document.createElement('div');
+      row.className = 'account-row';
+      const main = document.createElement('div');
+      main.className = 'acct-main';
+      const name = document.createElement('div');
+      name.className = 'acct-name';
+      name.textContent = (ACCOUNT_TYPE_LABEL[acc.type] || acc.type) + ' · ' + acc.holder_name;
+      const num = document.createElement('div');
+      num.className = 'acct-num';
+      num.textContent = acc.account_number + (acc.type === 'bank' && acc.bank_name ? ' · ' + acc.bank_name : '');
+      main.appendChild(name); main.appendChild(num);
+      row.appendChild(main);
+      if (acc.is_primary) {
+        const b = document.createElement('span');
+        b.className = 'primary-badge'; b.textContent = 'Primary';
+        row.appendChild(b);
+      }
+      const actions = document.createElement('div');
+      actions.className = 'acct-actions';
+      const editBtn = document.createElement('button');
+      editBtn.className = 'btn-ghost small'; editBtn.textContent = '✏️ Edit';
+      editBtn.addEventListener('click', () => startEditAccount(acc));
+      const delBtn = document.createElement('button');
+      delBtn.className = 'btn-ghost small'; delBtn.textContent = '🗑 Delete';
+      delBtn.addEventListener('click', async () => {
+        // In-app two-step confirm (no JS dialogs — WebView blocks them)
+        if (delBtn.dataset.confirm !== '1') {
+          delBtn.dataset.confirm = '1'; delBtn.textContent = 'Tap again to delete';
+          setTimeout(() => { delBtn.dataset.confirm = ''; delBtn.textContent = '🗑 Delete'; }, 3000);
+          return;
+        }
+        delBtn.disabled = true;
+        try {
+          const { error } = await supabase.from('payment_accounts').delete().eq('id', acc.id);
+          if (error) throw error;
+          if (editingAccountId === acc.id) resetAccountForm();
+          toast('Account deleted.');
+          await loadAccounts();
+        } catch (e) {
+          console.warn('account delete failed', e);
+          toast('Could not delete the account.', true);
+          delBtn.disabled = false;
+        }
+      });
+      actions.appendChild(editBtn); actions.appendChild(delBtn);
+      row.appendChild(actions);
+      list.appendChild(row);
+    });
+  }
+  // Populate the withdraw form's saved-account picker
+  const sel = $('withdraw-saved');
+  if (sel) {
+    const prev = sel.value;
+    sel.innerHTML = '<option value="">Type account manually</option>';
+    myAccounts.forEach(acc => {
+      const o = document.createElement('option');
+      o.value = acc.id;
+      o.textContent = (ACCOUNT_TYPE_LABEL[acc.type] || acc.type) + ' · ' + acc.account_number + (acc.is_primary ? ' (Primary)' : '');
+      sel.appendChild(o);
+    });
+    if (prev && myAccounts.some(a => a.id === prev)) sel.value = prev;
+  }
+}
+
+async function loadAccounts() {
+  try {
+    const { data, error } = await supabase.from('payment_accounts').select('*')
+      .eq('user_id', userId).order('is_primary', { ascending: false }).order('created_at', { ascending: true });
+    if (error) throw error;
+    myAccounts = Array.isArray(data) ? data : [];
+  } catch (e) {
+    console.warn('payment accounts read failed', e);
+    myAccounts = [];
+    const list = $('account-list');
+    if (list) list.innerHTML = '<p class="muted center">Could not load accounts.</p>';
+    return;
+  }
+  renderAccounts();
+  // Auto-fill the primary account into the withdraw form (only if empty)
+  const primary = myAccounts.find(a => a.is_primary);
+  if (primary && $('withdraw-account') && !$('withdraw-account').value) {
+    $('withdraw-method').value = primary.type;
+    $('withdraw-account').value = primary.account_number;
+    if ($('withdraw-saved')) $('withdraw-saved').value = primary.id;
+  }
+}
+
+function onAccountTypeChange() {
+  const type = $('account-type').value;
+  $('account-bank-row').hidden = type !== 'bank';
+  $('account-number-label').textContent = type === 'bank' ? 'IBAN / account number' : 'Mobile account number';
+  $('account-number').placeholder = type === 'bank' ? 'PK36XXXX0000000000000000' : '03XX-XXXXXXX';
+}
+
+function resetAccountForm() {
+  editingAccountId = null;
+  $('account-type').value = 'easypaisa';
+  $('account-holder').value = '';
+  $('account-bank').value = '';
+  $('account-number').value = '';
+  $('account-primary').checked = false;
+  $('btn-account-save').textContent = 'Save account';
+  $('btn-account-cancel').hidden = true;
+  onAccountTypeChange();
+}
+
+function startEditAccount(acc) {
+  editingAccountId = acc.id;
+  $('account-type').value = acc.type;
+  $('account-holder').value = acc.holder_name || '';
+  $('account-bank').value = acc.bank_name || '';
+  $('account-number').value = acc.account_number || '';
+  $('account-primary').checked = !!acc.is_primary;
+  $('btn-account-save').textContent = 'Update account';
+  $('btn-account-cancel').hidden = false;
+  onAccountTypeChange();
+  $('account-holder').focus();
+}
+
+async function saveAccount() {
+  unlockAudio();
+  const type = $('account-type').value;
+  const holder = $('account-holder').value.trim();
+  const bankName = $('account-bank').value.trim();
+  let number = $('account-number').value.trim();
+  const isPrimary = $('account-primary').checked || myAccounts.length === 0;
+  if (!holder) { toast('Enter the account holder name.', true); return; }
+  if (type === 'bank') {
+    number = number.replace(/\s+/g, '').toUpperCase();
+    if (!bankName) { toast('Enter the bank name.', true); return; }
+    if (number.length < 10) { toast('Enter a valid IBAN / account number.', true); return; }
+  } else {
+    number = number.replace(/[\s-]/g, '');
+    if (!/^03\d{9}$/.test(number)) { toast('Enter a valid mobile number (03XXXXXXXXX).', true); return; }
+  }
+  $('btn-account-save').disabled = true;
+  try {
+    // Keep exactly one primary: clear the flag on the user's other accounts first
+    if (isPrimary) {
+      await supabase.from('payment_accounts').update({ is_primary: false }).eq('user_id', userId).eq('is_primary', true);
+    }
+    const payload = {
+      user_id: userId, type, holder_name: holder, account_number: number,
+      bank_name: type === 'bank' ? bankName : null, is_primary: isPrimary,
+      updated_at: new Date().toISOString(),
+    };
+    let error;
+    if (editingAccountId) {
+      ({ error } = await supabase.from('payment_accounts').update(payload).eq('id', editingAccountId));
+    } else {
+      ({ error } = await supabase.from('payment_accounts').insert(payload));
+    }
+    if (error) throw error;
+    sounds.click();
+    toast(editingAccountId ? 'Account updated ✅' : 'Account saved ✅');
+    resetAccountForm();
+    await loadAccounts();
+  } catch (e) {
+    console.warn('account save failed', e);
+    toast('Could not save the account. Please try again.', true);
+  } finally {
+    $('btn-account-save').disabled = false;
+  }
+}
+
+function onWithdrawSavedChange() {
+  const acc = myAccounts.find(a => a.id === $('withdraw-saved').value);
+  if (!acc) return;
+  $('withdraw-method').value = acc.type;
+  $('withdraw-account').value = acc.account_number;
+}
+
 /* ---------------- init ---------------- */
 export function initWallet() {
   $$('.wallet-action').forEach(btn => btn.addEventListener('click', () => {
@@ -223,16 +412,22 @@ export function initWallet() {
     const target = btn.dataset.form;
     const form = document.getElementById(target);
     const wasHidden = form.hidden;
-    ['deposit-form', 'withdraw-form', 'transfer-form'].forEach(id => { $(id).hidden = true; });
+    ['deposit-form', 'withdraw-form', 'transfer-form', 'accounts-form'].forEach(id => { $(id).hidden = true; });
     $$('.wallet-action').forEach(b => b.classList.remove('active'));
     if (wasHidden) { form.hidden = false; btn.classList.add('active'); }
   }));
   $('btn-deposit-submit').addEventListener('click', submitDeposit);
   $('btn-withdraw-submit').addEventListener('click', submitWithdraw);
   $('btn-transfer-submit').addEventListener('click', submitTransfer);
+  $('btn-account-save').addEventListener('click', saveAccount);
+  $('btn-account-cancel').addEventListener('click', resetAccountForm);
+  $('account-type').addEventListener('change', onAccountTypeChange);
+  $('withdraw-saved').addEventListener('change', onWithdrawSavedChange);
+  onAccountTypeChange();
 }
 
 export async function refreshWallet() {
   await loadBalance();
   await loadHistory();
+  await loadAccounts();
 }
