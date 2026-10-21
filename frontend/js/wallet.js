@@ -130,14 +130,21 @@ async function submitDeposit() {
 async function submitWithdraw() {
   unlockAudio();
   const amount = Number($('withdraw-amount').value);
-  const method = $('withdraw-method').value;
-  const account = $('withdraw-account').value.trim();
+  // Same-account rule: payout only to one of the user's saved accounts
+  const savedAcc = myAccounts.find(a => a.id === $('withdraw-saved').value);
+  if (!savedAcc) { toast('Select your saved account first — add one in Wallet > Accounts. Withdrawals only go to your own account.', true); return; }
+  const method = savedAcc.type;
+  const account = savedAcc.account_number;
+  if (kycStatus !== 'verified') { toast('Pehle account verify karo: Wallet > Accounts mein CNIC submit karo, approval ke baad withdrawal khulega.', true); return; }
+  if (Number(payTotals.turnover) < Number(payTotals.deposits)) {
+    toast('Turnover incomplete: pehle apni total deposit rakam (Rs ' + fmtRs(payTotals.deposits) + ') game mein khelo. Abhi played: Rs ' + fmtRs(payTotals.turnover) + '.', true);
+    return;
+  }
   if (!amount || amount < 10000) { toast('Minimum withdrawal is Rs 10,000.', true); return; }
   if (amount > 50000) { toast('Maximum withdrawal is Rs 50,000.', true); return; }
   const maxWithdraw = Math.floor(balance * 0.5);
   if (amount > maxWithdraw) { toast('Max 50% of balance (Rs ' + fmtRs(maxWithdraw) + ').', true); return; }
   if (amount > balance) { toast('Insufficient balance.', true); return; }
-  if (!account) { toast('Enter the account number to receive the money.', true); return; }
   // Once per day: check if user already withdrew today
   try {
     const today = new Date().toISOString().split('T')[0];
@@ -156,17 +163,17 @@ async function submitWithdraw() {
   try {
     const { error } = await supabase.from('transactions').insert({
       user_id: userId, type: 'withdraw', amount, status: 'pending',
-      method, note: 'To account: ' + account,
+      method, note: 'To account: ' + account, account_id: savedAcc.id,
     });
     if (error) throw error;
     sounds.click();
-    toast('Withdrawal requested — status: pending ⏳');
+    toast('Withdrawal requested — status: pending ⏳ (processed within 24 hours)');
     $('withdraw-amount').value = '';
-    $('withdraw-account').value = '';
     loadHistory();
   } catch (e) {
     console.warn('withdraw insert failed', e);
-    toast('Could not submit the withdrawal request. Please contact support.', true);
+    const msg = (e && e.message) || '';
+    toast(/verified|Turnover|saved account/i.test(msg) ? msg : 'Could not submit the withdrawal request. Please contact support.', true);
   } finally {
     $('btn-withdraw-submit').disabled = false;
   }
@@ -223,7 +230,17 @@ async function submitTransfer() {
 let myAccounts = [];
 let editingAccountId = null;
 
-const ACCOUNT_TYPE_LABEL = { easypaisa: 'Easypaisa', jazzcash: 'JazzCash', bank: 'Bank' };
+const ACCOUNT_TYPE_LABEL = { easypaisa: 'Easypaisa', jazzcash: 'JazzCash', bank: 'Bank', sadapay: 'SadaPay', nayapay: 'NayaPay' };
+
+/* Official company accounts shown on the deposit screen ("send money here").
+   Filled in when the owner provides the numbers — empty = box stays hidden
+   and the generic region notice below it remains. */
+const OFFICIAL_ACCOUNTS = [
+  // { type: 'easypaisa', label: 'Easypaisa', number: '03XX-XXXXXXX', holder: 'Name' },
+];
+
+let kycStatus = 'unverified';
+let payTotals = { deposits: 0, turnover: 0 };
 
 function renderAccounts() {
   const list = $('account-list');
@@ -364,6 +381,11 @@ async function saveAccount() {
     number = number.replace(/\s+/g, '').toUpperCase();
     if (!bankName) { toast('Enter the bank name.', true); return; }
     if (number.length < 10) { toast('Enter a valid IBAN / account number.', true); return; }
+  } else if (type === 'sadapay' || type === 'nayapay') {
+    const raw = number.replace(/[\s-]/g, '');
+    if (/^03\d{9}$/.test(raw)) number = raw;
+    else if (/^PK\d{2}[A-Z]{4}\d{16,}$/i.test(raw)) number = raw.toUpperCase();
+    else { toast('Enter your ' + ACCOUNT_TYPE_LABEL[type] + ' mobile number or IBAN.', true); return; }
   } else {
     number = number.replace(/[\s-]/g, '');
     if (!/^03\d{9}$/.test(number)) { toast('Enter a valid mobile number (03XXXXXXXXX).', true); return; }
@@ -405,6 +427,74 @@ function onWithdrawSavedChange() {
   $('withdraw-account').value = acc.account_number;
 }
 
+/* ---------------- verification (KYC) + turnover ---------------- */
+function renderPaymentsState() {
+  const ks = $('kyc-status');
+  if (ks) {
+    const label = { unverified: 'Not verified', pending: 'Pending approval ⏳', verified: 'Verified ✅', rejected: 'Rejected ❌ — submit again' }[kycStatus] || kycStatus;
+    ks.textContent = 'Status: ' + label;
+    if ($('kyc-form')) $('kyc-form').hidden = kycStatus === 'verified' || kycStatus === 'pending';
+  }
+  const tl = $('turnover-line');
+  if (tl) {
+    const dep = Number(payTotals.deposits), turn = Number(payTotals.turnover);
+    tl.innerHTML = dep <= 0
+      ? 'No deposits yet. After your first approved deposit, you must play at least that amount before withdrawing.'
+      : 'Total deposits: <strong>Rs ' + fmtRs(dep) + '</strong> · Played so far: <strong>Rs ' + fmtRs(turn) + '</strong>' +
+        (turn >= dep ? ' · ✅ Withdrawal unlocked' : ' · Remaining to play: <strong>Rs ' + fmtRs(dep - turn) + '</strong>');
+  }
+}
+
+async function loadPaymentsState() {
+  try {
+    const { data } = await supabase.from('profiles').select('kyc_status').eq('id', userId).maybeSingle();
+    kycStatus = unwrapRow(data)?.kyc_status || 'unverified';
+  } catch (e) { console.warn('kyc read failed', e); }
+  try {
+    const { data, error } = await supabase.rpc('my_payment_totals');
+    if (!error) {
+      const row = unwrapRow(data) || data || {};
+      payTotals = { deposits: Number(row.deposits || 0), turnover: Number(row.turnover || 0) };
+    }
+  } catch (e) { console.warn('payment totals failed', e); }
+  renderPaymentsState();
+}
+
+async function submitKyc() {
+  unlockAudio();
+  const cnic = $('kyc-cnic').value.replace(/\D/g, '');
+  if (cnic.length !== 13) { toast('CNIC must be exactly 13 digits.', true); return; }
+  $('btn-kyc-submit').disabled = true;
+  try {
+    const { data, error } = await supabase.rpc('submit_kyc', { p_cnic: cnic });
+    if (error) throw error;
+    const row = unwrapRow(data) || data || {};
+    if (row.ok === false) throw new Error(row.error || 'Submission failed');
+    kycStatus = 'pending';
+    sounds.click();
+    toast('CNIC submitted — verification pending approval ⏳');
+    renderPaymentsState();
+  } catch (e) {
+    toast(friendlyError(e, 'Could not submit CNIC.'), true);
+  } finally {
+    $('btn-kyc-submit').disabled = false;
+  }
+}
+
+function renderOfficialAccounts() {
+  const box = $('deposit-official');
+  if (!box) return;
+  if (!OFFICIAL_ACCOUNTS.length) { box.hidden = true; return; }
+  box.innerHTML = '🏦 <strong>Send your deposit to our official account:</strong><br>' +
+    OFFICIAL_ACCOUNTS.map(a =>
+      (ACCOUNT_TYPE_LABEL[a.type] || a.label || a.type) + ': <strong>' + a.number + '</strong> (' + a.holder + ')'
+    ).join('<br>') +
+    '<br>Then submit the amount + transaction ID (TID) below.';
+  box.hidden = false;
+  const notice = $('deposit-notice');
+  if (notice) notice.hidden = true;
+}
+
 /* ---------------- init ---------------- */
 export function initWallet() {
   $$('.wallet-action').forEach(btn => btn.addEventListener('click', () => {
@@ -423,11 +513,14 @@ export function initWallet() {
   $('btn-account-cancel').addEventListener('click', resetAccountForm);
   $('account-type').addEventListener('change', onAccountTypeChange);
   $('withdraw-saved').addEventListener('change', onWithdrawSavedChange);
+  $('btn-kyc-submit').addEventListener('click', submitKyc);
   onAccountTypeChange();
+  renderOfficialAccounts();
 }
 
 export async function refreshWallet() {
   await loadBalance();
   await loadHistory();
   await loadAccounts();
+  await loadPaymentsState();
 }

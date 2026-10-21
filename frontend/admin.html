@@ -260,7 +260,7 @@
         <div id="users-loading" class="loading">Loading users…</div>
         <div id="users-content" class="table-wrap" hidden>
           <table class="data-table">
-            <thead><tr><th>Name</th><th>Phone</th><th>IDs</th><th>Source</th><th>Balance</th><th>Joined</th><th>Actions</th></tr></thead>
+            <thead><tr><th>Name</th><th>Phone</th><th>IDs</th><th>Source</th><th>Balance</th><th>KYC / Totals</th><th>Joined</th><th>Actions</th></tr></thead>
             <tbody id="users-tbody"></tbody>
           </table>
         </div>
@@ -555,7 +555,7 @@ async function loadUsers() {
     let profiles;
     try {
       const r = await supabase.from('profiles')
-        .select('id, phone, display_name, referral_id, transfer_id, signup_source, created_at, is_blocked')
+        .select('id, phone, display_name, referral_id, transfer_id, signup_source, created_at, is_blocked, cnic, kyc_status')
         .order('created_at', { ascending: false })
         .limit(50);
       if (r.error) throw r.error;
@@ -582,10 +582,23 @@ async function loadUsers() {
 
     const ids = rows.map(r => r.id);
     let balances = {};
+    let totals = {};
     if (ids.length) {
       const { data: w } = await supabase.from('wallets').select('user_id, balance').in('user_id', ids);
       (w || []).forEach(x => { balances[x.user_id] = x.balance; });
+      // Deposits (approved) + turnover (bets) per user — payments model (023)
+      const BET_TYPES = ['stake','coinflip_bet','dragontiger_bet','andarbahar_bet','roulette_bet','cv_bet','dice_bet'];
+      const { data: tx } = await supabase.from('transactions').select('user_id, type, amount, status').in('user_id', ids);
+      (tx || []).forEach(t => {
+        if (!totals[t.user_id]) totals[t.user_id] = { dep: 0, turn: 0 };
+        if (t.type === 'deposit' && (t.status === 'completed' || t.status === 'approved')) totals[t.user_id].dep += Number(t.amount || 0);
+        if (BET_TYPES.includes(t.type)) totals[t.user_id].turn += Number(t.amount || 0);
+      });
     }
+    const kycPill = (s) => s === 'verified' ? '<span class="pill completed">✅ Verified</span>'
+      : s === 'pending' ? '<span class="pill pending">⏳ Pending</span>'
+      : s === 'rejected' ? '<span class="pill" style="background:#5a1010;color:#ff8080;">Rejected</span>'
+      : '<span class="pill">Unverified</span>';
 
     const srcLabel = (s) => s === 'apk' ? '📱 APK' : s === 'mobile-web' ? '🌐 Mobile web' : s === 'desktop-web' ? '💻 Desktop' : '–';
     $('users-tbody').innerHTML = rows.map(p => `
@@ -595,12 +608,28 @@ async function loadUsers() {
         <td><span class="mono">${esc(p.referral_id || '')}</span><br /><span class="muted mono">${esc(p.transfer_id || '')}</span></td>
         <td class="muted">${srcLabel(p.signup_source)}</td>
         <td class="green"><strong>Rs ${fmtRs(balances[p.id])}</strong></td>
+        <td>${kycPill(p.kyc_status)}${p.cnic ? '<br /><span class="muted mono">' + esc(p.cnic) + '</span>' : ''}<br /><span class="muted">Dep Rs ${fmtRs(totals[p.id]?.dep)} · Played Rs ${fmtRs(totals[p.id]?.turn)}</span>${p.kyc_status === 'pending' ? '<br /><button class="btn-mini" data-kyc-verify="' + p.id + '">✔ Verify</button> <button class="btn-mini btn-danger" data-kyc-reject="' + p.id + '">✖ Reject</button>' : ''}</td>
         <td class="muted">${fmtDate(p.created_at)}</td>
         <td class="nowrap">
           <button class="btn-mini" data-block-user="${p.id}" data-blocked="${p.is_blocked ? 1 : 0}" data-name="${esc(p.display_name || p.phone || '')}">${p.is_blocked ? '🔓 Unblock' : '🚫 Block'}</button>
           <button class="btn-mini btn-danger" data-delete-user="${p.id}" data-name="${esc(p.display_name || p.phone || '')}">🗑 Delete</button>
         </td>
-      </tr>`).join('') || '<tr><td colspan="7" class="muted center">No users found.</td></tr>';
+      </tr>`).join('') || '<tr><td colspan="8" class="muted center">No users found.</td></tr>';
+
+    // Wire up KYC verify/reject buttons (payments model 023)
+    $('users-tbody').querySelectorAll('[data-kyc-verify],[data-kyc-reject]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const uid = btn.getAttribute('data-kyc-verify') || btn.getAttribute('data-kyc-reject');
+        const status = btn.hasAttribute('data-kyc-verify') ? 'verified' : 'rejected';
+        btn.disabled = true;
+        try {
+          const { error } = await supabase.rpc('admin_set_kyc', { target_user_id: uid, new_status: status });
+          if (error) throw error;
+          toast(status === 'verified' ? 'User verified ✔' : 'Verification rejected.');
+          loadUsers();
+        } catch (e) { toast(friendlyError(e), true); btn.disabled = false; }
+      });
+    });
 
     // Platform summary: how many users came from each source.
     try {
