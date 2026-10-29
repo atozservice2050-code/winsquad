@@ -21,9 +21,10 @@ import { initCashvault, setUser as setCashvaultUser, destroyCashvault } from './
 import { initDice, setUser as setDiceUser, destroyDice } from './dice.js';
 import { initDisclaimer, maybeShowDisclaimer } from './disclaimer.js';
 import { initMissions, refreshMissions, setUser as setMissionsUser, recordMissionEvent } from './missions.js';
+import { initFreeGames, refreshFreeHub, setUser as setFreeUser } from './free-games.js';
 import { restoreSession, initSessionBackup } from './session-backup.js';
 
-const VIEWS = ['auth', 'setup', 'resetpw', 'home', 'arena', 'private', 'wallet', 'rewards', 'missions', 'profile', 'coinflip', 'andarbahar', 'dt', 'roulette', 'cashvault', 'dice'];
+const VIEWS = ['auth', 'setup', 'resetpw', 'home', 'arena', 'private', 'wallet', 'rewards', 'missions', 'profile', 'coinflip', 'andarbahar', 'dt', 'roulette', 'cashvault', 'dice', 'freehub', 'mines', 'memory', 'flappy'];
 const TAB_VIEWS = ['home', 'arena', 'private', 'wallet', 'rewards', 'missions', 'profile'];
 let currentView = null;
 let currentProfile = null;
@@ -74,6 +75,7 @@ function showView(name) {
   if (name === 'roulette' && !initialized.roulette) { initRoulette(); initialized.roulette = true; }
   if (name === 'cashvault' && !initialized.cashvault) { initCashvault(); initialized.cashvault = true; }
   if (name === 'dice' && !initialized.dice) { initDice(); initialized.dice = true; }
+  if (name === 'freehub') { try { refreshFreeHub(); } catch (e) {} }
   if (name === 'arena' && initialized.arena) { /* arena runs its own realtime loop */ }
 }
 
@@ -91,6 +93,7 @@ function enterApp(profile, phone) {
   setRouletteUser(uid);
   setCashvaultUser(uid);
   setDiceUser(uid);
+  setFreeUser(uid);
   initWalletTopbar();
   $('app').hidden = false;
   showView('home');
@@ -104,6 +107,7 @@ function enterApp(profile, phone) {
 async function boot() {
   initNotifications();
   initDisclaimer();
+  try { initFreeGames(showView); } catch (e) { console.warn('free games init failed', e); }
   // 0. Session backup: restore a wiped session BEFORE the first
   // getSession(), and keep the backup fresh on token refresh.
   // (The APK WebView can clear localStorage between launches.)
@@ -299,6 +303,8 @@ document.querySelectorAll('.game-card').forEach(c =>
       showView('cashvault');
     } else if (c.dataset.game === 'dice') {
       showView('dice');
+    } else if (c.dataset.game === 'freehub') {
+      showView('freehub');
     } else {
       toast('Coming soon! 🎮');
     }

@@ -987,6 +987,43 @@ button { font-family: inherit; cursor: pointer; border: none; border-radius: 12p
 .split-label { font-size: 11px; color: var(--muted, #b9b9c9); font-weight: 700; letter-spacing: 0.4px; }
 .split-amount { font-size: 17px; font-weight: 800; color: #fff; font-variant-numeric: tabular-nums; }
 .split-note { margin: 10px 0 0; font-size: 12.5px; color: var(--gold-light); line-height: 1.5; }
+
+/* ---------- free games ---------- */
+.free-featured { border-color: #2ee06f !important; box-shadow: 0 0 24px rgba(46, 224, 111, 0.3); }
+.free-strip { background: linear-gradient(90deg, #14532d, #2ee06f) !important; color: #04150a !important; font-weight: 800; }
+.fg-pick-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
+.fg-pick { position: relative; text-align: center; padding: 20px 14px 16px; background: var(--card); border: 1px solid var(--card-border); border-radius: var(--radius); cursor: pointer; }
+.fg-pick:active { border-color: var(--gold); }
+.fg-pick-art { font-size: 52px; line-height: 1.1; }
+.fg-pick-name { font-size: 19px; font-weight: 800; color: #fff; margin-top: 4px; }
+.fg-pick-meta { font-size: 13px; color: var(--gold-light); margin: 3px 0 8px; }
+.fg-info { font-size: 15px; font-weight: 800; color: var(--gold-light); letter-spacing: 0.4px; }
+.fg-target { font-size: 16px; font-weight: 700; color: #fff; margin: 6px 0 12px; font-variant-numeric: tabular-nums; }
+.fg-target .danger { color: #ff5d5d; }
+.fg-msg { min-height: 22px; font-size: 14px; color: var(--gold-light); margin: 10px 0; }
+.mines-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 7px; max-width: 330px; margin: 0 auto; }
+.mine-tile { aspect-ratio: 1; border-radius: 10px; border: 1px solid var(--card-border); background: linear-gradient(160deg, #26263a, #171724); font-size: 22px; color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; user-select: none; -webkit-user-select: none; }
+.mine-tile.open { background: #14532d; border-color: #2ee06f; cursor: default; }
+.mine-tile.bomb { background: #5b1616; border-color: #ff5d5d; }
+.mine-tile:disabled { opacity: 1; }
+.memory-grid { display: grid; gap: 7px; max-width: 340px; margin: 0 auto; }
+.mem-card { aspect-ratio: 0.84; border-radius: 10px; border: 1px solid var(--card-border); background: linear-gradient(160deg, #2b2440, #171724); font-size: 25px; display: flex; align-items: center; justify-content: center; cursor: pointer; user-select: none; -webkit-user-select: none; color: transparent; }
+.mem-card.face { background: #23233a; color: #fff; cursor: default; }
+.mem-card.done { background: #14532d; border-color: #2ee06f; color: #fff; cursor: default; }
+#flappy-canvas { width: 100%; max-width: 360px; height: auto; border-radius: 12px; border: 1px solid var(--card-border); background: linear-gradient(180deg, #79c7e3 0%, #aee3f5 70%, #8fce6e 70.2%, #6db84f 100%); touch-action: manipulation; }
+.fg-overlay { position: fixed; inset: 0; z-index: 200; background: rgba(5, 5, 10, 0.93); display: flex; align-items: center; justify-content: center; }
+.fg-overlay[hidden] { display: none; }
+.fg-wait-box { text-align: center; padding: 24px; width: min(92vw, 380px); }
+.fg-wait-ad { border: 1px dashed var(--card-border); border-radius: 12px; padding: 26px 10px; color: #9a9ab0; font-size: 13px; letter-spacing: 2px; margin-bottom: 16px; background: #ffffff08; }
+.fg-wait-clock { font-size: 54px; }
+.fg-wait-time { font-size: 64px; font-weight: 900; color: #fff; font-variant-numeric: tabular-nums; line-height: 1.05; }
+.fg-wait-label { color: var(--gold-light); font-size: 14px; margin: 4px 0 16px; }
+.fg-wait-pause { position: absolute; top: 14px; left: 14px; }
+.fg-win-emoji { font-size: 60px; }
+.fg-win-title { font-size: 24px; font-weight: 900; letter-spacing: 1px; margin: 6px 0; }
+.fg-win-reward { font-size: 20px; font-weight: 800; color: #2ee06f; }
+.fg-win-next { color: var(--gold-light); margin: 6px 0 16px; font-size: 14px; }
+.fg-win-box-btns button { margin-top: 8px; }
 .wallet-actions { display: flex; gap: 8px; margin-bottom: 14px; }
 .wallet-action {
   flex: 1; padding: 14px 4px; font-size: 14px; color: var(--gold-light);

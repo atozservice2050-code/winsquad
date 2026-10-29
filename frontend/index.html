@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <meta name="theme-color" content="#0a0a14" />
   <title>WinSquad — Play together. Win together.</title>
-  <link rel="stylesheet" href="css/style.css?v=36" />
+  <link rel="stylesheet" href="css/style.css?v=37" />
   <!-- Runtime config: inline fallback (public anon key by design).
        js/env.js is preferred when present (generated at build time). -->
   <script>
@@ -14,8 +14,8 @@
       SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt6amt2aHRha3dvaHh4dXlzdXRvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE3MzUxNTgsImV4cCI6MjEwNzMxMTE1OH0.uPzzMNKm0FaqjDwZ_0iMotS2rGXx0J9lBNqYXm7G02I"
     };
   </script>
-  <script src="js/env.js?v=36"></script>
-  <script src="js/supabase-js.js?v=36"></script>
+  <script src="js/env.js?v=37"></script>
+  <script src="js/supabase-js.js?v=37"></script>
 </head>
 <body>
 
@@ -152,6 +152,16 @@
           </div>
         </div>
 
+        <div class="game-card featured free-featured" data-game="freehub">
+          <div class="live-strip free-strip"><span class="live-dot"></span> FREE</div>
+          <div class="game-badge play">▶ PLAY</div>
+          <div class="game-art fg-art">🆓</div>
+          <div class="game-info">
+            <div class="game-name">FREE GAMES</div>
+            <div class="game-desc">No money needed · win levels, earn real rewards</div>
+          </div>
+        </div>
+
         <div class="games-grid">
           <div class="game-card playable" data-game="cashvault">
             <div class="live-strip"><span class="live-dot"></span> LIVE</div>
@@ -216,6 +226,108 @@
           </div>
         </div>
       </section>
+
+      <!-- ============ FREE GAMES HUB ============ -->
+      <section id="view-freehub" class="view" hidden>
+        <div class="cf-header">
+          <button class="btn-ghost small" data-open-view="home">← Games</button>
+          <div class="card-title" style="margin:0;">🆓 <span class="gold">FREE GAMES</span></div>
+          <span style="width:64px;"></span>
+        </div>
+        <p class="hub-sub center" style="margin:6px 0 14px;">Bilkul free khelo — level jeeto, reward pao. Reward 🔒 bonus wallet mein jata hai.</p>
+        <div class="fg-pick-grid">
+          <div class="fg-pick" id="fg-pick-mines">
+            <div class="fg-pick-art">💣</div>
+            <div class="fg-pick-name">Mines</div>
+            <div class="fg-pick-meta">Level <span id="fg-lvl-mines">1</span> · Reward Rs <span id="fg-rew-mines">20</span></div>
+            <div class="game-badge play">▶ PLAY</div>
+          </div>
+          <div class="fg-pick" id="fg-pick-memory">
+            <div class="fg-pick-art">🧠</div>
+            <div class="fg-pick-name">Memory Match</div>
+            <div class="fg-pick-meta">Level <span id="fg-lvl-memory">1</span> · Reward Rs <span id="fg-rew-memory">20</span></div>
+            <div class="game-badge play">▶ PLAY</div>
+          </div>
+          <div class="fg-pick" id="fg-pick-flappy">
+            <div class="fg-pick-art">🐤</div>
+            <div class="fg-pick-name">Flappy Jump</div>
+            <div class="fg-pick-meta">Level <span id="fg-lvl-flappy">1</span> · Reward Rs <span id="fg-rew-flappy">20</span></div>
+            <div class="game-badge play">▶ PLAY</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ MINES (FREE) ============ -->
+      <section id="view-mines" class="view" hidden>
+        <div class="cf-header">
+          <button class="btn-ghost small fg-back">← Free</button>
+          <div class="card-title" style="margin:0;">💣 <span class="gold">MINES</span></div>
+          <span style="width:64px;"></span>
+        </div>
+        <div class="card gold-frame center">
+          <div class="fg-info" id="mines-info">Level 1 · Reward Rs 20</div>
+          <div class="fg-target" id="mines-target">Safe: 0 / 10 · 💣 × 5</div>
+          <div id="mines-grid" class="mines-grid"></div>
+          <div class="fg-msg" id="mines-msg">Play dabao aur safe khane kholo!</div>
+          <button id="mines-play" class="btn-red big">▶ Play</button>
+        </div>
+      </section>
+
+      <!-- ============ MEMORY MATCH (FREE) ============ -->
+      <section id="view-memory" class="view" hidden>
+        <div class="cf-header">
+          <button class="btn-ghost small fg-back">← Free</button>
+          <div class="card-title" style="margin:0;">🧠 <span class="gold">MEMORY</span></div>
+          <span style="width:64px;"></span>
+        </div>
+        <div class="card gold-frame center">
+          <div class="fg-info" id="memory-info">Level 1 · Reward Rs 20</div>
+          <div class="fg-target"><span id="memory-timer">⏱ 20</span> · Pairs: <span id="memory-pairs">0 / 6</span></div>
+          <div id="memory-grid" class="memory-grid"></div>
+          <div class="fg-msg" id="memory-msg">Play dabao aur joriyan milao!</div>
+          <button id="memory-play" class="btn-red big">▶ Play</button>
+        </div>
+      </section>
+
+      <!-- ============ FLAPPY JUMP (FREE) ============ -->
+      <section id="view-flappy" class="view" hidden>
+        <div class="cf-header">
+          <button class="btn-ghost small fg-back">← Free</button>
+          <div class="card-title" style="margin:0;">🐤 <span class="gold">FLAPPY</span></div>
+          <span style="width:64px;"></span>
+        </div>
+        <div class="card gold-frame center">
+          <div class="fg-info" id="flappy-info">Level 1 · Reward Rs 20</div>
+          <div class="fg-target">Pipes: <span id="flappy-score">0 / 10</span></div>
+          <canvas id="flappy-canvas" width="360" height="460"></canvas>
+          <div class="fg-msg" id="flappy-msg">Play dabao, phir screen tap karke urao!</div>
+          <button id="flappy-play" class="btn-red big">▶ Play</button>
+        </div>
+      </section>
+
+      <!-- ============ FREE GAMES: WAITING overlay (ad slot) ============ -->
+      <div id="fg-wait" class="fg-overlay" hidden>
+        <button id="fg-wait-pause" class="btn-ghost small fg-wait-pause">←</button>
+        <div class="fg-wait-box">
+          <div class="fg-wait-ad">AD · coming soon</div>
+          <div class="fg-wait-clock">⌚</div>
+          <div class="fg-wait-time" id="fg-wait-time">15</div>
+          <div class="fg-wait-label" id="fg-wait-label">Waiting…</div>
+          <button id="fg-wait-close" class="btn-red" hidden>❌ Close — Play again</button>
+        </div>
+      </div>
+
+      <!-- ============ FREE GAMES: WIN overlay ============ -->
+      <div id="fg-win" class="fg-overlay" hidden>
+        <div class="fg-wait-box">
+          <div class="fg-win-emoji">🎉</div>
+          <div class="fg-win-title gold">LEVEL COMPLETE!</div>
+          <div class="fg-win-reward" id="fg-win-reward">+ Rs 20 bonus</div>
+          <div class="fg-win-next" id="fg-win-next">Next: Level 2</div>
+          <button id="fg-win-next-btn" class="btn-red big">▶ Next Level</button>
+          <button id="fg-win-hub-btn" class="btn-ghost">Free Games</button>
+        </div>
+      </div>
 
       <!-- ============ ARENA (Squad Stakes) ============ -->
       <section id="view-arena" class="view" hidden>
@@ -1134,6 +1246,6 @@
     </div>
   </div>
 
-  <script type="module" src="js/app.js?v=36"></script>
+  <script type="module" src="js/app.js?v=37"></script>
 </body>
 </html>
