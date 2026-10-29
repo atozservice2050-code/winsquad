@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <meta name="theme-color" content="#0a0a14" />
   <title>WinSquad — Play together. Win together.</title>
-  <link rel="stylesheet" href="css/style.css?v=35" />
+  <link rel="stylesheet" href="css/style.css?v=36" />
   <!-- Runtime config: inline fallback (public anon key by design).
        js/env.js is preferred when present (generated at build time). -->
   <script>
@@ -14,8 +14,8 @@
       SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt6amt2aHRha3dvaHh4dXlzdXRvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE3MzUxNTgsImV4cCI6MjEwNzMxMTE1OH0.uPzzMNKm0FaqjDwZ_0iMotS2rGXx0J9lBNqYXm7G02I"
     };
   </script>
-  <script src="js/env.js?v=35"></script>
-  <script src="js/supabase-js.js?v=35"></script>
+  <script src="js/env.js?v=36"></script>
+  <script src="js/supabase-js.js?v=36"></script>
 </head>
 <body>
 
@@ -765,8 +765,19 @@
       <!-- ============ WALLET ============ -->
       <section id="view-wallet" class="view" hidden>
         <div class="balance-card">
-          <div class="balance-label">💰 Wallet balance</div>
+          <div class="balance-label">💰 Total balance</div>
           <div class="balance-amount">Rs <span id="wallet-balance">0</span></div>
+          <div class="balance-split">
+            <div class="split-item">
+              <span class="split-label">✅ Withdrawable</span>
+              <span class="split-amount">Rs <span id="wallet-withdrawable">0</span></span>
+            </div>
+            <div class="split-item">
+              <span class="split-label">🔒 Bonus (locked)</span>
+              <span class="split-amount">Rs <span id="wallet-bonus">0</span></span>
+            </div>
+          </div>
+          <p class="split-note" id="bonus-progress" hidden></p>
         </div>
 
         <div class="wallet-actions">
@@ -884,7 +895,8 @@
             2. Before your first withdrawal, your account must be <strong>verified</strong> (CNIC) — see Accounts above.<br>
             3. You must play (bet) at least your total deposited amount before you can withdraw.<br>
             4. Withdrawals are paid only to <strong>your own saved account</strong> — never to a third person's wallet.<br>
-            5. Wallet withdrawals are processed within <strong>24 hours</strong>. Limits: Rs 10,000 – 50,000, max 50% of balance, once per day.
+            5. Wallet withdrawals are processed within <strong>24 hours</strong>. Limits: Rs 10,000 – 50,000, max 50% of your withdrawable balance, once per day.<br>
+            6. Game rewards are credited as <strong>locked bonus</strong>. Bonus unlocks as you play — every rupee you bet unlocks one rupee of bonus. Once unlocked, it is fully withdrawable like your own money.
           </p>
         </div>
 
@@ -1122,6 +1134,6 @@
     </div>
   </div>
 
-  <script type="module" src="js/app.js?v=35"></script>
+  <script type="module" src="js/app.js?v=36"></script>
 </body>
 </html>

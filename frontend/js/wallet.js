@@ -16,15 +16,39 @@ import { $, $$, toast, fmtRs, fmtTime, unlockAudio, sounds } from './util.js';
 
 let userId = null;
 let balance = 0;
+let bonusBalance = 0;   // locked part of the balance (game rewards, unlocks by playing)
+let bonusReceived = 0;  // lifetime rewards received (for the unlock progress line)
 
 export function setUser(id) { userId = id; }
 
+/* The part of the balance that can actually be withdrawn right now */
+function withdrawable() { return Math.max(0, balance - bonusBalance); }
+
 async function loadBalance() {
   try {
-    const { data } = await supabase.from('wallets').select('balance').eq('user_id', userId).maybeSingle();
-    balance = Number(unwrapRow(data)?.balance ?? 0);
+    const { data } = await supabase.from('wallets').select('balance, bonus_balance, bonus_received').eq('user_id', userId).maybeSingle();
+    const row = unwrapRow(data);
+    balance = Number(row?.balance ?? 0);
+    bonusBalance = Number(row?.bonus_balance ?? 0);
+    bonusReceived = Number(row?.bonus_received ?? 0);
   } catch (e) { console.warn('wallet read failed', e); }
   $('wallet-balance').textContent = fmtRs(balance);
+  const wdEl = $('wallet-withdrawable');
+  if (wdEl) wdEl.textContent = fmtRs(withdrawable());
+  const bnEl = $('wallet-bonus');
+  if (bnEl) bnEl.textContent = fmtRs(bonusBalance);
+  const prog = $('bonus-progress');
+  if (prog) {
+    if (bonusReceived > 0) {
+      const unlocked = Math.max(0, bonusReceived - bonusBalance);
+      prog.hidden = false;
+      prog.textContent = bonusBalance > 0
+        ? '🎁 Bonus unlock: Rs ' + fmtRs(unlocked) + ' / Rs ' + fmtRs(bonusReceived) + ' — baqi Rs ' + fmtRs(bonusBalance) + ' bonus betting mein lagane par unlock hoga.'
+        : '🎁 Sara bonus unlock ho chuka hai — pura balance withdrawable hai ✔️';
+    } else {
+      prog.hidden = true;
+    }
+  }
   updateTopbarBalance();
 }
 
@@ -142,9 +166,15 @@ async function submitWithdraw() {
   }
   if (!amount || amount < 10000) { toast('Minimum withdrawal is Rs 10,000.', true); return; }
   if (amount > 50000) { toast('Maximum withdrawal is Rs 50,000.', true); return; }
-  const maxWithdraw = Math.floor(balance * 0.5);
-  if (amount > maxWithdraw) { toast('Max 50% of balance (Rs ' + fmtRs(maxWithdraw) + ').', true); return; }
-  if (amount > balance) { toast('Insufficient balance.', true); return; }
+  const wd = withdrawable();
+  if (amount > wd) {
+    toast(bonusBalance > 0
+      ? 'Sirf Rs ' + fmtRs(wd) + ' withdrawable hai — Rs ' + fmtRs(bonusBalance) + ' locked bonus hai. Pehle khelo, bonus unlock karo, phir withdraw hoga.'
+      : 'Insufficient balance.', true);
+    return;
+  }
+  const maxWithdraw = Math.floor(wd * 0.5);
+  if (amount > maxWithdraw) { toast('Max 50% of withdrawable balance (Rs ' + fmtRs(maxWithdraw) + ').', true); return; }
   // Once per day: check if user already withdrew today
   try {
     const today = new Date().toISOString().split('T')[0];
@@ -173,7 +203,7 @@ async function submitWithdraw() {
   } catch (e) {
     console.warn('withdraw insert failed', e);
     const msg = (e && e.message) || '';
-    toast(/verified|Turnover|saved account/i.test(msg) ? msg : 'Could not submit the withdrawal request. Please contact support.', true);
+    toast(/verified|Turnover|saved account|locked bonus|withdrawable/i.test(msg) ? msg : 'Could not submit the withdrawal request. Please contact support.', true);
   } finally {
     $('btn-withdraw-submit').disabled = false;
   }
