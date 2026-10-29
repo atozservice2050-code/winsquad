@@ -122,6 +122,19 @@ function finishWait() {
 }
 function pauseWait() { stopWaitTick(); $('fg-wait').hidden = true; }
 
+/* Full-screen burst visual (bomb explosion / crash) shown with the
+   losing message BEFORE the waiting screen covers the board. */
+let burstTimer = null;
+function showBurst(emoji, text, ms) {
+  const b = $('fg-burst');
+  if (!b) return;
+  $('fg-burst-emoji').textContent = emoji;
+  $('fg-burst-text').textContent = text || '';
+  b.hidden = false;
+  if (burstTimer) clearTimeout(burstTimer);
+  burstTimer = setTimeout(() => { b.hidden = true; }, ms || 1300);
+}
+
 /* A loss: escalate today's wait for this game and show the clock. */
 function startWaitAfterLoss(game) {
   const s = loadWait(game);
@@ -240,7 +253,13 @@ function minesTap(i, el) {
     try { sounds.lose(); } catch (_) {}
     $('mines-msg').textContent = '💣 Bomb phat gaya! Level fail.';
     const btn = $('mines-play'); btn.disabled = false; btn.textContent = '▶ Play again';
-    startWaitAfterLoss('mines');
+    // Reveal ALL bombs, shake the board, big explosion — then the wait.
+    const tiles = $('mines-grid').children;
+    mines.bombs.forEach(b => { if (tiles[b]) { tiles[b].classList.add('bomb'); tiles[b].textContent = '💣'; } });
+    const grid = $('mines-grid');
+    grid.classList.remove('fg-shake'); void grid.offsetWidth; grid.classList.add('fg-shake');
+    showBurst('💥', 'Bomb phat gaya!', 1400);
+    setTimeout(() => startWaitAfterLoss('mines'), 1400);
     return;
   }
   el.classList.add('open'); el.textContent = '💎';
@@ -454,7 +473,10 @@ function flappyLose() {
   try { sounds.lose(); } catch (_) {}
   $('flappy-msg').textContent = '💥 Takra gaye! Level fail.';
   const btn = $('flappy-play'); btn.disabled = false; btn.textContent = '▶ Play again';
-  startWaitAfterLoss('flappy');
+  const cv = $('flappy-canvas');
+  if (cv) { cv.classList.remove('fg-shake'); void cv.offsetWidth; cv.classList.add('fg-shake'); }
+  showBurst('💥', 'Takra gaye!', 1200);
+  setTimeout(() => startWaitAfterLoss('flappy'), 1200);
 }
 
 /* ---------------- init ---------------- */

@@ -1024,6 +1024,18 @@ button { font-family: inherit; cursor: pointer; border: none; border-radius: 12p
 .fg-win-reward { font-size: 20px; font-weight: 800; color: #2ee06f; }
 .fg-win-next { color: var(--gold-light); margin: 6px 0 16px; font-size: 14px; }
 .fg-win-box-btns button { margin-top: 8px; }
+.fg-win-box { animation: fgPopIn 0.35s cubic-bezier(0.2, 1.6, 0.4, 1); }
+.fg-win-party { font-size: 26px; letter-spacing: 6px; animation: fgParty 0.9s ease-in-out infinite alternate; }
+.fg-win-emoji { animation: fgParty 0.7s ease-in-out infinite alternate; }
+@keyframes fgPopIn { from { transform: scale(0.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+@keyframes fgParty { from { transform: translateY(0) rotate(-4deg); } to { transform: translateY(-7px) rotate(4deg); } }
+.fg-burst { position: fixed; inset: 0; z-index: 210; display: flex; flex-direction: column; align-items: center; justify-content: center; background: radial-gradient(circle, rgba(255, 90, 0, 0.4), rgba(10, 0, 0, 0.88) 70%); pointer-events: none; }
+.fg-burst[hidden] { display: none; }
+.fg-burst-emoji { font-size: 120px; animation: fgBurstPop 0.55s cubic-bezier(0.2, 1.8, 0.4, 1); filter: drop-shadow(0 0 34px rgba(255, 120, 0, 0.9)); }
+.fg-burst-text { font-size: 24px; font-weight: 900; color: #ffb13d; margin-top: 8px; text-shadow: 0 2px 12px #000; animation: fgPopIn 0.3s ease-out; }
+@keyframes fgBurstPop { 0% { transform: scale(0.1) rotate(-25deg); opacity: 0; } 55% { transform: scale(1.5) rotate(6deg); opacity: 1; } 100% { transform: scale(1.15) rotate(0deg); } }
+.fg-shake { animation: fgShake 0.5s ease-in-out; }
+@keyframes fgShake { 0%, 100% { transform: translateX(0); } 15% { transform: translateX(-11px); } 30% { transform: translateX(10px); } 45% { transform: translateX(-8px); } 60% { transform: translateX(7px); } 75% { transform: translateX(-4px); } 90% { transform: translateX(3px); } }
 .wallet-actions { display: flex; gap: 8px; margin-bottom: 14px; }
 .wallet-action {
   flex: 1; padding: 14px 4px; font-size: 14px; color: var(--gold-light);
