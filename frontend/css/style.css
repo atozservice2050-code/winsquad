@@ -989,7 +989,18 @@ button { font-family: inherit; cursor: pointer; border: none; border-radius: 12p
 .split-note { margin: 10px 0 0; font-size: 12.5px; color: var(--gold-light); line-height: 1.5; }
 
 /* ---------- free games ---------- */
-.free-featured { border-color: #2ee06f !important; box-shadow: 0 0 24px rgba(46, 224, 111, 0.3); }
+.free-featured { border: 2px solid #2ee06f !important; background: linear-gradient(150deg, #0d3319 0%, #14532d 45%, #7a5b00 130%) !important; box-shadow: 0 0 30px rgba(46, 224, 111, 0.45), inset 0 0 34px rgba(46, 224, 111, 0.14); overflow: hidden; position: relative; animation: fmGlow 1.8s ease-in-out infinite alternate; }
+@keyframes fmGlow { from { box-shadow: 0 0 18px rgba(46, 224, 111, 0.3), inset 0 0 22px rgba(46, 224, 111, 0.1); } to { box-shadow: 0 0 38px rgba(46, 224, 111, 0.6), inset 0 0 40px rgba(46, 224, 111, 0.2); } }
+.free-featured::before { content: ''; position: absolute; top: -60%; left: -25%; width: 45%; height: 230%; background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.22), transparent); transform: rotate(18deg); animation: fmShine 2.8s ease-in-out infinite; pointer-events: none; }
+@keyframes fmShine { 0% { left: -35%; } 55%, 100% { left: 125%; } }
+.fg-art { flex-direction: column; gap: 0; line-height: 1.1; }
+.fg-art > * { position: relative; z-index: 1; }
+.fm-money { font-size: 46px; animation: fmFloat 1.6s ease-in-out infinite alternate; filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.5)); }
+@keyframes fmFloat { from { transform: translateY(0) rotate(-5deg) scale(1); } to { transform: translateY(-7px) rotate(5deg) scale(1.1); } }
+.fm-title { font-size: 37px; font-weight: 900; letter-spacing: 1.5px; color: #2ee06f; text-shadow: 0 3px 0 #0a3d1c, 0 6px 18px rgba(0, 0, 0, 0.65); }
+.fm-title span { color: #ffd94d; text-shadow: 0 3px 0 #7a5200, 0 6px 18px rgba(0, 0, 0, 0.65); }
+.fm-sub { font-size: 13.5px; font-weight: 800; color: #eafff1; letter-spacing: 0.6px; margin-top: 3px; text-shadow: 0 2px 8px rgba(0, 0, 0, 0.7); }
+.free-strip { background: linear-gradient(90deg, #16a34a, #2ee06f) !important; color: #04150a !important; font-weight: 900; }
 .free-strip { background: linear-gradient(90deg, #14532d, #2ee06f) !important; color: #04150a !important; font-weight: 800; }
 .fg-pick-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
 .fg-pick { position: relative; text-align: center; padding: 20px 14px 16px; background: var(--card); border: 1px solid var(--card-border); border-radius: var(--radius); cursor: pointer; }
