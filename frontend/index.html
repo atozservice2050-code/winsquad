@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <meta name="theme-color" content="#0a0a14" />
   <title>WinSquad — Play together. Win together.</title>
-  <link rel="stylesheet" href="css/style.css?v=39" />
+  <link rel="stylesheet" href="css/style.css?v=40" />
   <!-- Runtime config: inline fallback (public anon key by design).
        js/env.js is preferred when present (generated at build time). -->
   <script>
@@ -14,8 +14,8 @@
       SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt6amt2aHRha3dvaHh4dXlzdXRvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE3MzUxNTgsImV4cCI6MjEwNzMxMTE1OH0.uPzzMNKm0FaqjDwZ_0iMotS2rGXx0J9lBNqYXm7G02I"
     };
   </script>
-  <script src="js/env.js?v=39"></script>
-  <script src="js/supabase-js.js?v=39"></script>
+  <script src="js/env.js?v=40"></script>
+  <script src="js/supabase-js.js?v=40"></script>
 </head>
 <body>
 
@@ -234,7 +234,7 @@
           <div class="card-title" style="margin:0;">🆓 <span class="gold">FREE GAMES</span></div>
           <span style="width:64px;"></span>
         </div>
-        <p class="hub-sub center" style="margin:6px 0 14px;">Bilkul free khelo — level jeeto, reward pao. Reward 🔒 bonus wallet mein jata hai.</p>
+        <p class="hub-sub center" style="margin:6px 0 14px;">Play completely free — win levels, earn rewards. Rewards go to your 🔒 bonus wallet.</p>
         <div class="fg-pick-grid">
           <div class="fg-pick" id="fg-pick-mines">
             <div class="fg-pick-art">💣</div>
@@ -268,7 +268,7 @@
           <div class="fg-info" id="mines-info">Level 1 · Reward Rs 20</div>
           <div class="fg-target" id="mines-target">Safe: 0 / 10 · 💣 × 5</div>
           <div id="mines-grid" class="mines-grid"></div>
-          <div class="fg-msg" id="mines-msg">Play dabao aur safe khane kholo!</div>
+          <div class="fg-msg" id="mines-msg">Press Play and open safe tiles!</div>
           <button id="mines-play" class="btn-red big">▶ Play</button>
         </div>
       </section>
@@ -284,7 +284,7 @@
           <div class="fg-info" id="memory-info">Level 1 · Reward Rs 20</div>
           <div class="fg-target"><span id="memory-timer">⏱ 20</span> · Pairs: <span id="memory-pairs">0 / 6</span></div>
           <div id="memory-grid" class="memory-grid"></div>
-          <div class="fg-msg" id="memory-msg">Play dabao aur joriyan milao!</div>
+          <div class="fg-msg" id="memory-msg">Press Play and match the pairs!</div>
           <button id="memory-play" class="btn-red big">▶ Play</button>
         </div>
       </section>
@@ -300,7 +300,7 @@
           <div class="fg-info" id="flappy-info">Level 1 · Reward Rs 20</div>
           <div class="fg-target">Pipes: <span id="flappy-score">0 / 10</span></div>
           <canvas id="flappy-canvas" width="360" height="460"></canvas>
-          <div class="fg-msg" id="flappy-msg">Play dabao, phir screen tap karke urao!</div>
+          <div class="fg-msg" id="flappy-msg">Press Play, then tap the screen to fly!</div>
           <button id="flappy-play" class="btn-red big">▶ Play</button>
         </div>
       </section>
@@ -318,9 +318,11 @@
       </div>
 
       <!-- ============ FREE GAMES: WIN overlay ============ -->
+      <div id="fg-toast" class="fg-toast" hidden></div>
+
       <div id="fg-burst" class="fg-burst" hidden>
         <div class="fg-burst-emoji" id="fg-burst-emoji">💥</div>
-        <div class="fg-burst-text" id="fg-burst-text">Bomb phat gaya!</div>
+        <div class="fg-burst-text" id="fg-burst-text">Bomb exploded!</div>
       </div>
 
       <div id="fg-win" class="fg-overlay" hidden>
@@ -1252,6 +1254,6 @@
     </div>
   </div>
 
-  <script type="module" src="js/app.js?v=39"></script>
+  <script type="module" src="js/app.js?v=40"></script>
 </body>
 </html>

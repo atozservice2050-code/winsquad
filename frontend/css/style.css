@@ -1034,6 +1034,13 @@ button { font-family: inherit; cursor: pointer; border: none; border-radius: 12p
 .fg-burst-emoji { font-size: 120px; animation: fgBurstPop 0.55s cubic-bezier(0.2, 1.8, 0.4, 1); filter: drop-shadow(0 0 34px rgba(255, 120, 0, 0.9)); }
 .fg-burst-text { font-size: 24px; font-weight: 900; color: #ffb13d; margin-top: 8px; text-shadow: 0 2px 12px #000; animation: fgPopIn 0.3s ease-out; }
 @keyframes fgBurstPop { 0% { transform: scale(0.1) rotate(-25deg); opacity: 0; } 55% { transform: scale(1.5) rotate(6deg); opacity: 1; } 100% { transform: scale(1.15) rotate(0deg); } }
+.fg-toast { position: fixed; top: 74px; left: 50%; transform: translateX(-50%); z-index: 205; background: #1d1d2eF2; border: 1px solid var(--gold); color: #fff; font-weight: 800; font-size: 15px; padding: 10px 18px; border-radius: 999px; box-shadow: 0 8px 28px rgba(0, 0, 0, 0.55); animation: fgToastIn 0.22s ease-out; pointer-events: none; max-width: 92vw; text-align: center; }
+.fg-toast[hidden] { display: none; }
+@keyframes fgToastIn { from { opacity: 0; transform: translate(-50%, -10px) scale(0.9); } to { opacity: 1; transform: translate(-50%, 0) scale(1); } }
+.mine-tile.open { animation: fgTilePop 0.25s ease-out; }
+@keyframes fgTilePop { 0% { transform: scale(0.6); } 60% { transform: scale(1.18); } 100% { transform: scale(1); } }
+.mem-card.face, .mem-card.done { animation: fgTilePop 0.25s ease-out; }
+.fg-score-pop { display: inline-block; animation: fgTilePop 0.3s ease-out; color: #2ee06f; }
 .fg-shake { animation: fgShake 0.5s ease-in-out; }
 @keyframes fgShake { 0%, 100% { transform: translateX(0); } 15% { transform: translateX(-11px); } 30% { transform: translateX(10px); } 45% { transform: translateX(-8px); } 60% { transform: translateX(7px); } 75% { transform: translateX(-4px); } 90% { transform: translateX(3px); } }
 .wallet-actions { display: flex; gap: 8px; margin-bottom: 14px; }

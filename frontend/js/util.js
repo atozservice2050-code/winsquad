@@ -60,6 +60,10 @@ export const sounds = {
   tick() { if (!isSoundOn()) return; tone(1200, 0, 0.12, 'square', 0.14); },
   click(){ if (!isSoundOn()) return; tone(660, 0, 0.05, 'sine', 0.08); },
   alarm(){ if (!isSoundOn()) return; [740, 740, 740].forEach((f, i) => tone(f, i * 0.18, 0.14, 'square', 0.09)); },
+  pop()  { if (!isSoundOn()) return; tone(520, 0, 0.07, 'sine', 0.13); tone(790, 0.05, 0.09, 'sine', 0.11); },
+  ding() { if (!isSoundOn()) return; [880, 1318.5].forEach((f, i) => tone(f, i * 0.09, 0.22, 'triangle', 0.16)); },
+  point(){ if (!isSoundOn()) return; tone(990, 0, 0.1, 'square', 0.09); tone(1320, 0.07, 0.12, 'square', 0.07); },
+  nope() { if (!isSoundOn()) return; tone(220, 0, 0.14, 'sawtooth', 0.07); tone(185, 0.1, 0.16, 'sawtooth', 0.07); },
 };
 
 /* ---------- formatting ---------- */

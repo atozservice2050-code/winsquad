@@ -14,7 +14,7 @@
      button appears only when the clock reaches 0.
    ============================================================ */
 import { supabase, unwrapRow } from './supabase-client.js';
-import { $, toast, fmtRs, unlockAudio, sounds } from './util.js';
+import { $, toast, fmtRs, unlockAudio, sounds } from './util.js?v=40';
 
 const GAME_LABEL = { mines: 'Mines', memory: 'Memory Match', flappy: 'Flappy Jump' };
 const rewardFor = (lvl) => Math.min(15 + 5 * lvl, 50);
@@ -108,7 +108,7 @@ function openWait(game) {
   const s = loadWait(game);
   if (s.remain <= 0) return;
   waitGame = game;
-  $('fg-wait-label').textContent = GAME_LABEL[game] + ' — haar ke baad ka waiting time. Clock khatam ho to dobara khel sakte ho.';
+  $('fg-wait-label').textContent = GAME_LABEL[game] + ' — waiting time after a loss. Wait for the clock to finish, then play again.';
   $('fg-wait-close').hidden = true;
   $('fg-wait').hidden = false;
   renderWaitTime();
@@ -133,6 +133,17 @@ function showBurst(emoji, text, ms) {
   b.hidden = false;
   if (burstTimer) clearTimeout(burstTimer);
   burstTimer = setTimeout(() => { b.hidden = true; }, ms || 1300);
+}
+
+/* Temporary in-game pop-up message: clear, auto-hides. */
+let fgToastTimer = null;
+function fgToast(text, ms) {
+  const el = $('fg-toast');
+  if (!el) return;
+  el.textContent = text;
+  el.hidden = false;
+  if (fgToastTimer) clearTimeout(fgToastTimer);
+  fgToastTimer = setTimeout(() => { el.hidden = true; }, ms || 1300);
 }
 
 /* A loss: escalate today's wait for this game and show the clock. */
@@ -167,7 +178,7 @@ async function onWin(game) {
     refreshTopbar();
   } catch (e) {
     console.warn('free game claim failed', e);
-    toast('Reward claim nahi ho saka — internet check karke dobara try karo.', true);
+    toast('Reward could not be claimed — check your internet and try again.', true);
   } finally { claiming = false; }
 }
 
@@ -223,13 +234,15 @@ function minesIdle() {
     d.className = 'mine-tile'; d.textContent = '?'; d.disabled = true;
     grid.appendChild(d);
   }
-  $('mines-msg').textContent = 'Play dabao aur safe khane kholo!';
+  $('mines-msg').textContent = 'Press Play and open safe tiles!';
   const btn = $('mines-play'); btn.disabled = false; btn.textContent = '▶ Play';
   minesInfo();
 }
 function minesStart() {
   unlockAudio();
+  try { sounds.click(); } catch (_) {}
   const c = minesCfg(levels.mines);
+  fgToast('🎯 Level ' + levels.mines + ' — open ' + c.safe + ' safe tiles!', 1500);
   mines.cfg = c; mines.opened = 0; mines.playing = true;
   mines.bombs = new Set();
   while (mines.bombs.size < c.bombs) mines.bombs.add(Math.floor(Math.random() * 25));
@@ -241,7 +254,7 @@ function minesStart() {
     d.addEventListener('click', () => minesTap(i, d));
     grid.appendChild(d);
   }
-  $('mines-msg').textContent = 'Safe khane kholo — bomb se bacho!';
+  $('mines-msg').textContent = 'Open safe tiles — avoid the bombs!';
   const btn = $('mines-play'); btn.disabled = true; btn.textContent = 'Playing…';
   minesInfo();
 }
@@ -251,24 +264,26 @@ function minesTap(i, el) {
     el.classList.add('bomb'); el.textContent = '💣';
     mines.playing = false;
     try { sounds.lose(); } catch (_) {}
-    $('mines-msg').textContent = '💣 Bomb phat gaya! Level fail.';
+    $('mines-msg').textContent = '💣 Boom! Bomb exploded. Level failed.';
     const btn = $('mines-play'); btn.disabled = false; btn.textContent = '▶ Play again';
     // Reveal ALL bombs, shake the board, big explosion — then the wait.
     const tiles = $('mines-grid').children;
     mines.bombs.forEach(b => { if (tiles[b]) { tiles[b].classList.add('bomb'); tiles[b].textContent = '💣'; } });
     const grid = $('mines-grid');
     grid.classList.remove('fg-shake'); void grid.offsetWidth; grid.classList.add('fg-shake');
-    showBurst('💥', 'Bomb phat gaya!', 1400);
+    showBurst('💥', 'Bomb exploded!', 1400);
     setTimeout(() => startWaitAfterLoss('mines'), 1400);
     return;
   }
   el.classList.add('open'); el.textContent = '💎';
-  try { sounds.click(); } catch (_) {}
+  try { sounds.pop(); } catch (_) {}
   mines.opened++;
+  if (mines.opened === Math.ceil(mines.cfg.safe / 2)) fgToast('🔥 Halfway there!');
+  else if (mines.opened === mines.cfg.safe - 1) fgToast('⚠️ Just 1 more!');
   minesInfo();
   if (mines.opened >= mines.cfg.safe) {
     mines.playing = false;
-    $('mines-msg').textContent = '🎉 Target pura!';
+    $('mines-msg').textContent = '🎉 Target complete!';
     onWin('mines');
   }
 }
@@ -295,6 +310,10 @@ function memRenderTime() {
   const el = $('memory-timer');
   el.textContent = '⏱ ' + left;
   el.classList.toggle('danger', left <= 5 && mem.playing);
+  if (mem.playing && left <= 5 && left > 0 && mem.lastTick !== left) {
+    mem.lastTick = left;
+    try { sounds.tick(); } catch (_) {}
+  }
   return left;
 }
 function memoryIdle() {
@@ -310,7 +329,7 @@ function memoryIdle() {
     grid.appendChild(d);
   }
   $('memory-timer').textContent = '⏱ ' + mem.cfg.seconds;
-  $('memory-msg').textContent = 'Play dabao aur joriyan milao!';
+  $('memory-msg').textContent = 'Press Play and match the pairs!';
   const btn = $('memory-play'); btn.disabled = false; btn.textContent = '▶ Play';
   memInfo();
 }
@@ -325,7 +344,10 @@ function shuffleFY(arr) {
 }
 function memoryStart() {
   unlockAudio();
+  try { sounds.click(); } catch (_) {}
   const c = memCfg(levels.memory);
+  mem.lastTick = -1;
+  fgToast('🎯 Level ' + levels.memory + ' — match ' + c.pairs + ' pairs in ' + c.seconds + 's!', 1600);
   mem.cfg = c; mem.found = 0; mem.first = null; mem.lock = false; mem.playing = true;
   // Random symbol subset each attempt + fully shuffled deck.
   const syms = shuffleFY([...MEM_SYMBOLS]).slice(0, c.pairs);
@@ -339,7 +361,7 @@ function memoryStart() {
     d.addEventListener('click', () => memFlip(d));
     grid.appendChild(d);
   });
-  $('memory-msg').textContent = c.penalty ? 'Joriyan milao — galat card par −' + c.penalty + ' sec!' : 'Joriyan milao!';
+  $('memory-msg').textContent = c.penalty ? 'Match the pairs — a wrong card costs −' + c.penalty + ' sec!' : 'Match the pairs!';
   const btn = $('memory-play'); btn.disabled = true; btn.textContent = 'Playing…';
   mem.endAt = Date.now() + c.seconds * 1000;
   memStopTimer();
@@ -349,22 +371,26 @@ function memoryStart() {
 }
 function memFlip(card) {
   if (!mem.playing || mem.lock || card.classList.contains('face') || card.classList.contains('done')) return;
-  try { sounds.click(); } catch (_) {}
+  try { sounds.pop(); } catch (_) {}
   card.classList.add('face'); card.textContent = card.dataset.sym;
   if (!mem.first) { mem.first = card; return; }
   if (mem.first.dataset.sym === card.dataset.sym) {
     mem.first.classList.add('done'); card.classList.add('done');
     mem.first = null; mem.found++;
+    try { sounds.ding(); } catch (_) {}
+    fgToast('✅ Pair matched! ' + mem.found + ' / ' + mem.cfg.pairs, 1000);
     memInfo();
     if (mem.found >= mem.cfg.pairs) {
       mem.playing = false; memStopTimer();
-      $('memory-msg').textContent = '🎉 Board pura!';
+      $('memory-msg').textContent = '🎉 Board complete!';
       onWin('memory');
     }
     return;
   }
   mem.lock = true;
   const a = mem.first; mem.first = null;
+  try { sounds.nope(); } catch (_) {}
+  fgToast(mem.cfg.penalty ? '❌ Wrong pair −' + mem.cfg.penalty + 's' : '❌ Wrong pair', 900);
   setTimeout(() => {
     a.classList.remove('face'); a.textContent = '❓';
     card.classList.remove('face'); card.textContent = '❓';
@@ -376,9 +402,10 @@ function memoryLose() {
   if (!mem.playing) return;
   mem.playing = false; memStopTimer();
   try { sounds.lose(); } catch (_) {}
-  $('memory-msg').textContent = '⏱ Time khatam! Level fail.';
+  $('memory-msg').textContent = '⏱ Time\'s up! Level failed.';
   const btn = $('memory-play'); btn.disabled = false; btn.textContent = '▶ Play again';
-  startWaitAfterLoss('memory');
+  showBurst('⏰', "Time's up!", 1100);
+  setTimeout(() => startWaitAfterLoss('memory'), 1100);
 }
 
 /* ============================================================
@@ -424,15 +451,17 @@ function flappyIdle() {
   flStop();
   fl.cfg = flCfg(levels.flappy);
   flDraw();
-  $('flappy-msg').textContent = 'Play dabao, phir screen tap karke urao!';
+  $('flappy-msg').textContent = 'Press Play, then tap the screen to fly!';
   const btn = $('flappy-play'); btn.disabled = false; btn.textContent = '▶ Play';
   flInfo();
 }
 function flappyStart() {
   unlockAudio();
+  try { sounds.click(); } catch (_) {}
   fl.cfg = flCfg(levels.flappy);
+  fgToast('🎯 Level ' + levels.flappy + ' — pass ' + fl.cfg.target + ' pipes!', 1500);
   fl.score = 0; fl.y = 220; fl.vy = 0; fl.pipes = []; fl.playing = true;
-  $('flappy-msg').textContent = 'Tap! Tap! Pipes se bacho!';
+  $('flappy-msg').textContent = 'Tap! Tap! Dodge the pipes!';
   const btn = $('flappy-play'); btn.disabled = true; btn.textContent = 'Playing…';
   flInfo();
   flStop();
@@ -449,7 +478,11 @@ function flappyStart() {
     // scoring
     for (const p of fl.pipes) {
       if (!p.passed && p.x + 64 < FL_X) {
-        p.passed = true; fl.score++; flInfo();
+        p.passed = true; fl.score++;
+        try { sounds.point(); } catch (_) {}
+        flInfo();
+        const sc = $('flappy-score');
+        if (sc) { sc.classList.remove('fg-score-pop'); void sc.offsetWidth; sc.classList.add('fg-score-pop'); }
         if (fl.score >= fl.cfg.target) { flappyWin(); return; }
       }
       if (FL_X + 13 > p.x && FL_X - 13 < p.x + 64 &&
@@ -464,18 +497,18 @@ function flappyStart() {
 }
 function flappyWin() {
   fl.playing = false; flStop(); flDraw();
-  $('flappy-msg').textContent = '🎉 Target pura!';
+  $('flappy-msg').textContent = '🎉 Target complete!';
   onWin('flappy');
 }
 function flappyLose() {
   if (!fl.playing) return;
   fl.playing = false; flStop(); flDraw();
   try { sounds.lose(); } catch (_) {}
-  $('flappy-msg').textContent = '💥 Takra gaye! Level fail.';
+  $('flappy-msg').textContent = '💥 Crash! Level failed.';
   const btn = $('flappy-play'); btn.disabled = false; btn.textContent = '▶ Play again';
   const cv = $('flappy-canvas');
   if (cv) { cv.classList.remove('fg-shake'); void cv.offsetWidth; cv.classList.add('fg-shake'); }
-  showBurst('💥', 'Takra gaye!', 1200);
+  showBurst('💥', 'Crashed!', 1200);
   setTimeout(() => startWaitAfterLoss('flappy'), 1200);
 }
 
@@ -497,7 +530,7 @@ export function initFreeGames(showView) {
   $('flappy-play').addEventListener('click', flappyStart);
   $('flappy-canvas').addEventListener('pointerdown', (e) => {
     e.preventDefault();
-    if (fl.playing) { fl.vy = -7.6; try { sounds.click(); } catch (_) {} }
+    if (fl.playing) { fl.vy = -7.6; try { sounds.pop(); } catch (_) {} }
   });
 
   $('fg-wait-pause').addEventListener('click', () => { pauseWait(); onBackFromGame(); });
