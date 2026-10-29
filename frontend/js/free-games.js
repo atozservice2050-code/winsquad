@@ -7,14 +7,16 @@
      and the next, tougher level opens. claim_free_game_win()
      pays only the stored level, so levels can't be farmed.
    - LOSE -> waiting screen (future ad slot): 15s after the 1st
-     loss of the day, +15s per further loss (per game, resets
-     daily). The countdown PAUSES when the player leaves and
+     loss, +15s per further loss, CAPPED at 90s max (per game).
+     The whole cycle RESETS 15 minutes after the last loss (an
+     unfinished wait is cleared; next loss starts again at 15s),
+     and also resets daily. The countdown PAUSES when the player leaves and
      RESUMES when they open the same game again; state is kept
      in localStorage so it survives app restarts. The close (X)
      button appears only when the clock reaches 0.
    ============================================================ */
 import { supabase, unwrapRow } from './supabase-client.js';
-import { $, toast, fmtRs, unlockAudio, sounds } from './util.js?v=42';
+import { $, toast, fmtRs, unlockAudio, sounds } from './util.js?v=43';
 
 const GAME_LABEL = { mines: 'Mines', memory: 'Memory Match', flappy: 'Flappy Jump' };
 const rewardFor = (lvl) => Math.min(15 + 5 * lvl, 50);
@@ -73,12 +75,17 @@ function pktDay() {
   catch (_) { return new Date().toISOString().slice(0, 10); }
 }
 function waitKey(game) { return 'fgwait_' + (userId || 'anon') + '_' + game; }
+const WAIT_RESET_MS = 15 * 60 * 1000; // wait cycle resets 15 min after the last loss
 function loadWait(game) {
-  const fresh = { day: pktDay(), losses: 0, remain: 0 };
+  const fresh = { day: pktDay(), losses: 0, remain: 0, lastLoss: 0 };
   try {
     const s = JSON.parse(localStorage.getItem(waitKey(game)));
     if (!s || s.day !== pktDay()) return fresh;
-    return { day: s.day, losses: Number(s.losses) || 0, remain: Number(s.remain) || 0 };
+    const lastLoss = Number(s.lastLoss) || 0;
+    // 15 minutes passed since the last loss -> the ad/wait screen resets:
+    // any unfinished wait is cleared and the next loss starts again at 15s.
+    if (lastLoss && Date.now() - lastLoss > WAIT_RESET_MS) return fresh;
+    return { day: s.day, losses: Number(s.losses) || 0, remain: Number(s.remain) || 0, lastLoss };
   } catch (_) { return fresh; }
 }
 function saveWait(game, s) {
@@ -176,7 +183,8 @@ function fgToast(text, ms) {
 function startWaitAfterLoss(game) {
   const s = loadWait(game);
   s.losses += 1;
-  s.remain = 15 * s.losses;
+  s.remain = Math.min(15 * s.losses, 90); // escalation caps at 90 seconds max
+  s.lastLoss = Date.now();
   saveWait(game, s);
   openWait(game);
 }
