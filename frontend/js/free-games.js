@@ -295,12 +295,22 @@ function memoryIdle() {
   const btn = $('memory-play'); btn.disabled = false; btn.textContent = '▶ Play';
   memInfo();
 }
+/* True-random shuffle (Fisher-Yates) — no positional bias, so no
+   pattern or trick can ever be learned; every attempt is unique. */
+function shuffleFY(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
 function memoryStart() {
   unlockAudio();
   const c = memCfg(levels.memory);
   mem.cfg = c; mem.found = 0; mem.first = null; mem.lock = false; mem.playing = true;
-  const syms = MEM_SYMBOLS.slice(0, c.pairs);
-  const deck = [...syms, ...syms].sort(() => Math.random() - 0.5);
+  // Random symbol subset each attempt + fully shuffled deck.
+  const syms = shuffleFY([...MEM_SYMBOLS]).slice(0, c.pairs);
+  const deck = shuffleFY([...syms, ...syms]);
   const grid = $('memory-grid');
   grid.style.gridTemplateColumns = 'repeat(4, 1fr)';
   grid.innerHTML = '';
