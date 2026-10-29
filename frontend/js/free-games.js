@@ -16,7 +16,7 @@
      button appears only when the clock reaches 0.
    ============================================================ */
 import { supabase, unwrapRow } from './supabase-client.js';
-import { $, toast, fmtRs, unlockAudio, sounds } from './util.js?v=43';
+import { $, toast, fmtRs, unlockAudio, sounds } from './util.js?v=44';
 
 const GAME_LABEL = { mines: 'Mines', memory: 'Memory Match', flappy: 'Flappy Jump' };
 const rewardFor = (lvl) => Math.min(15 + 5 * lvl, 50);
@@ -236,7 +236,7 @@ function onBackFromGame() {
 function stopActivity(game) {
   if (game === 'mines') mines.playing = false;
   if (game === 'memory') { mem.playing = false; memStopTimer(); }
-  if (game === 'flappy') { fl.playing = false; flStop(); }
+  if (game === 'flappy') { fl.playing = false; fl.ready = false; flStop(); }
 }
 function resetGameIdle(game) {
   if (game === 'mines') minesIdle();
@@ -446,7 +446,7 @@ function memoryLose() {
    FLAPPY JUMP — canvas. Level scaling:
    target pipes = min(5 + 5*L, 50); speed grows, gap tightens.
    ============================================================ */
-const fl = { playing: false, raf: 0, y: 220, vy: 0, pipes: [], score: 0, cfg: { target: 10, speed: 2, gap: 124 } };
+const fl = { playing: false, ready: false, raf: 0, y: 220, vy: 0, pipes: [], score: 0, cfg: { target: 10, speed: 2, gap: 124 } };
 const FL_W = 360, FL_H = 460, FL_X = 66;
 function flCfg(l) {
   return {
@@ -479,9 +479,17 @@ function flDraw() {
   ctx.font = '30px serif';
   ctx.textAlign = 'center';
   ctx.fillText('🐤', FL_X, fl.y + 10);
+  // waiting-for-first-tap hint
+  if (fl.ready) {
+    ctx.font = 'bold 24px system-ui, sans-serif';
+    ctx.lineWidth = 5; ctx.strokeStyle = 'rgba(0,0,0,0.65)';
+    ctx.fillStyle = '#ffd94d';
+    ctx.strokeText('👆 TAP TO START', FL_W / 2, 118);
+    ctx.fillText('👆 TAP TO START', FL_W / 2, 118);
+  }
 }
 function flappyIdle() {
-  fl.playing = false; fl.score = 0; fl.y = 220; fl.vy = 0; fl.pipes = [];
+  fl.playing = false; fl.ready = false; fl.score = 0; fl.y = 220; fl.vy = 0; fl.pipes = [];
   flStop();
   fl.cfg = flCfg(levels.flappy);
   flDraw();
@@ -494,10 +502,27 @@ function flappyStart() {
   try { sounds.click(); } catch (_) {}
   fl.cfg = flCfg(levels.flappy);
   fgToast('🎯 Level ' + levels.flappy + ' — pass ' + fl.cfg.target + ' pipes!', 1500);
-  fl.score = 0; fl.y = 220; fl.vy = 0; fl.pipes = []; fl.playing = true;
-  $('flappy-msg').textContent = 'Tap! Tap! Dodge the pipes!';
-  const btn = $('flappy-play'); btn.disabled = true; btn.textContent = 'Playing…';
+  fl.score = 0; fl.y = 220; fl.vy = 0; fl.pipes = []; fl.playing = false;
+  // The game does NOT start on its own: the bird hovers and waits
+  // until the user's first tap/click on the screen (flBegin).
+  fl.ready = true;
+  $('flappy-msg').textContent = '👆 Tap the screen to start!';
+  const btn = $('flappy-play'); btn.disabled = true; btn.textContent = 'Tap to start…';
   flInfo();
+  flStop();
+  const bob = () => {
+    if (!fl.ready) return;
+    fl.y = 220 + Math.sin(Date.now() / 300) * 7;
+    flDraw();
+    fl.raf = requestAnimationFrame(bob);
+  };
+  fl.raf = requestAnimationFrame(bob);
+}
+function flBegin() {
+  fl.ready = false;
+  fl.playing = true;
+  fl.vy = -7.6; // the starting tap is also the first flap
+  $('flappy-msg').textContent = 'Tap! Tap! Dodge the pipes!';
   flStop();
   const step = () => {
     if (!fl.playing) return;
@@ -564,6 +589,7 @@ export function initFreeGames(showView) {
   $('flappy-play').addEventListener('click', () => startWithCountdown(flappyStart));
   $('flappy-canvas').addEventListener('pointerdown', (e) => {
     e.preventDefault();
+    if (fl.ready) { try { sounds.pop(); } catch (_) {} flBegin(); return; }
     if (fl.playing) { fl.vy = -7.6; try { sounds.pop(); } catch (_) {} }
   });
 
