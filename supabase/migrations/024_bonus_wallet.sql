@@ -92,7 +92,7 @@ begin
       to_char(coalesce(v_bonus, 0), 'FM999999990'), to_char(v_withdrawable, 'FM999999990');
   end if;
   if new.amount > floor(v_withdrawable * 0.5) then
-    raise exception 'Max 50% of your withdrawable balance (Rs %) per withdrawal.',
+    raise exception 'Max 50%% of your withdrawable balance (Rs %) per withdrawal.',
       to_char(floor(v_withdrawable * 0.5), 'FM999999990');
   end if;
   -- 3. Turnover: total bets must be >= total approved deposits (1x)
