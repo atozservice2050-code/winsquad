@@ -14,7 +14,7 @@
      button appears only when the clock reaches 0.
    ============================================================ */
 import { supabase, unwrapRow } from './supabase-client.js';
-import { $, toast, fmtRs, unlockAudio, sounds } from './util.js?v=40';
+import { $, toast, fmtRs, unlockAudio, sounds } from './util.js?v=42';
 
 const GAME_LABEL = { mines: 'Mines', memory: 'Memory Match', flappy: 'Flappy Jump' };
 const rewardFor = (lvl) => Math.min(15 + 5 * lvl, 50);
@@ -133,6 +133,32 @@ function showBurst(emoji, text, ms) {
   b.hidden = false;
   if (burstTimer) clearTimeout(burstTimer);
   burstTimer = setTimeout(() => { b.hidden = true; }, ms || 1300);
+}
+
+/* 3-2-1-GO countdown: Play click -> countdown pause -> game starts. */
+let counting = false;
+function startWithCountdown(realStart) {
+  if (counting) return;
+  counting = true;
+  unlockAudio();
+  try { sounds.click(); } catch (_) {}
+  const ov = $('fg-count'), num = $('fg-count-num');
+  if (!ov || !num) { counting = false; realStart(); return; }
+  const steps = ['3', '2', '1', 'GO!'];
+  let i = 0;
+  ov.hidden = false;
+  const show = () => {
+    const s = steps[i];
+    num.textContent = s;
+    num.style.color = s === 'GO!' ? '#2ee06f' : '#ffd94d';
+    num.style.textShadow = s === 'GO!' ? '0 6px 0 #0a3d1c, 0 14px 38px rgba(0,0,0,0.85)' : '0 6px 0 #7a5200, 0 14px 38px rgba(0,0,0,0.85)';
+    num.classList.remove('fg-count-pop'); void num.offsetWidth; num.classList.add('fg-count-pop');
+    try { if (s === 'GO!') sounds.ding(); else sounds.tick(); } catch (_) {}
+    i++;
+    if (i < steps.length) setTimeout(show, 720);
+    else setTimeout(() => { ov.hidden = true; counting = false; realStart(); }, 460);
+  };
+  show();
 }
 
 /* Temporary in-game pop-up message: clear, auto-hides. */
@@ -525,9 +551,9 @@ export function initFreeGames(showView) {
   document.querySelectorAll('.fg-back').forEach(b =>
     b.addEventListener('click', () => { try { sounds.click(); } catch (_) {} onBackFromGame(); }));
 
-  $('mines-play').addEventListener('click', minesStart);
-  $('memory-play').addEventListener('click', memoryStart);
-  $('flappy-play').addEventListener('click', flappyStart);
+  $('mines-play').addEventListener('click', () => startWithCountdown(minesStart));
+  $('memory-play').addEventListener('click', () => startWithCountdown(memoryStart));
+  $('flappy-play').addEventListener('click', () => startWithCountdown(flappyStart));
   $('flappy-canvas').addEventListener('pointerdown', (e) => {
     e.preventDefault();
     if (fl.playing) { fl.vy = -7.6; try { sounds.pop(); } catch (_) {} }
