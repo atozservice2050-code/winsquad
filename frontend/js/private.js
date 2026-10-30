@@ -6,7 +6,8 @@
    - Reads: private_tables / private_seats / private_bids for
      tables the user sits at (realtime subscribed).
    Rules reflected: clock starts on FIRST bid (30s); only the 1
-   highest bidder loses; total reveals only after ALL 4 have bid.
+   highest bidder loses; total reveals after ALL seated players
+   have bid. A table starts with 3 players seated (4 max).
    Column names below are best-effort guesses against the backend
    contract — every read is defensive (see README "Backend contract").
    ============================================================ */
@@ -163,8 +164,15 @@ function seatName(seat) {
   return seatNames[seat.user_id] || seat.display_name || seat.player_name || seat.name ||
     ('Player ' + String(seat.user_id || '?').slice(0, 4));
 }
+function roundBids() {
+  // Only the current round's bids count — bids from earlier rounds of
+  // this table must not show as this round's bids or totals.
+  const rno = table?.current_round_no;
+  if (rno == null) return bids;
+  return bids.filter(b => Number(b.round_no ?? rno) === Number(rno));
+}
 function seatBid(seat) {
-  const b = bids.find(x => x.user_id === seat.user_id || x.seat_id === seat.id);
+  const b = roundBids().find(x => x.user_id === seat.user_id || x.seat_id === seat.id);
   return b ? Number(b.amount) : null;
 }
 
@@ -190,7 +198,7 @@ function renderTable() {
 
   // clock: starts on first bid (30s)
   const endsAt = table?.current_ends_at || table?.round_ends_at || table?.ends_at;
-  const anyBid = bids.length > 0;
+  const anyBid = roundBids().length > 0;
   clearInterval(clockInt);
   if (!anyBid || !endsAt) {
     $('private-clock').textContent = anyBid ? 'Starting…' : '⏳ Waiting for first bid…';
@@ -206,14 +214,17 @@ function renderTable() {
     }, 250);
   }
 
-  // total: reveals only after ALL 4 seats have bid
+  // total: reveals only after ALL seated players have bid (min 3 to start)
   const filledSeats = seats.length;
+  const rBids = roundBids();
   const totalEl = $('private-total');
-  if (filledSeats >= 4 && bids.length >= 4) {
-    const total = bids.reduce((a, b) => a + Number(b.amount || 0), 0);
+  if (filledSeats >= 3 && rBids.length >= filledSeats) {
+    const total = rBids.reduce((a, b) => a + Number(b.amount || 0), 0);
     totalEl.innerHTML = '💰 Total pot: <strong>Rs ' + fmtRs(total) + '</strong>';
+  } else if (filledSeats < 3) {
+    totalEl.textContent = 'Waiting for players — 3 needed to start (' + filledSeats + '/3 seated)';
   } else {
-    totalEl.textContent = 'Total reveals after all 4 players bid (' + bids.length + '/4 bids in)';
+    totalEl.textContent = 'Total reveals after all seated players bid (' + rBids.length + '/' + filledSeats + ' bids in)';
   }
 
   // results

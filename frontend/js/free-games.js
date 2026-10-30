@@ -16,7 +16,7 @@
      button appears only when the clock reaches 0.
    ============================================================ */
 import { supabase, unwrapRow } from './supabase-client.js';
-import { $, toast, fmtRs, unlockAudio, sounds } from './util.js?v=46';
+import { $, toast, fmtRs, unlockAudio, sounds } from './util.js?v=47';
 
 const GAME_LABEL = { mines: 'Mines', memory: 'Memory Match', flappy: 'Flappy Jump' };
 const rewardFor = (lvl) => Math.min(15 + 5 * lvl, 50);

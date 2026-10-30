@@ -1093,7 +1093,7 @@ end;
 $$;
 
 -- Join a private table by invite code (case/format tolerant). Fills the next
--- free seat (1-4). Table becomes 'active' when the 4th seat fills.
+-- free seat (1-4). Table becomes 'active' when the 3rd seat fills.
 create or replace function public.join_private_table(p_code text)
 returns jsonb
 language plpgsql
@@ -1156,7 +1156,7 @@ begin
   insert into public.private_seats (table_id, user_id, seat_no)
   values (v_tbl.id, v_uid, v_seat);
 
-  if v_n + 1 = 4 then
+  if v_n + 1 >= 3 then
     update public.private_tables set status = 'active' where id = v_tbl.id;
     v_tbl.status := 'active';
   end if;
@@ -1166,7 +1166,7 @@ begin
 end;
 $$;
 
--- Resolve a private table round once all 4 seats have bid.
+-- Resolve a private table round once all seated players (min 3) have bid.
 -- Single HIGHEST bidder loses (tie: earliest placed_at loses); the other 3
 -- split 90% proportionally; 10% fee -> private_tables.fee_amount (HIDDEN).
 -- Internal helper, but safe to expose: no-ops unless the round is complete.
@@ -1180,6 +1180,7 @@ declare
   v_tbl      public.private_tables%rowtype;
   v_rno      int;
   v_n        int;
+  v_seats    int;
   v_loser_id uuid;
   v_loser_amt numeric(12,2);
   v_bid      record;
@@ -1206,7 +1207,11 @@ begin
   from public.private_bids
   where table_id = p_table_id and round_no = v_rno;
 
-  if v_n < 4 then
+  select count(*) into v_seats
+  from public.private_seats
+  where table_id = p_table_id;
+
+  if v_seats < 3 or v_n < v_seats then
     return jsonb_build_object('ok', true, 'waiting', true,
                               'bids', v_n, 'round_no', v_rno);
   end if;
@@ -1260,7 +1265,7 @@ begin
 end;
 $$;
 
--- Place a private bid (min Rs 500). When all 4 seats have bid, the round
+-- Place a private bid (min Rs 500). When all seated players have bid, the round
 -- resolves automatically via resolve_private_round().
 create or replace function public.place_private_bid(
   p_table_id uuid,
@@ -1276,6 +1281,7 @@ declare
   v_tbl    public.private_tables%rowtype;
   v_bid_id uuid;
   v_res    jsonb;
+  v_seats  int;
 begin
   if v_uid is null then
     return jsonb_build_object('ok', false, 'error', 'not authenticated');
@@ -1290,8 +1296,21 @@ begin
   if v_tbl.id is null then
     return jsonb_build_object('ok', false, 'error', 'table not found');
   end if;
+  if v_tbl.status = 'closed' then
+    return jsonb_build_object('ok', false, 'error', 'table is closed');
+  end if;
+
+  select count(*) into v_seats
+  from public.private_seats
+  where table_id = p_table_id;
+
+  if v_seats < 3 then
+    return jsonb_build_object('ok', false, 'error', 'Need 3 players seated to start the table');
+  end if;
+
   if v_tbl.status <> 'active' then
-    return jsonb_build_object('ok', false, 'error', 'table is not active');
+    update public.private_tables set status = 'active' where id = p_table_id;
+    v_tbl.status := 'active';
   end if;
 
   if not exists (

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <meta name="theme-color" content="#0a0a14" />
   <title>WinSquad — Play together. Win together.</title>
-  <link rel="stylesheet" href="css/style.css?v=46" />
+  <link rel="stylesheet" href="css/style.css?v=47" />
   <!-- Runtime config: inline fallback (public anon key by design).
        js/env.js is preferred when present (generated at build time). -->
   <script>
@@ -14,8 +14,8 @@
       SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt6amt2aHRha3dvaHh4dXlzdXRvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE3MzUxNTgsImV4cCI6MjEwNzMxMTE1OH0.uPzzMNKm0FaqjDwZ_0iMotS2rGXx0J9lBNqYXm7G02I"
     };
   </script>
-  <script src="js/env.js?v=46"></script>
-  <script src="js/supabase-js.js?v=46"></script>
+  <script src="js/env.js?v=47"></script>
+  <script src="js/supabase-js.js?v=47"></script>
 </head>
 <body>
 
@@ -845,7 +845,7 @@
         <div id="private-lobby">
           <div class="card gold-frame">
             <div class="card-title">🔒 Private table</div>
-            <p class="hint">4 players · invite code · only the <strong>highest</strong> bidder loses · min bid Rs 500</p>
+            <p class="hint">3–4 players · invite code · only the <strong>highest</strong> bidder loses · min bid Rs 500</p>
             <button id="btn-create-table" class="btn-red">Create table</button>
             <div class="divider"><span>or</span></div>
             <label class="field-label" for="join-code-input">Invite code</label>
@@ -870,7 +870,7 @@
             <div class="card-title">🔒 Private table <span class="muted" id="private-code-label"></span></div>
             <div id="private-clock" class="clock big">Waiting for first bid…</div>
             <div id="private-seats" class="seats"></div>
-            <div id="private-total" class="pot-total small">Total reveals after all 4 players bid</div>
+            <div id="private-total" class="pot-total small">Total reveals after all seated players bid</div>
             <button id="btn-share-table" class="btn-gold">🔗 Share invite link</button>
             <p class="hint center">Friends open the link and join this table directly — no code typing.</p>
             <div class="bid-tabs" role="tablist">
@@ -1264,6 +1264,6 @@
     </div>
   </div>
 
-  <script type="module" src="js/app.js?v=46"></script>
+  <script type="module" src="js/app.js?v=47"></script>
 </body>
 </html>
