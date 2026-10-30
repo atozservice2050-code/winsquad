@@ -106,6 +106,30 @@ function showView(name) {
   if (name === 'arena' && initialized.arena) { /* arena runs its own realtime loop */ }
 }
 
+/* Push notifications (APK v2+): the native shell exposes
+   window.WinSquadPush; register this device's FCM token against the
+   signed-in user, and nag users on an outdated shell to update. */
+const LATEST_APK_VERSION = 2;
+function initPushBridge() {
+  const bridge = window.WinSquadPush;
+  if (!bridge) return; // plain web browser — no native push
+  const send = (t) => {
+    if (t) supabase.rpc('register_push_token', { p_token: t, p_platform: 'android' }).then(() => {}, () => {});
+  };
+  try { send(bridge.getToken()); } catch (e) {}
+  window.addEventListener('winsquad-push-token', (e) => send(e.detail));
+  try {
+    const vc = bridge.getVersionCode();
+    if (vc && vc < LATEST_APK_VERSION) {
+      const banner = $('apk-update-banner');
+      if (banner) {
+        banner.hidden = false;
+        $('apk-update-close')?.addEventListener('click', () => { banner.hidden = true; });
+      }
+    }
+  } catch (e) {}
+}
+
 /* Presence heartbeat: keeps profiles.last_seen_at fresh so the admin
    portal can show who is online (migration 033). */
 let presenceTimer = null;
@@ -134,6 +158,7 @@ function enterApp(profile, phone) {
   setFreeUser(uid);
   initWalletTopbar();
   startPresence();
+  initPushBridge();
   $('app').hidden = false;
   showView('home');
   // Disclaimer: shown once on first login.

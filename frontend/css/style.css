@@ -1220,6 +1220,26 @@ button { font-family: inherit; cursor: pointer; border: none; border-radius: 12p
 }
 #toast.error { border-color: var(--red); }
 
+/* APK update banner (shown only inside an outdated native shell) */
+.apk-update-banner {
+  position: sticky; top: 0; z-index: 300;
+  display: flex; align-items: center; gap: 10px;
+  background: linear-gradient(90deg, #7c2d12, #b45309);
+  color: #fff; font-size: 13px; font-weight: 700;
+  padding: 10px 12px;
+}
+.apk-update-banner[hidden] { display: none; }
+.apk-update-banner span { flex: 1; }
+.apk-update-btn {
+  background: var(--gold); color: #1a1200; font-weight: 800;
+  padding: 6px 12px; border-radius: 999px; text-decoration: none;
+  white-space: nowrap;
+}
+.apk-update-close {
+  background: transparent; border: none; color: #fff;
+  font-size: 15px; cursor: pointer; padding: 2px 4px;
+}
+
 #result-modal {
   position: fixed; inset: 0; z-index: 300;
   background: rgba(0, 0, 0, 0.72);
