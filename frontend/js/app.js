@@ -106,6 +106,17 @@ function showView(name) {
   if (name === 'arena' && initialized.arena) { /* arena runs its own realtime loop */ }
 }
 
+/* Presence heartbeat: keeps profiles.last_seen_at fresh so the admin
+   portal can show who is online (migration 033). */
+let presenceTimer = null;
+function startPresence() {
+  const beat = () => { supabase.rpc('touch_presence').then(() => {}, () => {}); };
+  beat();
+  if (presenceTimer) clearInterval(presenceTimer);
+  presenceTimer = setInterval(beat, 30000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) beat(); });
+}
+
 function enterApp(profile, phone) {
   currentProfile = profile;
   const uid = profile?.id;
@@ -122,6 +133,7 @@ function enterApp(profile, phone) {
   setDiceUser(uid);
   setFreeUser(uid);
   initWalletTopbar();
+  startPresence();
   $('app').hidden = false;
   showView('home');
   // Disclaimer: shown once on first login.

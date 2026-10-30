@@ -257,6 +257,8 @@
           <button class="btn-refresh" id="btn-user-search">Search</button>
         </div>
         <div id="source-summary" class="muted" style="margin:6px 2px;font-size:13px"></div>
+        <div id="online-summary" style="margin:6px 2px;font-size:15px"></div>
+        <div id="presence-feed" class="muted" style="margin:6px 2px;font-size:13px"></div>
         <div id="users-loading" class="loading">Loading users…</div>
         <div id="users-content" class="table-wrap" hidden>
           <table class="data-table">
@@ -459,6 +461,7 @@ async function onAdminAuthed() {
       return;
     }
     $('admin-main').hidden = false;
+    startPresenceWatcher();
     await loadDashboard();
   } catch (e) {
     toast(friendlyError(e, 'Could not verify admin access.'), true);
@@ -546,16 +549,18 @@ async function loadDashboard() {
 TAB_LOADERS.dashboard = loadDashboard;
 
 /* ================= users ================= */
-async function loadUsers() {
-  $('users-loading').hidden = false;
-  $('users-content').hidden = true;
+async function loadUsers(silent = false) {
+  if (!silent) {
+    $('users-loading').hidden = false;
+    $('users-content').hidden = true;
+  }
   try {
     const q = $('user-search').value.trim();
     // signup_source column exists only after migration 012; fall back gracefully.
     let profiles;
     try {
       const r = await supabase.from('profiles')
-        .select('id, phone, display_name, referral_id, transfer_id, signup_source, created_at, is_blocked, cnic, kyc_status')
+        .select('id, phone, display_name, referral_id, transfer_id, signup_source, created_at, is_blocked, cnic, kyc_status, last_seen_at')
         .order('created_at', { ascending: false })
         .limit(50);
       if (r.error) throw r.error;
@@ -601,9 +606,15 @@ async function loadUsers() {
       : '<span class="pill">Unverified</span>';
 
     const srcLabel = (s) => s === 'apk' ? '📱 APK' : s === 'mobile-web' ? '🌐 Mobile web' : s === 'desktop-web' ? '💻 Desktop' : '–';
+    const presenceHtml = (p) => {
+      if (!p.last_seen_at) return '<br /><span class="muted" style="font-size:12px">⚫ Never online</span>';
+      const ago = Date.now() - new Date(p.last_seen_at).getTime();
+      if (ago < 90000) return '<br /><span style="color:#22c55e;font-size:12px">🟢 Online now</span>';
+      return '<br /><span class="muted" style="font-size:12px">⚫ Last seen ' + relTime(p.last_seen_at) + '</span>';
+    };
     $('users-tbody').innerHTML = rows.map(p => `
       <tr style="${p.is_blocked ? 'opacity:0.55;' : ''}">
-        <td><strong>${esc(p.display_name)}</strong>${p.is_blocked ? ' <span class="pill" style="background:#5a1010;color:#ff8080;">BLOCKED</span>' : ''}</td>
+        <td><strong>${esc(p.display_name)}</strong>${p.is_blocked ? ' <span class="pill" style="background:#5a1010;color:#ff8080;">BLOCKED</span>' : ''}${presenceHtml(p)}</td>
         <td class="mono">${esc(p.phone || '–')}</td>
         <td><span class="mono">${esc(p.referral_id || '')}</span><br /><span class="muted mono">${esc(p.transfer_id || '')}</span></td>
         <td class="muted">${srcLabel(p.signup_source)}</td>
@@ -687,6 +698,76 @@ async function loadUsers() {
   }
 }
 TAB_LOADERS.users = loadUsers;
+
+/* ================= presence: online count + arrival notifications ================= */
+function relTime(ts) {
+  const s = Math.max(0, Math.floor((Date.now() - new Date(ts).getTime()) / 1000));
+  if (s < 60) return 'just now';
+  const m = Math.floor(s / 60);
+  if (m < 60) return m + ' min ago';
+  const h = Math.floor(m / 60);
+  if (h < 24) return h + ' hr ago';
+  const d = Math.floor(h / 24);
+  return d + (d === 1 ? ' day ago' : ' days ago');
+}
+
+function beep() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.connect(g); g.connect(ctx.destination);
+    o.frequency.value = 880;
+    g.gain.setValueAtTime(0.08, ctx.currentTime);
+    o.start(); o.stop(ctx.currentTime + 0.18);
+    setTimeout(() => ctx.close(), 300);
+  } catch (e) { /* sound is best-effort */ }
+}
+
+let lastEventAt = null;
+let presenceTimer = null;
+
+async function pollPresence() {
+  try {
+    const since = new Date(Date.now() - 90000).toISOString();
+    const { count } = await supabase.from('profiles')
+      .select('id', { count: 'exact', head: true })
+      .gt('last_seen_at', since);
+    const el = $('online-summary');
+    if (el) el.innerHTML = '🟢 <strong>Online now: ' + (count ?? 0) + '</strong>';
+
+    const { data: evs } = await supabase.from('presence_events')
+      .select('id, user_id, came_online_at')
+      .order('came_online_at', { ascending: false }).limit(10);
+    if (evs && evs.length) {
+      const ids = [...new Set(evs.map(e => e.user_id))];
+      const { data: profs } = await supabase.from('profiles').select('id, display_name').in('id', ids);
+      const names = {};
+      (profs || []).forEach(p => { names[p.id] = p.display_name; });
+      const feed = $('presence-feed');
+      if (feed) feed.innerHTML = '🔔 <strong>Recent online activity</strong><br />' +
+        evs.map(e => '🟢 ' + esc(names[e.user_id] || 'A player') + ' came online · ' + relTime(e.came_online_at)).join('<br />');
+      const newestAt = evs[0].came_online_at;
+      if (lastEventAt === null) {
+        lastEventAt = newestAt;
+      } else if (newestAt > lastEventAt) {
+        evs.filter(e => e.came_online_at > lastEventAt)
+           .slice(0, 3)
+           .forEach(e => { toast('🟢 ' + (names[e.user_id] || 'A player') + ' is online now!'); beep(); });
+        lastEventAt = newestAt;
+      }
+    } else if (lastEventAt === null) {
+      lastEventAt = new Date(0).toISOString();
+    }
+    if (!$('tab-users').hidden) loadUsers(true);
+  } catch (e) { /* presence is best-effort */ }
+}
+
+function startPresenceWatcher() {
+  if (presenceTimer) return;
+  pollPresence();
+  presenceTimer = setInterval(pollPresence, 15000);
+}
 
 /* ================= user block/delete modal ================= */
 let _userActionFn = null;
