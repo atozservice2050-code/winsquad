@@ -84,7 +84,15 @@ create table public.transactions (
   user_id              uuid not null references public.profiles(id) on delete cascade,
   type                 text not null
                          check (type in ('deposit','withdraw','transfer_in','transfer_out',
-                                          'stake','payout','bonus','fee')),
+                                          'stake','payout','bonus','fee',
+                                          'coinflip_bet','coinflip_win','coinflip_loss',
+                                          'dragontiger_bet','dragontiger_win','dragontiger_loss',
+                                          'andarbahar_bet','andarbahar_win',
+                                          'roulette_bet','roulette_win','roulette_loss',
+                                          'squad_loss',
+                                          'cv_bet','cv_win','cv_loss',
+                                          'dice_bet','dice_win','dice_loss',
+                                          'refund')),
   amount               numeric(12,2) not null check (amount > 0),
   status               text not null default 'completed'
                          check (status in ('pending','completed','rejected')),
@@ -1286,7 +1294,6 @@ declare
   v_uid    uuid := auth.uid();
   v_tbl    public.private_tables%rowtype;
   v_bid_id uuid;
-  v_res    jsonb;
   v_seats  int;
 begin
   if v_uid is null then
@@ -1351,14 +1358,13 @@ begin
   values (p_table_id, v_tbl.current_round_no, v_uid, p_amount)
   returning id into v_bid_id;
 
-  v_res := public.resolve_private_round(p_table_id);
-
+  -- NO auto-resolve: the round waits for the spin turn (spin_private_table).
   return jsonb_build_object(
     'ok', true,
     'bid_id', v_bid_id,
     'amount', p_amount,
     'round_no', v_tbl.current_round_no,
-    'resolved', coalesce((v_res ->> 'resolved')::boolean, false)
+    'resolved', false
   );
 exception
   when unique_violation then
@@ -1366,22 +1372,102 @@ exception
 end;
 $$;
 
--- Leave a private table (migration 028): deletes the caller's seat so the
--- player disappears from everyone else's screen at once. Below 2 seated the
--- table goes back to 'waiting'; when the last player leaves, the current
--- round's bids go to the house fee (NO refund — owner rule) and the table
--- closes.
-create or replace function public.leave_private_table(p_table_id uuid)
+create or replace function public.spin_private_table(
+  p_table_id uuid
+)
 returns jsonb
 language plpgsql
 security definer
 set search_path = public
 as $$
 declare
-  v_uid   uuid := auth.uid();
-  v_tbl   public.private_tables%rowtype;
-  v_left  int;
-  v_pot   numeric(12,2) := 0;
+  v_uid       uuid := auth.uid();
+  v_tbl       public.private_tables%rowtype;
+  v_seated    uuid[];
+  v_spinner   uuid;
+  v_pending   int;
+  v_bid_count int;
+  v_res       jsonb;
+begin
+  if v_uid is null then
+    return jsonb_build_object('ok', false, 'error', 'not authenticated');
+  end if;
+
+  select * into v_tbl from public.private_tables where id = p_table_id for update;
+  if v_tbl.id is null then
+    return jsonb_build_object('ok', false, 'error', 'table not found');
+  end if;
+  if v_tbl.status = 'closed' then
+    return jsonb_build_object('ok', false, 'error', 'table is closed');
+  end if;
+
+  if not exists (
+    select 1 from public.private_seats
+    where table_id = p_table_id and user_id = v_uid
+  ) then
+    return jsonb_build_object('ok', false, 'error', 'you are not seated at this table');
+  end if;
+
+  select array_agg(user_id order by seat_no) into v_seated
+  from public.private_seats
+  where table_id = p_table_id;
+
+  if coalesce(array_length(v_seated, 1), 0) < 2 then
+    return jsonb_build_object('ok', false, 'error', 'Need 2 players seated to spin');
+  end if;
+
+  select count(*) into v_pending
+  from public.private_seats s
+  where s.table_id = p_table_id
+    and not exists (
+      select 1 from public.private_bids b
+      where b.table_id = p_table_id
+        and b.round_no = v_tbl.current_round_no
+        and b.user_id = s.user_id
+    );
+
+  select count(*) into v_bid_count
+  from public.private_bids
+  where table_id = p_table_id and round_no = v_tbl.current_round_no;
+
+  if v_pending > 0 or v_bid_count < 2 then
+    return jsonb_build_object('ok', false, 'error', 'Round is not ready — waiting for all players to bid');
+  end if;
+
+  -- spin turn rotates by round over the seated players in seat order
+  v_spinner := v_seated[((v_tbl.current_round_no - 1) % array_length(v_seated, 1)) + 1];
+  if v_uid <> v_spinner then
+    return jsonb_build_object('ok', false, 'error', 'not your turn to spin');
+  end if;
+
+  v_res := public.resolve_private_round(p_table_id);
+  if not coalesce((v_res ->> 'resolved')::boolean, false) then
+    return jsonb_build_object('ok', false, 'error', 'round could not be resolved');
+  end if;
+
+  return jsonb_build_object(
+    'ok', true,
+    'resolved', true,
+    'round_no', v_tbl.current_round_no
+  );
+end;
+$$;
+
+create or replace function public.leave_private_table(
+  p_table_id uuid
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_uid         uuid := auth.uid();
+  v_tbl         public.private_tables%rowtype;
+  v_seats_left  int;
+  v_bid_count   int;
+  v_round_total numeric;
+  v_bid         public.private_bids%rowtype;
 begin
   if v_uid is null then
     return jsonb_build_object('ok', false, 'error', 'not authenticated');
@@ -1392,44 +1478,67 @@ begin
     return jsonb_build_object('ok', false, 'error', 'table not found');
   end if;
 
+  if not exists (
+    select 1 from public.private_seats
+    where table_id = p_table_id and user_id = v_uid
+  ) then
+    return jsonb_build_object('ok', false, 'error', 'you are not seated at this table');
+  end if;
+
+  select count(*), coalesce(sum(amount), 0) into v_bid_count, v_round_total
+  from public.private_bids
+  where table_id = p_table_id and round_no = v_tbl.current_round_no;
+
   delete from public.private_seats
   where table_id = p_table_id and user_id = v_uid;
-  if not found then
-    return jsonb_build_object('ok', true, 'already_left', true);
-  end if;
 
-  select count(*) into v_left from public.private_seats where table_id = p_table_id;
+  select count(*) into v_seats_left
+  from public.private_seats
+  where table_id = p_table_id;
 
-  if v_left = 0 then
-    select coalesce(sum(amount), 0) into v_pot
-    from public.private_bids
-    where table_id = p_table_id and round_no = v_tbl.current_round_no;
-    delete from public.private_bids
-    where table_id = p_table_id and round_no = v_tbl.current_round_no;
+  if v_seats_left = 0 then
+    -- LAST PLAYER OUT (owner rule): no refunds — the current round's bids
+    -- go to the house fee and the table closes.
     update public.private_tables
-    set status = 'closed', fee_amount = fee_amount + v_pot
+    set status = 'closed',
+        fee_amount = fee_amount + v_round_total
     where id = p_table_id;
-    return jsonb_build_object('ok', true, 'seats_left', 0, 'status', 'closed',
-                              'fee_taken', v_pot);
+  else
+    if v_seats_left = 1 and v_bid_count = 1 then
+      -- The round can never complete (one player left, one bid): refund
+      -- that bid and clear it so the money is not stuck.
+      for v_bid in
+        select * from public.private_bids
+        where table_id = p_table_id and round_no = v_tbl.current_round_no
+      loop
+        update public.wallets
+        set balance = balance + v_bid.amount, updated_at = now()
+        where user_id = v_bid.user_id;
+        insert into public.transactions (user_id, type, amount, status, note)
+        values (v_bid.user_id, 'refund', v_bid.amount, 'completed',
+                'Private table round refund');
+      end loop;
+      delete from public.private_bids
+      where table_id = p_table_id and round_no = v_tbl.current_round_no;
+    end if;
+
+    update public.private_tables
+    set status = case when v_seats_left < 2 then 'waiting' else status end
+    where id = p_table_id;
   end if;
 
-  if v_left < 2 and v_tbl.status = 'active' then
-    update public.private_tables set status = 'waiting' where id = p_table_id;
-    v_tbl.status := 'waiting';
-  end if;
-
-  perform public.resolve_private_round(p_table_id);
-
-  return jsonb_build_object('ok', true, 'seats_left', v_left, 'status', v_tbl.status);
+  return jsonb_build_object(
+    'ok', true,
+    'seats_left', v_seats_left,
+    'status', case
+                when v_seats_left = 0 then 'closed'
+                when v_seats_left < 2 then 'waiting'
+                else v_tbl.status
+              end
+  );
 end;
 $$;
 
--- ----------------------------------------------------------------------------
--- 12. RPC functions — deposits (manual) + admin helpers
--- ----------------------------------------------------------------------------
-
--- Stub admin check: true when the caller's id is in public.admins.
--- The owner inserts their own auth.users id into admins after first sign-in.
 create or replace function public.is_admin()
 returns boolean
 language sql

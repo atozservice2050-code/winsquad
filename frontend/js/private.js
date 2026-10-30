@@ -3,6 +3,7 @@
    - create_private_table() -> {table_id, code}
    - join_private_table(p_code) -> {ok, error, table_id}
    - place_private_bid(p_table_id, p_amount)
+   - spin_private_table(p_table_id) -> resolves the round (manual spin)
    - leave_private_table(p_table_id) -> {ok, seats_left, status}
    - Reads: private_tables / private_seats / private_bids for
      tables the user sits at (realtime subscribed).
@@ -35,8 +36,11 @@ let lastRoundSeen = null;    // current_round_no at last render (resolve detect)
 let resultPoppedFor = 0;     // highest round no. already shown as a pop-up
 let highlightMap = {};       // user_id -> 'win' | 'lose' after a resolve
 let highlightUntil = 0;      // highlight expiry timestamp (ms)
-let arrowDeg = 0;            // accumulated arrow rotation (spins keep going forward)
-let spinTimer = null;        // pending reveal after the 5s arrow spin
+let arrowDeg = 0;            // accumulated needle rotation (spins keep going forward)
+let spinTimer = null;        // pending reveal after the 5s needle spin
+let localSpinRound = null;   // round THIS client spun via the pot click
+let spinInFlight = false;    // a pot-click spin is currently running
+let curSpin = { ready: false, spinner: null }; // spin state at last render
 
 export function setUser(id, displayName) { userId = id; myName = displayName || 'You'; }
 
@@ -195,6 +199,17 @@ function seatBid(seat) {
   return b ? Number(b.amount) : null;
 }
 
+// Spin state: a round is ready when every seated player has bid
+// (>= 2 bids). The spin turn rotates by round over the seated players
+// in seat order — the same rule the server enforces in
+// spin_private_table. Bidding itself has no turn order.
+function spinState() {
+  const rb = roundBids();
+  const ready = seats.length >= 2 && rb.length >= 2 && seats.every(s => seatBid(s) != null);
+  const spinner = ready ? seats[(Number(table.current_round_no) - 1) % seats.length] : null;
+  return { ready, spinner };
+}
+
 function renderTable() {
   // A round that just resolved: seat highlights + personal win/lose pop-up.
   const rnoNow = table?.current_round_no;
@@ -202,6 +217,7 @@ function renderTable() {
     for (let r = lastRoundSeen; r < rnoNow; r++) onRoundResolved(r);
   }
   if (rnoNow != null) lastRoundSeen = rnoNow;
+  curSpin = table ? spinState() : { ready: false, spinner: null };
 
   // seats (always 4 slots)
   const wrap = $('private-seats');
@@ -216,7 +232,9 @@ function renderTable() {
       const bid = seatBid(seat);
       const hl = (Date.now() < highlightUntil && highlightMap[seat.user_id])
         ? ' seat-' + highlightMap[seat.user_id] : '';
-      div.className = 'seat filled' + (seat.user_id === userId ? ' you' : '') + hl;
+      const turn = (curSpin.ready && curSpin.spinner && curSpin.spinner.user_id === seat.user_id)
+        ? ' seat-turn' : '';
+      div.className = 'seat filled' + (seat.user_id === userId ? ' you' : '') + hl + turn;
       div.innerHTML = '<div class="seat-emoji">🤑</div><div class="seat-name"></div>' +
         '<div class="seat-bid">' + (bid != null ? 'Bid: Rs ' + fmtRs(bid) : 'thinking…') + '</div>';
       div.querySelector('.seat-name').textContent = seatName(seat);
@@ -228,7 +246,12 @@ function renderTable() {
   const endsAt = table?.current_ends_at || table?.round_ends_at || table?.ends_at;
   const anyBid = roundBids().length > 0;
   clearInterval(clockInt);
-  if (!anyBid || !endsAt) {
+  if (curSpin.ready) {
+    $('private-clock').textContent = (curSpin.spinner.user_id === userId)
+      ? '🎯 Your turn — tap the POT to spin!'
+      : '⏳ Waiting for ' + seatName(curSpin.spinner) + ' to spin the pot…';
+    $('private-clock').classList.remove('urgent');
+  } else if (!anyBid || !endsAt) {
     $('private-clock').textContent = anyBid ? '⏳ Waiting for all players to bid…' : '⏳ Waiting for first bid…';
     $('private-clock').classList.remove('urgent');
   } else {
@@ -296,6 +319,8 @@ function nameForBid(b) {
 const SEAT_ANGLES = { 0: -135, 1: -45, 2: 135, 3: 45 };
 
 function onRoundResolved(r) {
+  // The player who clicked the pot already ran their own spin + reveal.
+  if (r === localSpinRound) { localSpinRound = null; return; }
   const rb = bids.filter(b => Number(b.round_no ?? r) === r);
   if (!rb.length) return;
   // Highest bid loses; ties go to the earliest bid (same rule as server).
@@ -315,22 +340,67 @@ function onRoundResolved(r) {
     if (mine) showPrivateResult(rb, loser, mine);
   };
   if (loserIdx < 0) { reveal(); return; }
-  // Game show moment: once every bid is in, the arrow spins for 5
-  // seconds and stops on the loser — the player who bid the highest.
+  // Game show moment: the clock needle spins for 5 seconds like a
+  // roller and stops on the loser — the player who bid the highest.
   const actEl = $('private-activity');
-  if (actEl) actEl.textContent = '🎯 Spinning the arrow…';
+  if (actEl) actEl.textContent = '🎯 Spinning the needle…';
   spinArrowTo(loserIdx, reveal);
 }
 
 function spinArrowTo(seatIdx, done) {
-  const arrow = $('stage-arrow');
+  const needle = $('pot-needle');
   clearTimeout(spinTimer);
-  if (!arrow) { done(); return; }
-  const target = SEAT_ANGLES[seatIdx] ?? 0;
+  if (!needle) { done(); return; }
+  // The needle points UP at 0deg (the old arrow pointed right), so the
+  // seat angles shift by +90.
+  const target = (SEAT_ANGLES[seatIdx] ?? 0) + 90;
   const delta = ((target - arrowDeg) % 360 + 360) % 360;
   arrowDeg = arrowDeg + 360 * 5 + delta;
-  arrow.style.transform = 'rotate(' + arrowDeg + 'deg)';
+  needle.style.transform = 'rotate(' + arrowDeg + 'deg)';
   spinTimer = setTimeout(done, 5000);
+}
+
+/* ------------- pot click: the rotation spinner starts the round ------------ */
+async function onPotClick() {
+  if (!table || spinInFlight) return;
+  const { ready, spinner } = spinState();
+  if (!ready || !spinner || spinner.user_id !== userId) return;
+  spinInFlight = true;
+  const rno = Number(table.current_round_no);
+  const rb = roundBids().slice();
+  try {
+    const { data, error } = await supabase.rpc('spin_private_table', { p_table_id: table.id });
+    if (error) throw error;
+    if (data && data.ok === false) throw new Error(data.error || 'Could not spin.');
+  } catch (e) {
+    spinInFlight = false;
+    toast(friendlyError(e, 'Could not spin. Try again.'), true);
+    refreshTable(table.id);
+    return;
+  }
+  // The round is resolved on the server. Spin this client's needle to
+  // the loser and reveal; other clients spin via onRoundResolved.
+  localSpinRound = rno;
+  resultPoppedFor = rno;
+  const sorted = [...rb].sort((a, b) =>
+    (Number(b.amount) - Number(a.amount)) ||
+    (new Date(a.placed_at) - new Date(b.placed_at)));
+  const loser = sorted[0];
+  const loserIdx = seats.findIndex(s => s.user_id === loser.user_id);
+  const actEl = $('private-activity');
+  if (actEl) actEl.textContent = '🎯 Spinning the needle…';
+  const reveal = () => {
+    highlightMap = {};
+    rb.forEach(b => { highlightMap[b.user_id] = (b.user_id === loser.user_id) ? 'lose' : 'win'; });
+    highlightUntil = Date.now() + 4000;
+    spinInFlight = false;
+    renderTable();
+    const mine = rb.find(b => b.user_id === userId);
+    if (mine) showPrivateResult(rb, loser, mine);
+    refreshTable(table.id);
+  };
+  if (loserIdx < 0) { reveal(); return; }
+  spinArrowTo(loserIdx, reveal);
 }
 
 function showPrivateResult(rb, loser, mine) {
@@ -387,8 +457,15 @@ function renderStage() {
     pot.classList.add('pot-pop');
   }
   stagePrimed = true;
+  // The pot pulses for the player whose spin turn it is.
+  pot.classList.toggle('pot-ready',
+    !!(curSpin.ready && curSpin.spinner && curSpin.spinner.user_id === userId && !spinInFlight));
   // Activity line: the latest action at the table.
-  if (rb.length) {
+  if (curSpin.ready) {
+    actEl.textContent = (curSpin.spinner.user_id === userId)
+      ? '🎯 All bids in — tap the POT to spin!'
+      : '🎯 All bids in — ' + seatName(curSpin.spinner) + ' will spin the pot…';
+  } else if (rb.length) {
     const last = [...rb].sort((a, b) => new Date(a.placed_at) - new Date(b.placed_at)).at(-1);
     actEl.textContent = '⚡ ' + nameForBid(last) + ' bid Rs ' + fmtRs(last.amount);
   } else if (seats.length) {
@@ -558,6 +635,7 @@ export function initPrivate() {
     $('private-custom-row').hidden = selectedBid !== 'custom';
   }));
   $('btn-private-bid').addEventListener('click', placePrivateBid);
+  $('stage-pot')?.addEventListener('click', onPotClick);
   $('btn-leave-table').addEventListener('click', leaveTable);
   // The win/lose pop-up reuses the shared result modal; wire its close
   // button here too (arena.js wires it as well — hiding twice is harmless).

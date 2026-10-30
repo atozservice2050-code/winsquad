@@ -9,7 +9,7 @@ import { $, toast, unlockAudio } from './util.js';
 import { initNotifications } from './notifications.js';
 import { initAuth, initSetup, initResetPassword, isRecoveryUrl, loadProfile } from './auth.js';
 import { initArena, destroyArena, setUser as setArenaUser } from './arena.js';
-import { initPrivate, destroyPrivate, joinPrivateTableByCode, setUser as setPrivateUser } from './private.js?v=50';
+import { initPrivate, destroyPrivate, joinPrivateTableByCode, setUser as setPrivateUser } from './private.js?v=51';
 import { initWallet, refreshWallet, setUser as setWalletUser, initWalletTopbar } from './wallet.js';
 import { initRewards, refreshRewards, setUser as setRewardsUser } from './rewards.js';
 import { initProfile, renderProfile } from './profile.js';

@@ -965,27 +965,52 @@ button { font-family: inherit; cursor: pointer; border: none; border-radius: 12p
 .seat.seat-lose { border-color: #ef4444; animation: seatShake 0.5s ease 2; }
 @keyframes seatShake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
 
-/* private table stage: live pot in the middle of the table */
-.table-stage { position: relative; margin: 6px auto 2px; text-align: center; }
+/* private table stage: pot sits in the MIDDLE of the seats, clock needle */
+.table-arena { position: relative; }
+.table-stage {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  z-index: 6; text-align: center; pointer-events: none;
+}
 .stage-pot {
+  position: relative;
   width: 96px; height: 96px; margin: 0 auto; border-radius: 50%;
   background: radial-gradient(circle at 50% 35%, #14532d, #052e16);
   border: 3px solid var(--gold);
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
+  padding-bottom: 10px;
   box-shadow: 0 0 18px rgba(212, 175, 55, 0.35), inset 0 0 18px rgba(0, 0, 0, 0.5);
+  pointer-events: auto;
 }
 .stage-pot.pot-pop { animation: potPop 0.45s ease; }
 @keyframes potPop { 0% { transform: scale(1); } 40% { transform: scale(1.12); } 100% { transform: scale(1); } }
-.stage-arrow {
-  font-size: 24px; color: var(--gold); line-height: 1;
-  text-shadow: 0 0 8px rgba(212, 175, 55, 0.8);
-  transition: transform 5s cubic-bezier(0.12, 0.8, 0.08, 1);
-  will-change: transform;
+.stage-pot.pot-ready { cursor: pointer; animation: potReadyPulse 1.1s ease-in-out infinite; }
+@keyframes potReadyPulse {
+  0%, 100% { box-shadow: 0 0 18px rgba(212, 175, 55, 0.35), inset 0 0 18px rgba(0, 0, 0, 0.5); }
+  50% { box-shadow: 0 0 36px rgba(245, 179, 1, 0.9), inset 0 0 18px rgba(0, 0, 0, 0.5); }
 }
+/* clock-style needle that spins like a roller and stops on the loser */
+#pot-needle {
+  position: absolute; inset: 0; z-index: 2; will-change: transform; pointer-events: none;
+  transition: transform 5s cubic-bezier(0.12, 0.8, 0.08, 1);
+}
+.needle-hand {
+  position: absolute; left: 50%; bottom: 50%; width: 7px; height: 40%;
+  margin-left: -3.5px;
+  background: linear-gradient(#fff3b0, #f5b301);
+  clip-path: polygon(50% 0, 100% 26%, 63% 100%, 37% 100%, 0 26%);
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.65));
+}
+.needle-hub {
+  position: absolute; left: 50%; top: 50%; width: 15px; height: 15px;
+  margin: -8.5px 0 0 -8.5px; border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, #ffe98a, #b8860b);
+  border: 2px solid #5c4303; z-index: 3;
+}
+.seat.seat-turn { border-color: var(--gold); box-shadow: 0 0 14px rgba(245, 179, 1, 0.55); }
 .pot-chips { font-size: 16px; line-height: 1.15; min-height: 19px; max-width: 76px; }
-.pot-label { font-size: 10px; letter-spacing: 2px; color: var(--gold); font-weight: 800; margin-top: 2px; }
-.pot-count { font-size: 9px; color: #d6d3d1; margin-top: 1px; }
-.stage-activity { margin-top: 8px; font-size: 12px; color: var(--muted); min-height: 16px; }
+.pot-label { position: relative; z-index: 1; font-size: 10px; letter-spacing: 2px; color: var(--gold); font-weight: 800; margin-top: 2px; }
+.pot-count { position: relative; z-index: 1; font-size: 9px; color: #d6d3d1; margin-top: 1px; }
+.stage-activity { margin-top: 8px; font-size: 12px; color: var(--muted); min-height: 16px; text-align: center; }
 .chip-fly { position: absolute; font-size: 20px; pointer-events: none; z-index: 5; transition: all 0.65s cubic-bezier(0.3, 0.7, 0.4, 1); }
 .invite-code {
   font-size: 34px; font-weight: 900; letter-spacing: 6px; text-align: center;
