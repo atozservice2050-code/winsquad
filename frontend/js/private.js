@@ -1,5 +1,5 @@
 /* ============================================================
-   PRIVATE TABLES — 4 seats, invite code, min bid Rs 500.
+   PRIVATE TABLES — 4 seats, invite code, bids Rs 50 to Rs 10,000.
    - create_private_table() -> {table_id, code}
    - join_private_table(p_code) -> {ok, error, table_id}
    - place_private_bid(p_table_id, p_amount)
@@ -18,7 +18,7 @@ import { $, $$, toast, fmtRs, sounds, unlockAudio, copyText } from './util.js';
 let table = null;          // private_tables row
 let seats = [];            // private_seats rows
 let bids = [];             // private_bids rows (current round)
-let selectedBid = 800;
+let selectedBid = 100;
 let clockInt = null;
 let channels = [];
 let pollInt = null;          // 1s safety refresh while seated (realtime stays primary)
@@ -438,7 +438,8 @@ async function placePrivateBid() {
   if (selectedBid === 'custom') {
     amount = Number($('private-custom-input').value);
   } else amount = selectedBid;
-  if (!amount || amount < 500) { toast('Minimum private bid is Rs 500.', true); return; }
+  if (!amount || amount < 50) { toast('Minimum private bid is Rs 50.', true); return; }
+  if (amount > 10000) { toast('Maximum private bid is Rs 10,000.', true); return; }
   $('btn-private-bid').disabled = true;
   try {
     const { data, error } = await supabase.rpc('place_private_bid', {

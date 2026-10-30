@@ -168,7 +168,7 @@ create table public.private_bids (
   table_id   uuid not null references public.private_tables(id) on delete cascade,
   round_no   integer not null,
   user_id    uuid not null references public.profiles(id) on delete cascade,
-  amount     numeric(12,2) not null check (amount >= 500),
+  amount     numeric(12,2) not null check (amount >= 50 and amount <= 10000),
   placed_at  timestamptz not null default now(),
   unique (table_id, round_no, user_id)
 );
@@ -1294,8 +1294,11 @@ begin
   end if;
 
   p_amount := round(p_amount, 2);
-  if p_amount is null or p_amount < 500 or p_amount > 1000000 then
-    return jsonb_build_object('ok', false, 'error', 'minimum bid is Rs 500');
+  if p_amount is null or p_amount < 50 then
+    return jsonb_build_object('ok', false, 'error', 'minimum bid is Rs 50');
+  end if;
+  if p_amount > 10000 then
+    return jsonb_build_object('ok', false, 'error', 'maximum bid is Rs 10,000');
   end if;
 
   select * into v_tbl from public.private_tables where id = p_table_id for update;
