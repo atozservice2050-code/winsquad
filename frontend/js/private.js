@@ -3,11 +3,12 @@
    - create_private_table() -> {table_id, code}
    - join_private_table(p_code) -> {ok, error, table_id}
    - place_private_bid(p_table_id, p_amount)
+   - leave_private_table(p_table_id) -> {ok, seats_left, status}
    - Reads: private_tables / private_seats / private_bids for
      tables the user sits at (realtime subscribed).
    Rules reflected: clock starts on FIRST bid (30s); only the 1
    highest bidder loses; total reveals after ALL seated players
-   have bid. A table starts with 3 players seated (4 max).
+   have bid. A table starts with 2 players seated (4 max).
    Column names below are best-effort guesses against the backend
    contract — every read is defensive (see README "Backend contract").
    ============================================================ */
@@ -20,11 +21,22 @@ let bids = [];             // private_bids rows (current round)
 let selectedBid = 800;
 let clockInt = null;
 let channels = [];
+let pollInt = null;          // 1s safety refresh while seated (realtime stays primary)
+let leaveArmed = false;
+let leaveArmTimer = null;
 let userId = null;
 let myName = 'You';
 let currentCode = '';
 let joiningPrivate = false;
 let seatNames = {};          // user_id -> display_name (from public_profiles)
+let knownBidIds = new Set(); // bids already seen (chip fly-in animation)
+let stagePrimed = false;     // skip fly-in for bids that predate entering
+let lastRoundSeen = null;    // current_round_no at last render (resolve detect)
+let resultPoppedFor = 0;     // highest round no. already shown as a pop-up
+let highlightMap = {};       // user_id -> 'win' | 'lose' after a resolve
+let highlightUntil = 0;      // highlight expiry timestamp (ms)
+let arrowDeg = 0;            // accumulated arrow rotation (spins keep going forward)
+let spinTimer = null;        // pending reveal after the 5s arrow spin
 
 export function setUser(id, displayName) { userId = id; myName = displayName || 'You'; }
 
@@ -129,8 +141,15 @@ async function enterTable(tableId, code) {
   $('private-lobby').hidden = true;
   $('private-table').hidden = false;
   $('private-code-label').textContent = '· ' + (code || '');
+  lastRoundSeen = null;
+  resultPoppedFor = 0;
+  knownBidIds = new Set();
+  stagePrimed = false;
+  highlightMap = {};
+  highlightUntil = 0;
   await refreshTable(tableId);
   subscribe(tableId);
+  startPoll(tableId);
 }
 
 async function refreshTable(tableId) {
@@ -177,6 +196,13 @@ function seatBid(seat) {
 }
 
 function renderTable() {
+  // A round that just resolved: seat highlights + personal win/lose pop-up.
+  const rnoNow = table?.current_round_no;
+  if (lastRoundSeen != null && rnoNow != null && rnoNow > lastRoundSeen) {
+    for (let r = lastRoundSeen; r < rnoNow; r++) onRoundResolved(r);
+  }
+  if (rnoNow != null) lastRoundSeen = rnoNow;
+
   // seats (always 4 slots)
   const wrap = $('private-seats');
   wrap.innerHTML = '';
@@ -188,7 +214,9 @@ function renderTable() {
       div.innerHTML = '<div class="seat-emoji">🪑</div><div class="seat-name">Empty seat</div><div class="seat-bid">waiting…</div>';
     } else {
       const bid = seatBid(seat);
-      div.className = 'seat filled' + (seat.user_id === userId ? ' you' : '');
+      const hl = (Date.now() < highlightUntil && highlightMap[seat.user_id])
+        ? ' seat-' + highlightMap[seat.user_id] : '';
+      div.className = 'seat filled' + (seat.user_id === userId ? ' you' : '') + hl;
       div.innerHTML = '<div class="seat-emoji">🤑</div><div class="seat-name"></div>' +
         '<div class="seat-bid">' + (bid != null ? 'Bid: Rs ' + fmtRs(bid) : 'thinking…') + '</div>';
       div.querySelector('.seat-name').textContent = seatName(seat);
@@ -201,7 +229,7 @@ function renderTable() {
   const anyBid = roundBids().length > 0;
   clearInterval(clockInt);
   if (!anyBid || !endsAt) {
-    $('private-clock').textContent = anyBid ? 'Starting…' : '⏳ Waiting for first bid…';
+    $('private-clock').textContent = anyBid ? '⏳ Waiting for all players to bid…' : '⏳ Waiting for first bid…';
     $('private-clock').classList.remove('urgent');
   } else {
     let lastTick = -1;
@@ -214,18 +242,20 @@ function renderTable() {
     }, 250);
   }
 
-  // total: reveals only after ALL seated players have bid (min 3 to start)
+  // total: reveals only after ALL seated players have bid (min 2 to start)
   const filledSeats = seats.length;
   const rBids = roundBids();
   const totalEl = $('private-total');
-  if (filledSeats >= 3 && rBids.length >= filledSeats) {
+  if (filledSeats >= 2 && rBids.length >= filledSeats) {
     const total = rBids.reduce((a, b) => a + Number(b.amount || 0), 0);
     totalEl.innerHTML = '💰 Total pot: <strong>Rs ' + fmtRs(total) + '</strong>';
-  } else if (filledSeats < 3) {
-    totalEl.textContent = 'Waiting for players — 3 needed to start (' + filledSeats + '/3 seated)';
+  } else if (filledSeats < 2) {
+    totalEl.textContent = 'Waiting for players — 2 needed to start (' + filledSeats + '/2 seated)';
   } else {
     totalEl.textContent = 'Total reveals after all seated players bid (' + rBids.length + '/' + filledSeats + ' bids in)';
   }
+
+  renderStage();
 
   // results
   const status = table?.status;
@@ -254,7 +284,150 @@ function renderResults() {
 }
 function nameForBid(b) {
   const seat = seats.find(s => s.user_id === b.user_id || s.id === b.seat_id);
-  return seat ? seatName(seat) : 'Player';
+  if (seat) return seatName(seat);
+  if (b.user_id === userId) return myName;
+  return seatNames[b.user_id] || 'Player';
+}
+
+/* ---------------- round resolved: highlights + pop-up ---------------- */
+// Seat slot angles for the arrow (➤ points right at 0deg; CSS rotate is
+// clockwise). Slot order is the seats grid: 0 top-left, 1 top-right,
+// 2 bottom-left, 3 bottom-right.
+const SEAT_ANGLES = { 0: -135, 1: -45, 2: 135, 3: 45 };
+
+function onRoundResolved(r) {
+  const rb = bids.filter(b => Number(b.round_no ?? r) === r);
+  if (!rb.length) return;
+  // Highest bid loses; ties go to the earliest bid (same rule as server).
+  const sorted = [...rb].sort((a, b) =>
+    (Number(b.amount) - Number(a.amount)) ||
+    (new Date(a.placed_at) - new Date(b.placed_at)));
+  const loser = sorted[0];
+  if (resultPoppedFor >= r) return;
+  resultPoppedFor = r;
+  const mine = rb.find(b => b.user_id === userId);
+  const loserIdx = seats.findIndex(s => s.user_id === loser.user_id);
+  const reveal = () => {
+    highlightMap = {};
+    rb.forEach(b => { highlightMap[b.user_id] = (b.user_id === loser.user_id) ? 'lose' : 'win'; });
+    highlightUntil = Date.now() + 4000;
+    renderTable();
+    if (mine) showPrivateResult(rb, loser, mine);
+  };
+  if (loserIdx < 0) { reveal(); return; }
+  // Game show moment: once every bid is in, the arrow spins for 5
+  // seconds and stops on the loser — the player who bid the highest.
+  const actEl = $('private-activity');
+  if (actEl) actEl.textContent = '🎯 Spinning the arrow…';
+  spinArrowTo(loserIdx, reveal);
+}
+
+function spinArrowTo(seatIdx, done) {
+  const arrow = $('stage-arrow');
+  clearTimeout(spinTimer);
+  if (!arrow) { done(); return; }
+  const target = SEAT_ANGLES[seatIdx] ?? 0;
+  const delta = ((target - arrowDeg) % 360 + 360) % 360;
+  arrowDeg = arrowDeg + 360 * 5 + delta;
+  arrow.style.transform = 'rotate(' + arrowDeg + 'deg)';
+  spinTimer = setTimeout(done, 5000);
+}
+
+function showPrivateResult(rb, loser, mine) {
+  const modal = $('result-modal');
+  if (!modal) return;
+  const card = modal.querySelector('.result-card');
+  if (loser.user_id === userId) {
+    sounds.lose();
+    if (navigator.vibrate) navigator.vibrate([400]);
+    $('result-emoji').textContent = '😭';
+    $('result-title').textContent = 'You Lost';
+    $('result-amount').textContent = '-Rs ' + fmtRs(mine.amount);
+    $('result-amount').style.color = '#ef4444';
+    $('result-sub').textContent = 'Highest bid loses — your Rs ' + fmtRs(mine.amount) + ' went to the other players. Better luck next round!';
+    card.classList.add('lost');
+  } else {
+    // Same payout math as the server: winners split 90% of the loser's
+    // bid in proportion to their own bids (floored to the paisa).
+    const dist = Math.floor(Number(loser.amount) * 0.90 * 100) / 100;
+    const wtot = rb.filter(b => b.user_id !== loser.user_id)
+                   .reduce((a, b) => a + Number(b.amount || 0), 0);
+    const payout = wtot > 0 ? Math.floor((dist * Number(mine.amount) / wtot) * 100) / 100 : 0;
+    sounds.win();
+    if (navigator.vibrate) navigator.vibrate([100, 50, 200, 50, 300]);
+    $('result-emoji').textContent = '🎉';
+    $('result-title').textContent = 'You Won!';
+    $('result-amount').textContent = '+Rs ' + fmtRs(payout);
+    $('result-amount').style.color = '#22c55e';
+    $('result-sub').textContent = nameForBid(loser) + ' bid the highest (Rs ' + fmtRs(loser.amount) + ') and lost. +Rs ' + fmtRs(payout) + ' added to your wallet! 🎉';
+    card.classList.remove('lost');
+  }
+  modal.hidden = false;
+  modal.style.display = 'flex';
+}
+
+/* ---------------- table stage: pot, chip fly-in, activity ---------------- */
+function renderStage() {
+  const pot = $('stage-pot');
+  const chipsEl = $('pot-chips');
+  const actEl = $('private-activity');
+  if (!pot || !chipsEl || !actEl) return;
+  const rb = roundBids();
+  chipsEl.textContent = rb.length ? '🪙'.repeat(Math.min(rb.length, 8)) : '·';
+  const countEl = $('pot-count');
+  if (countEl) countEl.textContent = rb.length
+    ? rb.length + (rb.length === 1 ? ' bid in' : ' bids in') : 'no bids yet';
+  // Fly a chip to the pot for any bid that appeared since the last render.
+  let newBid = null;
+  rb.forEach(b => { if (b.id && !knownBidIds.has(b.id)) { knownBidIds.add(b.id); newBid = b; } });
+  if (newBid && stagePrimed) {
+    flyChipToPot(newBid);
+    pot.classList.remove('pot-pop');
+    void pot.offsetWidth;
+    pot.classList.add('pot-pop');
+  }
+  stagePrimed = true;
+  // Activity line: the latest action at the table.
+  if (rb.length) {
+    const last = [...rb].sort((a, b) => new Date(a.placed_at) - new Date(b.placed_at)).at(-1);
+    actEl.textContent = '⚡ ' + nameForBid(last) + ' bid Rs ' + fmtRs(last.amount);
+  } else if (seats.length) {
+    actEl.textContent = seats.length + ' player' + (seats.length === 1 ? '' : 's') + ' at the table — waiting for the first bid…';
+  } else {
+    actEl.textContent = 'Waiting for players…';
+  }
+}
+
+function flyChipToPot(bid) {
+  try {
+    const stage = $('private-stage');
+    const pot = $('stage-pot');
+    if (!stage || !pot) return;
+    const idx = seats.findIndex(s => s.user_id === bid.user_id);
+    const seatEl = idx >= 0 ? $('private-seats').children[idx] : null;
+    const sr = stage.getBoundingClientRect();
+    const pr = pot.getBoundingClientRect();
+    const chip = document.createElement('span');
+    chip.className = 'chip-fly';
+    chip.textContent = '🪙';
+    let sx = pr.left - sr.left + pr.width / 2 - 10;
+    let sy = -8;
+    if (seatEl) {
+      const r = seatEl.getBoundingClientRect();
+      sx = r.left - sr.left + r.width / 2 - 10;
+      sy = r.top - sr.top + r.height / 2 - 12;
+    }
+    chip.style.left = sx + 'px';
+    chip.style.top = sy + 'px';
+    stage.appendChild(chip);
+    requestAnimationFrame(() => {
+      chip.style.left = (pr.left - sr.left + pr.width / 2 - 10) + 'px';
+      chip.style.top = (pr.top - sr.top + pr.height / 2 - 12) + 'px';
+      chip.style.opacity = '0.35';
+      chip.style.transform = 'scale(0.7)';
+    });
+    setTimeout(() => chip.remove(), 750);
+  } catch (_) { /* animation is cosmetic */ }
 }
 
 /* ---------------- placing a private bid ---------------- */
@@ -302,6 +475,69 @@ function unsubscribe() {
   channels.forEach(c => { try { supabase.removeChannel(c); } catch {} });
   channels = [];
   clearInterval(clockInt);
+  stopPoll();
+}
+
+/* Live safety net: realtime delivers changes instantly; this 1s poll
+   guarantees other players' joins/leaves/bids show right away even
+   if a realtime event is ever missed. */
+function startPoll(tableId) {
+  stopPoll();
+  pollInt = setInterval(() => {
+    if (table?.id === tableId && !document.hidden) refreshTable(tableId);
+  }, 1000);
+}
+function stopPoll() {
+  if (pollInt) { clearInterval(pollInt); pollInt = null; }
+}
+
+function exitToLobby() {
+  unsubscribe();
+  clearTimeout(spinTimer);
+  spinTimer = null;
+  table = null;
+  currentCode = '';
+  leaveArmed = false;
+  const btn = $('btn-leave-table');
+  if (btn) { btn.disabled = false; btn.textContent = 'Leave table'; }
+  $('private-table').hidden = true;
+  $('private-lobby').hidden = false;
+  $('invite-code-card').hidden = true;
+}
+
+/* Leave for real: the seat is deleted on the server, so the player
+   disappears from everyone else's screen at once (realtime + poll).
+   Two-tap in-app confirm — JS confirm() is banned (WebView). */
+async function leaveTable() {
+  unlockAudio();
+  if (!table?.id) { exitToLobby(); return; }
+  const btn = $('btn-leave-table');
+  if (!leaveArmed) {
+    leaveArmed = true;
+    btn.textContent = 'Tap again to leave';
+    toast('Tap Leave again to confirm — your seat will be freed for the others.');
+    clearTimeout(leaveArmTimer);
+    leaveArmTimer = setTimeout(() => {
+      leaveArmed = false;
+      btn.textContent = 'Leave table';
+    }, 4000);
+    return;
+  }
+  clearTimeout(leaveArmTimer);
+  leaveArmed = false;
+  btn.disabled = true;
+  btn.textContent = 'Leaving…';
+  const tableId = table.id;
+  try {
+    const { data, error } = await supabase.rpc('leave_private_table', { p_table_id: tableId });
+    if (error) throw error;
+    const row = unwrapRow(data);
+    if (row && row.ok === false) throw new Error(row.error || 'Could not leave the table.');
+    toast('You left the table. 👋');
+  } catch (e) {
+    toast(friendlyError(e, 'Could not leave cleanly — you have exited on this device.'), true);
+  }
+  exitToLobby();
 }
 
 /* ---------------- init ---------------- */
@@ -321,13 +557,12 @@ export function initPrivate() {
     $('private-custom-row').hidden = selectedBid !== 'custom';
   }));
   $('btn-private-bid').addEventListener('click', placePrivateBid);
-  $('btn-leave-table').addEventListener('click', () => {
-    unsubscribe();
-    table = null;
-    currentCode = '';
-    $('private-table').hidden = true;
-    $('private-lobby').hidden = false;
-    $('invite-code-card').hidden = true;
+  $('btn-leave-table').addEventListener('click', leaveTable);
+  // The win/lose pop-up reuses the shared result modal; wire its close
+  // button here too (arena.js wires it as well — hiding twice is harmless).
+  $('btn-result-close')?.addEventListener('click', () => {
+    const m = $('result-modal');
+    if (m) { m.hidden = true; m.style.display = ''; }
   });
 }
 

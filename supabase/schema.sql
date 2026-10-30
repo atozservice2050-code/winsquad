@@ -1093,7 +1093,7 @@ end;
 $$;
 
 -- Join a private table by invite code (case/format tolerant). Fills the next
--- free seat (1-4). Table becomes 'active' when the 3rd seat fills.
+-- free seat (1-4). Table becomes 'active' when the 2nd seat fills (029).
 create or replace function public.join_private_table(p_code text)
 returns jsonb
 language plpgsql
@@ -1156,7 +1156,7 @@ begin
   insert into public.private_seats (table_id, user_id, seat_no)
   values (v_tbl.id, v_uid, v_seat);
 
-  if v_n + 1 >= 3 then
+  if v_n + 1 >= 2 then
     update public.private_tables set status = 'active' where id = v_tbl.id;
     v_tbl.status := 'active';
   end if;
@@ -1180,7 +1180,7 @@ declare
   v_tbl      public.private_tables%rowtype;
   v_rno      int;
   v_n        int;
-  v_seats    int;
+  v_pending  int;
   v_loser_id uuid;
   v_loser_amt numeric(12,2);
   v_bid      record;
@@ -1207,11 +1207,17 @@ begin
   from public.private_bids
   where table_id = p_table_id and round_no = v_rno;
 
-  select count(*) into v_seats
-  from public.private_seats
-  where table_id = p_table_id;
+  -- Seated players who have not bid yet are still pending. A bid from a
+  -- player who has since left still counts toward the round (migration 028).
+  select count(*) into v_pending
+  from public.private_seats s
+  where s.table_id = p_table_id
+    and not exists (
+      select 1 from public.private_bids b
+      where b.table_id = p_table_id and b.round_no = v_rno and b.user_id = s.user_id
+    );
 
-  if v_seats < 3 or v_n < v_seats then
+  if v_n < 2 or v_pending > 0 then
     return jsonb_build_object('ok', true, 'waiting', true,
                               'bids', v_n, 'round_no', v_rno);
   end if;
@@ -1304,8 +1310,8 @@ begin
   from public.private_seats
   where table_id = p_table_id;
 
-  if v_seats < 3 then
-    return jsonb_build_object('ok', false, 'error', 'Need 3 players seated to start the table');
+  if v_seats < 2 then
+    return jsonb_build_object('ok', false, 'error', 'Need 2 players seated to start the table');
   end if;
 
   if v_tbl.status <> 'active' then
@@ -1354,6 +1360,64 @@ begin
 exception
   when unique_violation then
     return jsonb_build_object('ok', false, 'error', 'already placed a bid this round');
+end;
+$$;
+
+-- Leave a private table (migration 028): deletes the caller's seat so the
+-- player disappears from everyone else's screen at once. Below 2 seated the
+-- table goes back to 'waiting'; when the last player leaves, the current
+-- round's bids go to the house fee (NO refund — owner rule) and the table
+-- closes.
+create or replace function public.leave_private_table(p_table_id uuid)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_uid   uuid := auth.uid();
+  v_tbl   public.private_tables%rowtype;
+  v_left  int;
+  v_pot   numeric(12,2) := 0;
+begin
+  if v_uid is null then
+    return jsonb_build_object('ok', false, 'error', 'not authenticated');
+  end if;
+
+  select * into v_tbl from public.private_tables where id = p_table_id for update;
+  if v_tbl.id is null then
+    return jsonb_build_object('ok', false, 'error', 'table not found');
+  end if;
+
+  delete from public.private_seats
+  where table_id = p_table_id and user_id = v_uid;
+  if not found then
+    return jsonb_build_object('ok', true, 'already_left', true);
+  end if;
+
+  select count(*) into v_left from public.private_seats where table_id = p_table_id;
+
+  if v_left = 0 then
+    select coalesce(sum(amount), 0) into v_pot
+    from public.private_bids
+    where table_id = p_table_id and round_no = v_tbl.current_round_no;
+    delete from public.private_bids
+    where table_id = p_table_id and round_no = v_tbl.current_round_no;
+    update public.private_tables
+    set status = 'closed', fee_amount = fee_amount + v_pot
+    where id = p_table_id;
+    return jsonb_build_object('ok', true, 'seats_left', 0, 'status', 'closed',
+                              'fee_taken', v_pot);
+  end if;
+
+  if v_left < 2 and v_tbl.status = 'active' then
+    update public.private_tables set status = 'waiting' where id = p_table_id;
+    v_tbl.status := 'waiting';
+  end if;
+
+  perform public.resolve_private_round(p_table_id);
+
+  return jsonb_build_object('ok', true, 'seats_left', v_left, 'status', v_tbl.status);
 end;
 $$;
 
@@ -1484,6 +1548,7 @@ begin
         'get_current_round', 'place_bid', 'resolve_round', 'resolve_due_rounds',
         'transfer_funds', 'claim_daily_streak', 'apply_referral',
         'create_private_table', 'join_private_table', 'place_private_bid',
+        'leave_private_table',
         'resolve_private_round', 'approve_deposit', 'reject_deposit',
         'is_admin', 'update_display_name', 'is_private_table_member'
       )

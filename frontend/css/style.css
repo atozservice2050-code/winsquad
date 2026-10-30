@@ -961,6 +961,32 @@ button { font-family: inherit; cursor: pointer; border: none; border-radius: 12p
 .seat.filled { border-style: solid; border-color: var(--gold); }
 .seat.you { box-shadow: 0 0 14px rgba(212, 175, 55, 0.4); }
 .seat.empty { opacity: 0.55; }
+.seat.seat-win { border-color: #22c55e; box-shadow: 0 0 16px rgba(34, 197, 94, 0.7); }
+.seat.seat-lose { border-color: #ef4444; animation: seatShake 0.5s ease 2; }
+@keyframes seatShake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+
+/* private table stage: live pot in the middle of the table */
+.table-stage { position: relative; margin: 6px auto 2px; text-align: center; }
+.stage-pot {
+  width: 96px; height: 96px; margin: 0 auto; border-radius: 50%;
+  background: radial-gradient(circle at 50% 35%, #14532d, #052e16);
+  border: 3px solid var(--gold);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  box-shadow: 0 0 18px rgba(212, 175, 55, 0.35), inset 0 0 18px rgba(0, 0, 0, 0.5);
+}
+.stage-pot.pot-pop { animation: potPop 0.45s ease; }
+@keyframes potPop { 0% { transform: scale(1); } 40% { transform: scale(1.12); } 100% { transform: scale(1); } }
+.stage-arrow {
+  font-size: 24px; color: var(--gold); line-height: 1;
+  text-shadow: 0 0 8px rgba(212, 175, 55, 0.8);
+  transition: transform 5s cubic-bezier(0.12, 0.8, 0.08, 1);
+  will-change: transform;
+}
+.pot-chips { font-size: 16px; line-height: 1.15; min-height: 19px; max-width: 76px; }
+.pot-label { font-size: 10px; letter-spacing: 2px; color: var(--gold); font-weight: 800; margin-top: 2px; }
+.pot-count { font-size: 9px; color: #d6d3d1; margin-top: 1px; }
+.stage-activity { margin-top: 8px; font-size: 12px; color: var(--muted); min-height: 16px; }
+.chip-fly { position: absolute; font-size: 20px; pointer-events: none; z-index: 5; transition: all 0.65s cubic-bezier(0.3, 0.7, 0.4, 1); }
 .invite-code {
   font-size: 34px; font-weight: 900; letter-spacing: 6px; text-align: center;
   color: var(--gold-light); background: #0c0c15;
