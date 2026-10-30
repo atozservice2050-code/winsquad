@@ -480,26 +480,34 @@ create policy "round_results_select_all"
   using (true);
 
 -- private tables: only seated members can read.
+-- NOTE: membership is checked through a SECURITY DEFINER helper — a policy
+-- on private_seats must NEVER query private_seats in its own USING clause
+-- (Postgres: infinite recursion detected in policy). Fixed in migration 026
+-- after the live empty-seats bug.
+create or replace function public.is_private_table_member(p_table_id uuid)
+returns boolean
+language sql
+security definer
+set search_path = public
+stable
+as $$
+  select exists (
+    select 1 from public.private_seats
+    where table_id = p_table_id and user_id = auth.uid()
+  );
+$$;
+
 create policy "pt_select_member"
   on public.private_tables for select to authenticated
-  using (exists (
-    select 1 from public.private_seats s
-    where s.table_id = private_tables.id and s.user_id = auth.uid()
-  ));
+  using (public.is_private_table_member(id));
 
 create policy "ps_select_member"
   on public.private_seats for select to authenticated
-  using (exists (
-    select 1 from public.private_seats s
-    where s.table_id = private_seats.table_id and s.user_id = auth.uid()
-  ));
+  using (public.is_private_table_member(table_id));
 
 create policy "pb_select_member"
   on public.private_bids for select to authenticated
-  using (exists (
-    select 1 from public.private_seats s
-    where s.table_id = private_bids.table_id and s.user_id = auth.uid()
-  ));
+  using (public.is_private_table_member(table_id));
 
 -- NOTE: public.rounds has NO select policy on purpose — the fee_amount column
 -- must never reach clients. Clients use the public_rounds VIEW below (owner
@@ -1458,7 +1466,7 @@ begin
         'transfer_funds', 'claim_daily_streak', 'apply_referral',
         'create_private_table', 'join_private_table', 'place_private_bid',
         'resolve_private_round', 'approve_deposit', 'reject_deposit',
-        'is_admin', 'update_display_name'
+        'is_admin', 'update_display_name', 'is_private_table_member'
       )
   loop
     execute 'revoke all on function ' || v_sig || ' from public';

@@ -23,6 +23,7 @@ let userId = null;
 let myName = 'You';
 let currentCode = '';
 let joiningPrivate = false;
+let seatNames = {};          // user_id -> display_name (from public_profiles)
 
 export function setUser(id, displayName) { userId = id; myName = displayName || 'You'; }
 
@@ -133,12 +134,25 @@ async function enterTable(tableId, code) {
 
 async function refreshTable(tableId) {
   try {
-    const { data: t } = await supabase.from('private_tables').select('*').eq('id', tableId).maybeSingle();
+    const { data: t, error: tErr } = await supabase.from('private_tables').select('*').eq('id', tableId).maybeSingle();
+    if (tErr) console.warn('private table load failed', tErr);
     table = unwrapRow(t);
     if (table?.code) currentCode = normalizeInviteCode(table.code);
-    const { data: s } = await supabase.from('private_seats').select('*').eq('table_id', tableId);
+    const { data: s, error: sErr } = await supabase.from('private_seats').select('*')
+      .eq('table_id', tableId).order('seat_no', { ascending: true });
+    if (sErr) console.warn('private seats load failed', sErr);
     seats = Array.isArray(s) ? s : [];
-    const { data: b } = await supabase.from('private_bids').select('*').eq('table_id', tableId);
+    // Resolve real display names for the seated players.
+    try {
+      const ids = [...new Set(seats.map(x => x.user_id).filter(Boolean))];
+      if (ids.length) {
+        const { data: profs } = await supabase.from('public_profiles')
+          .select('id, display_name').in('id', ids);
+        if (Array.isArray(profs)) profs.forEach(p => { if (p?.id && p.display_name) seatNames[p.id] = p.display_name; });
+      }
+    } catch (_) { /* names are cosmetic; seats still render */ }
+    const { data: b, error: bErr } = await supabase.from('private_bids').select('*').eq('table_id', tableId);
+    if (bErr) console.warn('private bids load failed', bErr);
     bids = Array.isArray(b) ? b : [];
     renderTable();
   } catch (e) { console.warn('private table refresh failed', e); }
@@ -146,7 +160,7 @@ async function refreshTable(tableId) {
 
 function seatName(seat) {
   if (seat.user_id === userId) return myName + ' (you)';
-  return seat.display_name || seat.player_name || seat.name ||
+  return seatNames[seat.user_id] || seat.display_name || seat.player_name || seat.name ||
     ('Player ' + String(seat.user_id || '?').slice(0, 4));
 }
 function seatBid(seat) {
