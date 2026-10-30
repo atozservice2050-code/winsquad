@@ -9,7 +9,7 @@ import { $, toast, unlockAudio } from './util.js';
 import { initNotifications } from './notifications.js';
 import { initAuth, initSetup, initResetPassword, isRecoveryUrl, loadProfile } from './auth.js';
 import { initArena, destroyArena, setUser as setArenaUser } from './arena.js';
-import { initPrivate, destroyPrivate, setUser as setPrivateUser } from './private.js';
+import { initPrivate, destroyPrivate, joinPrivateTableByCode, setUser as setPrivateUser } from './private.js?v=45';
 import { initWallet, refreshWallet, setUser as setWalletUser, initWalletTopbar } from './wallet.js';
 import { initRewards, refreshRewards, setUser as setRewardsUser } from './rewards.js';
 import { initProfile, renderProfile } from './profile.js';
@@ -21,7 +21,7 @@ import { initCashvault, setUser as setCashvaultUser, destroyCashvault } from './
 import { initDice, setUser as setDiceUser, destroyDice } from './dice.js';
 import { initDisclaimer, maybeShowDisclaimer } from './disclaimer.js';
 import { initMissions, refreshMissions, setUser as setMissionsUser, recordMissionEvent } from './missions.js';
-import { initFreeGames, refreshFreeHub, setUser as setFreeUser } from './free-games.js?v=44';
+import { initFreeGames, refreshFreeHub, setUser as setFreeUser } from './free-games.js?v=45';
 import { restoreSession, initSessionBackup } from './session-backup.js';
 
 const VIEWS = ['auth', 'setup', 'resetpw', 'home', 'arena', 'private', 'wallet', 'rewards', 'missions', 'profile', 'coinflip', 'andarbahar', 'dt', 'roulette', 'cashvault', 'dice', 'freehub', 'mines', 'memory', 'flappy'];
@@ -29,6 +29,33 @@ const TAB_VIEWS = ['home', 'arena', 'private', 'wallet', 'rewards', 'missions', 
 let currentView = null;
 let currentProfile = null;
 let initialized = {};
+const PRIVATE_INVITE_KEY = 'winsquad_pending_private_invite';
+let privateInviteHandled = false;
+
+function capturePrivateInvite() {
+  try {
+    const params = new URLSearchParams(location.search);
+    const raw = params.get('join') || params.get('invite');
+    if (!raw) return;
+    const code = raw.trim().toUpperCase();
+    if (/^[A-Z0-9-]{4,12}$/.test(code)) localStorage.setItem(PRIVATE_INVITE_KEY, code);
+    params.delete('join');
+    params.delete('invite');
+    const qs = params.toString();
+    history.replaceState(null, '', location.pathname + (qs ? '?' + qs : ''));
+  } catch (_) {}
+}
+
+async function handlePendingPrivateInvite() {
+  if (privateInviteHandled) return;
+  let code = '';
+  try { code = localStorage.getItem(PRIVATE_INVITE_KEY) || ''; } catch (_) {}
+  if (!code) return;
+  privateInviteHandled = true;
+  try { localStorage.removeItem(PRIVATE_INVITE_KEY); } catch (_) {}
+  showView('private');
+  await joinPrivateTableByCode(code);
+}
 
 /* ---------------- router ---------------- */
 function showView(name) {
@@ -101,10 +128,13 @@ function enterApp(profile, phone) {
   try { maybeShowDisclaimer(); } catch (e) {}
   // Mission progress: daily visit
   try { recordMissionEvent('daily_visit'); } catch (e) {}
+  // A shared private-table link opens that table directly after login.
+  try { handlePendingPrivateInvite(); } catch (e) { console.warn('private invite failed', e); }
 }
 
 /* ---------------- boot ---------------- */
 async function boot() {
+  capturePrivateInvite();
   initNotifications();
   initDisclaimer();
   try { initFreeGames(showView); } catch (e) { console.warn('free games init failed', e); }

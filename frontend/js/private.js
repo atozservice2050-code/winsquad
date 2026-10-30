@@ -21,6 +21,8 @@ let clockInt = null;
 let channels = [];
 let userId = null;
 let myName = 'You';
+let currentCode = '';
+let joiningPrivate = false;
 
 export function setUser(id, displayName) { userId = id; myName = displayName || 'You'; }
 
@@ -31,6 +33,38 @@ function showError(msg) {
 }
 function hideError() { $('private-error').hidden = true; }
 
+function normalizeInviteCode(raw) {
+  return String(raw || '').trim().toUpperCase();
+}
+
+function inviteLink(code = currentCode) {
+  const clean = normalizeInviteCode(code);
+  return location.origin + location.pathname + '?join=' + encodeURIComponent(clean);
+}
+
+async function shareInviteLink() {
+  unlockAudio();
+  const code = normalizeInviteCode(currentCode || table?.code || $('invite-code')?.textContent);
+  if (!code || code === '------') { toast('Create or join a table first.', true); return; }
+  const url = inviteLink(code);
+  const shareData = {
+    title: 'WinSquad Private Table',
+    text: 'Join my WinSquad private table (code ' + code + '):',
+    url,
+  };
+  if (navigator.share) {
+    try { await navigator.share(shareData); return; }
+    catch (e) { if (e?.name === 'AbortError') return; }
+  }
+  await copyText(url, 'Invite link copied!');
+}
+
+async function copyInviteLink() {
+  const code = normalizeInviteCode(currentCode || table?.code || $('invite-code')?.textContent);
+  if (!code || code === '------') { toast('Create or join a table first.', true); return; }
+  await copyText(inviteLink(code), 'Invite link copied!');
+}
+
 /* ---------------- lobby: create / join ---------------- */
 async function createTable() {
   unlockAudio(); hideError();
@@ -40,6 +74,7 @@ async function createTable() {
     if (error) throw error;
     const row = unwrapRow(data);
     if (!row || !row.table_id) throw new Error('Could not create the table.');
+    currentCode = normalizeInviteCode(row.code);
     $('invite-code').textContent = row.code || '------';
     $('invite-code-card').hidden = false;
     toast('Table created! Share your code 🔒');
@@ -51,27 +86,44 @@ async function createTable() {
   }
 }
 
-async function joinTable() {
-  unlockAudio(); hideError();
-  const code = $('join-code-input').value.trim().toUpperCase();
-  if (!code) { showError('Enter the invite code.'); return; }
-  $('btn-join-table').disabled = true;
+async function joinTableByCode(rawCode) {
+  hideError();
+  const code = normalizeInviteCode(rawCode);
+  if (!code) { showError('Enter the invite code.'); return false; }
+  if (joiningPrivate) return false;
+  joiningPrivate = true;
+  const btn = $('btn-join-table');
+  if (btn) btn.disabled = true;
   try {
     const { data, error } = await supabase.rpc('join_private_table', { p_code: code });
     if (error) throw error;
     const row = unwrapRow(data);
     if (!row || row.ok === false) throw new Error(row?.error || 'Could not join this table.');
-    toast('Joined the table! 🎉');
+    currentCode = code;
+    toast(row.already_seated ? 'Welcome back to the table! 🔒' : 'Joined the table! 🎉');
     await enterTable(row.table_id, code);
+    return true;
   } catch (e) {
     showError(friendlyError(e, 'Could not join. Check the code and try again.'));
+    return false;
   } finally {
-    $('btn-join-table').disabled = false;
+    joiningPrivate = false;
+    if (btn) btn.disabled = false;
   }
+}
+
+async function joinTable() {
+  unlockAudio();
+  await joinTableByCode($('join-code-input').value);
+}
+
+export async function joinPrivateTableByCode(code) {
+  return joinTableByCode(code);
 }
 
 /* ---------------- table state ---------------- */
 async function enterTable(tableId, code) {
+  if (code) currentCode = normalizeInviteCode(code);
   $('private-lobby').hidden = true;
   $('private-table').hidden = false;
   $('private-code-label').textContent = '· ' + (code || '');
@@ -83,6 +135,7 @@ async function refreshTable(tableId) {
   try {
     const { data: t } = await supabase.from('private_tables').select('*').eq('id', tableId).maybeSingle();
     table = unwrapRow(t);
+    if (table?.code) currentCode = normalizeInviteCode(table.code);
     const { data: s } = await supabase.from('private_seats').select('*').eq('table_id', tableId);
     seats = Array.isArray(s) ? s : [];
     const { data: b } = await supabase.from('private_bids').select('*').eq('table_id', tableId);
@@ -232,6 +285,9 @@ export function initPrivate() {
   $('btn-join-table').addEventListener('click', joinTable);
   $('btn-copy-code').addEventListener('click', () =>
     copyText($('invite-code').textContent.trim(), 'Invite code copied!'));
+  $('btn-share-code')?.addEventListener('click', shareInviteLink);
+  $('btn-copy-link')?.addEventListener('click', copyInviteLink);
+  $('btn-share-table')?.addEventListener('click', shareInviteLink);
   $$('.pbid-tab').forEach(tab => tab.addEventListener('click', () => {
     unlockAudio(); sounds.click();
     $$('.pbid-tab').forEach(t => t.classList.remove('active'));
@@ -243,6 +299,7 @@ export function initPrivate() {
   $('btn-leave-table').addEventListener('click', () => {
     unsubscribe();
     table = null;
+    currentCode = '';
     $('private-table').hidden = true;
     $('private-lobby').hidden = false;
     $('invite-code-card').hidden = true;
