@@ -179,7 +179,7 @@ async function refreshTable(tableId) {
 }
 
 function seatName(seat) {
-  if (seat.user_id === userId) return myName + ' (you)';
+  if (seat.user_id === userId) return myName;
   return seatNames[seat.user_id] || seat.display_name || seat.player_name || seat.name ||
     ('Player ' + String(seat.user_id || '?').slice(0, 4));
 }
