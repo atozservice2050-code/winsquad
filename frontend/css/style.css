@@ -2337,3 +2337,8 @@ button { font-family: inherit; cursor: pointer; border: none; border-radius: 12p
 .d7-opt-name { font-size: 12px; font-weight: 700; letter-spacing: 0.5px; color: var(--gold); }
 .d7-opt-range { font-size: 10px; color: #94a3b8; }
 .d7-opt-total { font-size: 12px; color: #cbd5e1; }
+
+/* Disconnected seat (migration 036): greyed out with a warning line
+   while the player is within their 1-minute reconnect grace. */
+.seat-offline { opacity: .55; filter: grayscale(.7); }
+.seat-status { color: #ffb340; font-size: 11px; font-weight: 700; margin-top: 2px; }

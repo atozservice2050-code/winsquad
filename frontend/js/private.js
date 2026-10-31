@@ -30,6 +30,7 @@ let myName = 'You';
 let currentCode = '';
 let joiningPrivate = false;
 let seatNames = {};          // user_id -> display_name (from public_profiles)
+let seatSeen = {};           // user_id -> last_seen_at (presence, migration 036)
 let knownBidIds = new Set(); // bids already seen (chip fly-in animation)
 let stagePrimed = false;     // skip fly-in for bids that predate entering
 let lastRoundSeen = null;    // current_round_no at last render (resolve detect)
@@ -140,7 +141,7 @@ export async function joinPrivateTableByCode(code) {
 }
 
 /* ---------------- table state ---------------- */
-async function enterTable(tableId, code) {
+export async function enterTable(tableId, code) {
   if (code) currentCode = normalizeInviteCode(code);
   // Full-screen play mode while seated at a table.
   document.body.classList.add('playing');
@@ -176,8 +177,11 @@ async function refreshTable(tableId) {
       const ids = [...new Set(seats.map(x => x.user_id).filter(Boolean))];
       if (ids.length) {
         const { data: profs } = await supabase.from('public_profiles')
-          .select('id, display_name').in('id', ids);
-        if (Array.isArray(profs)) profs.forEach(p => { if (p?.id && p.display_name) seatNames[p.id] = p.display_name; });
+          .select('id, display_name, last_seen_at').in('id', ids);
+        if (Array.isArray(profs)) profs.forEach(p => {
+          if (p?.id && p.display_name) seatNames[p.id] = p.display_name;
+          if (p?.id && p.last_seen_at) seatSeen[p.id] = p.last_seen_at;
+        });
       }
     } catch (_) { /* names are cosmetic; seats still render */ }
     const { data: b, error: bErr } = await supabase.from('private_bids').select('*').eq('table_id', tableId);
@@ -243,9 +247,11 @@ function renderTable() {
         ? ' seat-' + highlightMap[seat.user_id] : '';
       const turn = (curSpin.ready && curSpin.spinner && curSpin.spinner.user_id === seat.user_id)
         ? ' seat-turn' : '';
-      div.className = 'seat filled' + (seat.user_id === userId ? ' you' : '') + hl + turn;
-      div.innerHTML = '<div class="seat-emoji">🤑</div><div class="seat-name"></div>' +
-        '<div class="seat-bid">' + (bid != null ? 'Bid: Rs ' + fmtRs(bid) : 'thinking…') + '</div>';
+      const off = seatOffline(seat);
+      div.className = 'seat filled' + (seat.user_id === userId ? ' you' : '') + hl + turn + (off ? ' seat-offline' : '');
+      div.innerHTML = '<div class="seat-emoji">' + (off ? '📵' : '🤑') + '</div><div class="seat-name"></div>' +
+        '<div class="seat-bid">' + (bid != null ? 'Bid: Rs ' + fmtRs(bid) : 'thinking…') + '</div>' +
+        (off ? '<div class="seat-status">⚠ Connection error</div>' : '');
       div.querySelector('.seat-name').textContent = seatName(seat);
     }
     wrap.appendChild(div);
@@ -568,11 +574,32 @@ function unsubscribe() {
 /* Live safety net: realtime delivers changes instantly; this 1s poll
    guarantees other players' joins/leaves/bids show right away even
    if a realtime event is ever missed. */
+let pollTicks = 0;
 function startPoll(tableId) {
   stopPoll();
+  pollTicks = 0;
   pollInt = setInterval(() => {
-    if (table?.id === tableId && !document.hidden) refreshTable(tableId);
+    if (table?.id === tableId && !document.hidden) {
+      refreshTable(tableId);
+      // Every ~10s, clear seats whose owner has been offline past the
+      // 1-minute grace (server decides; migration 036).
+      pollTicks += 1;
+      if (pollTicks % 10 === 0) {
+        supabase.rpc('private_presence_sweep', { p_table_id: tableId })
+          .then(() => {}, () => {});
+      }
+    }
   }, 1000);
+}
+
+/* A seat is shown as disconnected once its owner's presence heartbeat
+   is older than ~40s (heartbeats run every 20s while the app is open).
+   The seat itself is only removed server-side after ~65s offline. */
+function seatOffline(seat) {
+  if (!seat || seat.user_id === userId) return false;
+  const last = seatSeen[seat.user_id];
+  if (!last) return false;
+  return (Date.now() - new Date(last).getTime()) > 40000;
 }
 function stopPoll() {
   if (pollInt) { clearInterval(pollInt); pollInt = null; }
@@ -595,6 +622,29 @@ function exitToLobby() {
   $('private-table').hidden = true;
   $('private-lobby').hidden = false;
   $('invite-code-card').hidden = true;
+}
+
+/* Rejoin on app launch (owner rule): if I still hold a seat at an open
+   table, go straight back into that table — closing the app must not
+   drop me from the game. The sweep runs first, so a seat that passed
+   the 1-minute grace is already gone and I land in the lobby instead.
+   Returns { id, code } of the table rejoined, or null. */
+export async function rejoinMyTable() {
+  if (!userId) return null;
+  try {
+    const { data: mySeats } = await supabase.from('private_seats')
+      .select('table_id').eq('user_id', userId);
+    for (const row of (mySeats || [])) {
+      const { data: t } = await supabase.from('private_tables')
+        .select('id, code, status').eq('id', row.table_id).maybeSingle();
+      if (!t || t.status === 'closed') continue;
+      await supabase.rpc('private_presence_sweep', { p_table_id: t.id });
+      const { data: still } = await supabase.from('private_seats')
+        .select('user_id').eq('table_id', t.id).eq('user_id', userId).maybeSingle();
+      if (still) return { id: t.id, code: t.code };
+    }
+  } catch (e) { console.warn('rejoin check failed', e); }
+  return null;
 }
 
 /* Leave for real: the seat is deleted on the server, so the player

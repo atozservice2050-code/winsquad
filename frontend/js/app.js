@@ -9,7 +9,7 @@ import { $, toast, unlockAudio } from './util.js';
 import { initNotifications } from './notifications.js';
 import { initAuth, initSetup, initResetPassword, isRecoveryUrl, loadProfile } from './auth.js';
 import { initArena, destroyArena, setUser as setArenaUser } from './arena.js';
-import { initPrivate, destroyPrivate, joinPrivateTableByCode, setUser as setPrivateUser } from './private.js?v=53';
+import { initPrivate, destroyPrivate, joinPrivateTableByCode, enterTable, rejoinMyTable, setUser as setPrivateUser } from './private.js?v=54';
 import { initWallet, refreshWallet, setUser as setWalletUser, initWalletTopbar } from './wallet.js';
 import { initRewards, refreshRewards, setUser as setRewardsUser } from './rewards.js';
 import { initProfile, renderProfile } from './profile.js';
@@ -166,7 +166,7 @@ function startPresence() {
   const beat = () => { supabase.rpc('touch_presence').then(() => {}, () => {}); };
   beat();
   if (presenceTimer) clearInterval(presenceTimer);
-  presenceTimer = setInterval(beat, 30000);
+  presenceTimer = setInterval(beat, 20000);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) beat(); });
 }
 
@@ -202,7 +202,19 @@ function enterApp(profile, phone) {
   // Mission progress: daily visit
   try { recordMissionEvent('daily_visit'); } catch (e) {}
   // A shared private-table link opens that table directly after login.
+  let hadInvite = false;
+  try { hadInvite = !!localStorage.getItem(PRIVATE_INVITE_KEY); } catch (e) {}
   try { handlePendingPrivateInvite(); } catch (e) { console.warn('private invite failed', e); }
+  // Otherwise, if the player still holds a seat at a private table,
+  // reopening the app lands them straight back in that game.
+  if (!hadInvite) {
+    (async () => {
+      try {
+        const t = await rejoinMyTable();
+        if (t) { showView('private'); await enterTable(t.id, t.code); }
+      } catch (e) { console.warn('table rejoin failed', e); }
+    })();
+  }
 }
 
 /* ---------------- boot ---------------- */
