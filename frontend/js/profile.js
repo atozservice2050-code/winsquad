@@ -81,7 +81,44 @@ async function loadAccountBalance() {
   } catch (e) { console.warn('balance load failed', e); }
 }
 
-/* Betting record / Profit & Loss panel. */
+/* Betting record / Profit & Loss panel.
+   Reads EVERY game's bid table. (The old version read only the legacy
+   Arena table and cf_bids — and asked cf_bids for a created_at column
+   it does not have — so Roulette / Dragon Tiger / Andar Bahar / Dice /
+   Cash Vault / Private players saw an empty record.) */
+const BID_SOURCES = [
+  { table: 'roulette_bids', game: 'Roulette', cols: 'amount, placed_at, is_winner, payout, bet_type, bet_value',
+    pick: b => b.bet_type === 'straight' ? 'No. ' + b.bet_value : b.bet_type },
+  { table: 'cf_bids', game: 'Coin Flip', cols: 'amount, placed_at, is_winner, payout, side', pick: b => b.side },
+  { table: 'dt_bids', game: 'Dragon Tiger', cols: 'amount, placed_at, is_winner, payout, side', pick: b => b.side },
+  { table: 'ab_bids', game: 'Andar Bahar', cols: 'amount, placed_at, is_winner, payout, side', pick: b => b.side },
+  { table: 'dice_bids', game: 'Dice · 7 Up Down', cols: 'amount, placed_at, is_winner, payout, option',
+    pick: b => ({ under7: 'Under 7', seven: 'Exactly 7', over7: 'Over 7' })[b.option] || b.option },
+  { table: 'cv_bids', game: 'Cash Vault', cols: 'amount, placed_at, is_winner, payout, segment', pick: b => b.segment },
+  { table: 'private_bids', game: 'Private Table', cols: 'amount, placed_at, round_no', pick: b => 'Round ' + b.round_no },
+  { table: 'bids', game: 'Arena', cols: 'amount, placed_at', pick: () => '' },
+];
+
+async function loadAllBids() {
+  const out = [];
+  await Promise.all(BID_SOURCES.map(async (src) => {
+    try {
+      const { data, error } = await supabase.from(src.table)
+        .select(src.cols).eq('user_id', currentUserId)
+        .order('placed_at', { ascending: false }).limit(30);
+      if (error) { console.warn('record source failed', src.table, error); return; }
+      (data || []).forEach(b => out.push({
+        game: src.game, pick: src.pick(b), amount: Number(b.amount || 0),
+        at: b.placed_at,
+        isWinner: (b.is_winner === undefined ? null : b.is_winner),
+        payout: b.payout != null ? Number(b.payout) : null,
+      }));
+    } catch (e) { console.warn('record source failed', src.table, e); }
+  }));
+  out.sort((a, b) => new Date(b.at) - new Date(a.at));
+  return out;
+}
+
 async function showRecord(kind) {
   const panel = $('record-panel');
   const list = $('record-list');
@@ -90,39 +127,33 @@ async function showRecord(kind) {
   list.innerHTML = '<p class="hint">Loading…</p>';
   if (!currentUserId) { list.innerHTML = '<p class="hint">Not signed in.</p>'; return; }
   try {
+    const rows = await loadAllBids();
     if (kind === 'pnl') {
-      // Sum wins and losses from transactions
-      const { data } = await supabase.from('transactions')
-        .select('type, amount').eq('user_id', currentUserId);
-      let won = 0, lost = 0;
-      (data || []).forEach(t => {
-        const a = Number(t.amount || 0);
-        if (t.type === 'coinflip_win' || t.type === 'payout') won += a;
-        else if (t.type === 'coinflip_bet' || t.type === 'bid') lost += a;
+      let wagered = 0, returned = 0, pending = 0;
+      rows.forEach(r => {
+        wagered += r.amount;
+        if (r.isWinner === true) returned += (r.payout || 0);
+        else if (r.isWinner === null) pending += 1;
       });
-      const net = won - lost;
+      const net = returned - wagered;
       list.innerHTML =
-        '<div class="profile-row"><span>Total won</span><strong style="color:#2ee06f">Rs ' + fmtRs(won) + '</strong></div>' +
-        '<div class="profile-row"><span>Total wagered</span><strong>Rs ' + fmtRs(lost) + '</strong></div>' +
-        '<div class="profile-row"><span>Net P&amp;L</span><strong style="color:' + (net >= 0 ? '#2ee06f' : '#ff5555') + '">Rs ' + fmtRs(net) + '</strong></div>';
+        '<div class="profile-row"><span>Total wagered</span><strong>Rs ' + fmtRs(wagered) + '</strong></div>' +
+        '<div class="profile-row"><span>Total returned</span><strong style="color:#2ee06f">Rs ' + fmtRs(returned) + '</strong></div>' +
+        '<div class="profile-row"><span>Net P&amp;L</span><strong style="color:' + (net >= 0 ? '#2ee06f' : '#ff5555') + '">Rs ' + fmtRs(net) + '</strong></div>' +
+        (pending ? '<p class="hint">⏳ ' + pending + ' bet(s) still playing — P&amp;L updates when those rounds finish.</p>' : '');
     } else {
-      // Recent bids (Squad Stakes + Coin Flip)
-      const rows = [];
-      const { data: bids } = await supabase.from('bids')
-        .select('amount, created_at').eq('user_id', currentUserId)
-        .order('created_at', { ascending: false }).limit(10);
-      (bids || []).forEach(b => rows.push({ label: 'Squad Stakes bid', amount: b.amount, at: b.created_at }));
-      try {
-        const { data: cfBids } = await supabase.from('cf_bids')
-          .select('amount, side, created_at').eq('user_id', currentUserId)
-          .order('created_at', { ascending: false }).limit(10);
-        (cfBids || []).forEach(b => rows.push({ label: 'Coin Flip · ' + b.side, amount: b.amount, at: b.created_at }));
-      } catch { /* ignore */ }
-      rows.sort((a, b) => new Date(b.at) - new Date(a.at));
-      if (!rows.length) { list.innerHTML = '<p class="hint">No bets yet.</p>'; return; }
-      list.innerHTML = rows.slice(0, 15).map(r =>
-        '<div class="profile-row"><span>' + r.label + '</span><strong>Rs ' + fmtRs(r.amount) + '</strong></div>'
-      ).join('');
+      if (!rows.length) { list.innerHTML = '<p class="hint">No bets yet — play any game and your bets will show here.</p>'; return; }
+      list.innerHTML = rows.slice(0, 20).map(r => {
+        const when = r.at ? new Date(r.at).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }) : '';
+        const res = r.isWinner === true
+          ? '<strong style="color:#2ee06f">🏆 +Rs ' + fmtRs(r.payout || 0) + '</strong>'
+          : r.isWinner === false
+            ? '<strong style="color:#ff5555">😭 lost</strong>'
+            : '<strong>⏳ playing</strong>';
+        return '<div class="profile-row"><span>' + r.game + (r.pick ? ' · ' + r.pick : '') +
+          '<br><small class="muted">' + when + '</small></span>' +
+          '<span style="text-align:right">Rs ' + fmtRs(r.amount) + '<br>' + res + '</span></div>';
+      }).join('');
     }
   } catch (e) {
     console.warn('record load failed', e);
@@ -240,14 +271,24 @@ export function initProfile() {
   on('btn-pw-save', async () => {
     const errEl = $('pw-error'), okEl = $('pw-ok');
     errEl.hidden = true; okEl.hidden = true;
+    const pw0 = $('pw-current').value;
     const pw1 = $('pw-new').value, pw2 = $('pw-confirm').value;
-    if (!pw1 || pw1.length < 6) { errEl.textContent = 'Password must be at least 6 characters.'; errEl.hidden = false; return; }
+    if (!pw0) { errEl.textContent = 'Enter your current password first.'; errEl.hidden = false; return; }
+    if (!pw1 || pw1.length < 6) { errEl.textContent = 'New password must be at least 6 characters.'; errEl.hidden = false; return; }
     if (pw1 !== pw2) { errEl.textContent = 'Passwords do not match.'; errEl.hidden = false; return; }
+    if (pw1 === pw0) { errEl.textContent = 'New password must be different from the current one.'; errEl.hidden = false; return; }
     $('btn-pw-save').disabled = true;
     try {
+      // The CURRENT password must check out before anything changes:
+      // re-authenticate with it; only a correct one lets us continue.
+      const { data: u } = await supabase.auth.getUser();
+      const email = u?.user?.email;
+      if (!email) throw new Error('Could not verify your account. Please log in again.');
+      const { error: vErr } = await supabase.auth.signInWithPassword({ email, password: pw0 });
+      if (vErr) { errEl.textContent = 'Current password is incorrect.'; errEl.hidden = false; return; }
       const { error } = await supabase.auth.updateUser({ password: pw1 });
       if (error) throw error;
-      $('pw-new').value = ''; $('pw-confirm').value = '';
+      $('pw-current').value = ''; $('pw-new').value = ''; $('pw-confirm').value = '';
       okEl.textContent = 'Password changed successfully!';
       okEl.hidden = false;
     } catch (e) {

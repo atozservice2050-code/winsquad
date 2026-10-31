@@ -1219,6 +1219,8 @@
         <!-- Change password panel (hidden by default) -->
         <div class="card gold-frame" id="pw-panel" hidden>
           <div class="card-title">🔑 Change Password</div>
+          <label class="field-label" for="pw-current">Current password</label>
+          <input id="pw-current" type="password" placeholder="Your current password" autocomplete="current-password" />
           <label class="field-label" for="pw-new">New password</label>
           <input id="pw-new" type="password" placeholder="Min 6 characters" autocomplete="new-password" />
           <label class="field-label" for="pw-confirm">Confirm new password</label>
@@ -1293,6 +1295,6 @@
     </div>
   </div>
 
-  <script type="module" src="js/app.js?v=59"></script>
+  <script type="module" src="js/app.js?v=60"></script>
 </body>
 </html>

@@ -57,10 +57,34 @@ async function handlePendingPrivateInvite() {
   await joinPrivateTableByCode(code);
 }
 
-/* ---------------- router ---------------- */
+/* ---------------- router ----------------
+   Resume behaviour (owner order): the app must reopen where the
+   player left it — no refresh back to the hub. Every navigation is
+   (a) remembered in localStorage and restored on the next launch,
+   and (b) pushed onto the browser history, so the Android Back
+   button steps back through views instead of closing the app. */
+const LAST_VIEW_KEY = 'winsquad_last_view';
+const NO_RESTORE_VIEWS = ['auth', 'setup', 'resetpw'];
+let navFromPop = false;
+window.addEventListener('popstate', (e) => {
+  const v = e && e.state && e.state.view;
+  if (v && VIEWS.includes(v) && v !== currentView) {
+    navFromPop = true;
+    showView(v);
+    navFromPop = false;
+  }
+});
+
 function showView(name) {
   if (!VIEWS.includes(name)) name = 'home';
+  const prevView = currentView;
   currentView = name;
+  if (!NO_RESTORE_VIEWS.includes(name)) {
+    try { localStorage.setItem(LAST_VIEW_KEY, name); } catch (e) {}
+    if (!navFromPop && prevView && prevView !== name && !NO_RESTORE_VIEWS.includes(prevView)) {
+      try { history.pushState({ view: name }, ''); } catch (e) {}
+    }
+  }
   // Hide splash screen on first view render.
   const splash = document.getElementById('splash');
   if (splash && !splash.classList.contains('hide')) {
@@ -165,7 +189,14 @@ function enterApp(profile, phone) {
   startPresence();
   initPushBridge();
   $('app').hidden = false;
-  showView('home');
+  // Reopen where the player left off (not a refresh to the hub).
+  let startView = 'home';
+  try {
+    const lv = localStorage.getItem(LAST_VIEW_KEY);
+    if (lv && VIEWS.includes(lv) && !NO_RESTORE_VIEWS.includes(lv)) startView = lv;
+  } catch (e) {}
+  showView(startView);
+  try { history.replaceState({ view: startView }, ''); } catch (e) {}
   // Disclaimer: shown once on first login.
   try { maybeShowDisclaimer(); } catch (e) {}
   // Mission progress: daily visit
