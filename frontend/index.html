@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <meta name="theme-color" content="#0a0a14" />
   <title>WinSquad — Play together. Win together.</title>
-  <link rel="stylesheet" href="css/style.css?v=52" />
+  <link rel="stylesheet" href="css/style.css?v=53" />
   <!-- Runtime config: inline fallback (public anon key by design).
        js/env.js is preferred when present (generated at build time). -->
   <script>
@@ -105,6 +105,7 @@
           </div>
 
           <p id="auth-error" class="error" hidden></p>
+          <a class="btn-gold web-only dl-app-btn" href="https://winsquad.pages.dev/winsquad.apk">📲 Download the Android App</a>
         </div>
       </section>
 
@@ -142,6 +143,11 @@
 
       <!-- ============ GAMES HUB (home) ============ -->
       <section id="view-home" class="view" hidden>
+        <div class="dl-bar web-only" id="dl-bar" hidden>
+          <span>📲 Get the WinSquad Android app</span>
+          <a class="dl-bar-btn" href="https://winsquad.pages.dev/winsquad.apk">Download</a>
+          <button class="dl-bar-close" id="dl-bar-close" type="button">✕</button>
+        </div>
         <div class="hub-header">
           <div class="hub-title">🎮 <span class="gold">ALL GAMES</span></div>
           <p class="hub-sub">Choose your game. Roulette is live now!</p>
@@ -357,6 +363,7 @@
 
       <!-- ============ ARENA (Squad Stakes) ============ -->
       <section id="view-arena" class="view" hidden>
+        <button class="btn-ghost small" data-open-view="home">← Games</button>
         <div class="arena-wrap">
           <!-- TOP: round status + big timer -->
           <div class="round-top">
@@ -1105,6 +1112,7 @@
           <div class="reward-title">Referral Bonus</div>
           <p class="hint">Invite friends — you get <strong>Rs 500</strong>, they get <strong>Rs 100</strong>.</p>
           <div class="invite-code" id="referral-code">WS-••••••</div>
+          <button id="btn-share-invite" class="btn-gold">📤 Share invite — with app download link</button>
           <button id="btn-copy-referral" class="btn-ghost">📋 Copy referral code</button>
           <button id="btn-copy-invite-link" class="btn-ghost">🔗 Copy invite link</button>
           <div class="divider"><span>have a code?</span></div>
@@ -1200,7 +1208,7 @@
           <button class="member-item" data-open-view="rewards"><span class="member-icon">⭐</span><span>Reward Center</span></button>
           <button class="member-item" id="btn-betting-record"><span class="member-icon">📊</span><span>Betting Record</span></button>
           <button class="member-item" id="btn-profit-loss"><span class="member-icon">📈</span><span>Profit &amp; Loss</span></button>
-          <button class="member-item" data-copy="profile-referral"><span class="member-icon">👥</span><span>Invite Friends</span></button>
+          <button class="member-item" id="btn-invite-friends"><span class="member-icon">👥</span><span>Invite Friends</span></button>
           <button class="member-item" data-open-view="wallet"><span class="member-icon">💰</span><span>My Wallet</span></button>
           <button class="member-item" id="btn-my-bids"><span class="member-icon">🧾</span><span>My Bids</span></button>
           <button class="member-item" id="btn-change-pw"><span class="member-icon">🔑</span><span>Change Password</span></button>
@@ -1285,6 +1293,6 @@
     </div>
   </div>
 
-  <script type="module" src="js/app.js?v=57"></script>
+  <script type="module" src="js/app.js?v=58"></script>
 </body>
 </html>

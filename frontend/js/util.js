@@ -108,6 +108,23 @@ export function normalizePhone(raw) {
   if (!/^923\d{9}$/.test(d)) return null;
   return '+' + d;
 }
+/** Share the referral invite (code + app download link) via the
+ *  system share sheet; falls back to copying the full message. */
+export async function shareInvite(code) {
+  const safe = (code || '').trim();
+  if (!safe || safe.includes('•')) { toast('Your referral code is still loading.', true); return; }
+  const webLink = location.origin + location.pathname + '?ref=' + encodeURIComponent(safe);
+  const text = '🎮 Join me on WinSquad — Roulette, Coin Flip, Dragon Tiger, Andar Bahar & more!\n'
+    + 'Use my code ' + safe + ' — you get Rs 100 bonus, I get Rs 500.\n'
+    + '📲 Download the app: https://winsquad.pages.dev/winsquad.apk\n'
+    + '🌐 Or play on web: ' + webLink;
+  if (navigator.share) {
+    try { await navigator.share({ title: 'WinSquad', text }); return; }
+    catch (e) { if (e && e.name === 'AbortError') return; }
+  }
+  await copyText(text, 'Invite copied! Paste it in WhatsApp to share.');
+}
+
 /** Copy text to clipboard with fallback. */
 export async function copyText(text, label = 'Copied!') {
   try {

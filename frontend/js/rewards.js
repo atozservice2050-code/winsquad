@@ -7,7 +7,7 @@
    - apply_referral(p_referral_id) -> {ok, error}: Rs 100 to both users.
    ============================================================ */
 import { supabase, unwrapRow, friendlyError } from './supabase-client.js';
-import { $, toast, copyText, unlockAudio, sounds } from './util.js';
+import { $, toast, copyText, shareInvite, unlockAudio, sounds } from './util.js';
 import { recordMissionEvent } from './missions.js';
 
 let userId = null;
@@ -124,6 +124,8 @@ async function loadFreeBidStatus() {
 
 /* ---------------- init ---------------- */
 export function initRewards() {
+  $('btn-share-invite')?.addEventListener('click', () =>
+    shareInvite($('referral-code').textContent.trim()));
   $('btn-copy-referral').addEventListener('click', () =>
     copyText($('referral-code').textContent.trim(), 'Referral code copied!'));
   $('btn-copy-invite-link').addEventListener('click', () => {

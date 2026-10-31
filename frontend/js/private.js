@@ -142,6 +142,11 @@ export async function joinPrivateTableByCode(code) {
 /* ---------------- table state ---------------- */
 async function enterTable(tableId, code) {
   if (code) currentCode = normalizeInviteCode(code);
+  // Full-screen play mode while seated at a table.
+  document.body.classList.add('playing');
+  document.body.classList.remove('has-tabs');
+  $('tabbar').hidden = true;
+  $('topbar').style.display = 'none';
   $('private-lobby').hidden = true;
   $('private-table').hidden = false;
   $('private-code-label').textContent = '· ' + (code || '');
@@ -574,6 +579,11 @@ function stopPoll() {
 }
 
 function exitToLobby() {
+  // Back to the lobby: restore the menu bars.
+  document.body.classList.remove('playing');
+  document.body.classList.add('has-tabs');
+  $('tabbar').hidden = false;
+  $('topbar').style.display = 'flex';
   unsubscribe();
   clearTimeout(spinTimer);
   spinTimer = null;

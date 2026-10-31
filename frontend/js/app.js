@@ -9,7 +9,7 @@ import { $, toast, unlockAudio } from './util.js';
 import { initNotifications } from './notifications.js';
 import { initAuth, initSetup, initResetPassword, isRecoveryUrl, loadProfile } from './auth.js';
 import { initArena, destroyArena, setUser as setArenaUser } from './arena.js';
-import { initPrivate, destroyPrivate, joinPrivateTableByCode, setUser as setPrivateUser } from './private.js?v=52';
+import { initPrivate, destroyPrivate, joinPrivateTableByCode, setUser as setPrivateUser } from './private.js?v=53';
 import { initWallet, refreshWallet, setUser as setWalletUser, initWalletTopbar } from './wallet.js';
 import { initRewards, refreshRewards, setUser as setRewardsUser } from './rewards.js';
 import { initProfile, renderProfile } from './profile.js';
@@ -21,7 +21,7 @@ import { initCashvault, setUser as setCashvaultUser, destroyCashvault } from './
 import { initDice, setUser as setDiceUser, destroyDice } from './dice.js';
 import { initDisclaimer, maybeShowDisclaimer } from './disclaimer.js';
 import { initMissions, refreshMissions, setUser as setMissionsUser, recordMissionEvent } from './missions.js';
-import { initFreeGames, refreshFreeHub, setUser as setFreeUser } from './free-games.js?v=48';
+import { initFreeGames, refreshFreeHub, setUser as setFreeUser } from './free-games.js?v=49';
 import { restoreSession, initSessionBackup } from './session-backup.js';
 
 const VIEWS = ['auth', 'setup', 'resetpw', 'home', 'arena', 'private', 'wallet', 'rewards', 'missions', 'profile', 'coinflip', 'andarbahar', 'dt', 'roulette', 'cashvault', 'dice', 'freehub', 'mines', 'memory', 'flappy'];
@@ -74,11 +74,16 @@ function showView(name) {
     else if (v === name) console.warn('showView: missing section for view "' + v + '"');
   });
 
-  // Arena is reached from the Games hub; tabbar stays visible with Games active.
-  const inTabs = TAB_VIEWS.includes(name) || name === 'arena';
-  const activeTab = name === 'arena' ? 'home' : name;
+  // Full-screen play mode: in a game, the tab bar AND top bar hide so
+  // the whole screen is the game; Back (← Games) returns to the menu.
+  const GAME_VIEWS = ['arena', 'coinflip', 'andarbahar', 'dt', 'roulette', 'cashvault', 'dice', 'mines', 'memory', 'flappy'];
+  const inGame = GAME_VIEWS.includes(name);
+  const inTabs = !inGame && TAB_VIEWS.includes(name);
+  const activeTab = name;
   $('tabbar').hidden = !inTabs;
   $('topbar').style.display = inTabs ? 'flex' : 'none';
+  document.body.classList.toggle('has-tabs', inTabs);
+  document.body.classList.toggle('playing', inGame);
   document.querySelectorAll('.tab').forEach(t =>
     t.classList.toggle('active', t.dataset.view === activeTab));
 
@@ -329,6 +334,22 @@ async function boot() {
       destroyRoulette();
       location.reload();
     }
+  });
+}
+
+/* Web-only elements (app download option): hidden inside the APK shell. */
+if (window.WinSquadPush) document.body.classList.add('in-apk');
+else {
+  try {
+    if (!localStorage.getItem('winsquad_dl_dismissed')) {
+      const bar = $('dl-bar');
+      if (bar) bar.hidden = false;
+    }
+  } catch (e) {}
+  $('dl-bar-close')?.addEventListener('click', () => {
+    const bar = $('dl-bar');
+    if (bar) bar.hidden = true;
+    try { localStorage.setItem('winsquad_dl_dismissed', '1'); } catch (e) {}
   });
 }
 

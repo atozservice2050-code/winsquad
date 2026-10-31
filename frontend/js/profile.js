@@ -3,7 +3,7 @@
    center grid, betting record, profit/loss. Keeps display name,
    phone, referral ID, 14-digit transfer ID, copy, logout, admin.
    ============================================================ */
-import { $, copyText, unlockAudio, toast, fmtRs, isSoundOn, setSoundOn } from './util.js';
+import { $, copyText, shareInvite, unlockAudio, toast, fmtRs, isSoundOn, setSoundOn } from './util.js';
 import { logout } from './auth.js';
 import { supabase } from './supabase-client.js';
 import { refreshWallet } from './wallet.js';
@@ -199,6 +199,12 @@ export function initProfile() {
       const target = $(btn.dataset.copy);
       if (target) copyText(target.textContent.trim(), 'Copied!');
     });
+  });
+
+  // Invite Friends: share sheet with the referral code + app download link.
+  on('btn-invite-friends', () => {
+    unlockAudio();
+    shareInvite(($('profile-referral')?.textContent || '').trim());
   });
 
   // Sound on/off toggle
