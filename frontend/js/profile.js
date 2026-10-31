@@ -95,8 +95,8 @@ const BID_SOURCES = [
   { table: 'dice_bids', game: 'Dice · 7 Up Down', cols: 'amount, placed_at, is_winner, payout, option',
     pick: b => ({ under7: 'Under 7', seven: 'Exactly 7', over7: 'Over 7' })[b.option] || b.option },
   { table: 'cv_bids', game: 'Cash Vault', cols: 'amount, placed_at, is_winner, payout, segment', pick: b => b.segment },
-  { table: 'private_bids', game: 'Private Table', cols: 'amount, placed_at, round_no', pick: b => 'Round ' + b.round_no },
-  { table: 'bids', game: 'Arena', cols: 'amount, placed_at', pick: () => '' },
+  { table: 'private_bids', game: 'Private Table', cols: 'amount, placed_at, round_no', untracked: true, pick: b => 'Round ' + b.round_no },
+  { table: 'bids', game: 'Arena', cols: 'amount, placed_at', untracked: true, pick: () => '' },
 ];
 
 async function loadAllBids() {
@@ -110,7 +110,8 @@ async function loadAllBids() {
       (data || []).forEach(b => out.push({
         game: src.game, pick: src.pick(b), amount: Number(b.amount || 0),
         at: b.placed_at,
-        isWinner: (b.is_winner === undefined ? null : b.is_winner),
+        isWinner: src.untracked ? undefined : b.is_winner,
+        untracked: !!src.untracked,
         payout: b.payout != null ? Number(b.payout) : null,
       }));
     } catch (e) { console.warn('record source failed', src.table, e); }
@@ -133,7 +134,7 @@ async function showRecord(kind) {
       rows.forEach(r => {
         wagered += r.amount;
         if (r.isWinner === true) returned += (r.payout || 0);
-        else if (r.isWinner === null) pending += 1;
+        else if (r.isWinner === null && !r.untracked) pending += 1;
       });
       const net = returned - wagered;
       list.innerHTML =
@@ -145,7 +146,7 @@ async function showRecord(kind) {
       if (!rows.length) { list.innerHTML = '<p class="hint">No bets yet — play any game and your bets will show here.</p>'; return; }
       list.innerHTML = rows.slice(0, 20).map(r => {
         const when = r.at ? new Date(r.at).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }) : '';
-        const res = r.isWinner === true
+        const res = r.untracked ? '' : r.isWinner === true
           ? '<strong style="color:#2ee06f">🏆 +Rs ' + fmtRs(r.payout || 0) + '</strong>'
           : r.isWinner === false
             ? '<strong style="color:#ff5555">😭 lost</strong>'
