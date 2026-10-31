@@ -153,6 +153,7 @@ Deno.serve(async (req) => {
                 title: "🟢 Player online",
                 body: `${name} is now online`,
               },
+              data: { open_url: "https://winsquad.pages.dev/admin" },
               android: {
                 priority: "HIGH",
                 notification: { channel_id: "winsquad_alerts" },
