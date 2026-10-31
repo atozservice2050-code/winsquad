@@ -1077,6 +1077,16 @@ button { font-family: inherit; cursor: pointer; border: none; border-radius: 12p
 .fg-overlay[hidden] { display: none; }
 .fg-wait-box { text-align: center; padding: 24px; width: min(92vw, 380px); }
 .fg-wait-ad { border: 1px dashed var(--card-border); border-radius: 12px; padding: 26px 10px; color: #9a9ab0; font-size: 13px; letter-spacing: 2px; margin-bottom: 16px; background: #ffffff08; }
+.fg-promo { border: 1px solid #d4af37; border-radius: 14px; padding: 18px 14px 12px; margin-bottom: 16px; background: linear-gradient(160deg, #2a2105 0%, #17130a 55%, #0d0b06 100%); box-shadow: 0 0 18px #d4af3733; transition: opacity .3s ease; }
+.fg-promo.fade { opacity: 0; }
+.fg-promo-tag { font-size: 10px; letter-spacing: 2px; color: #d4af37; text-transform: uppercase; margin-bottom: 6px; }
+.fg-promo-emoji { font-size: 40px; line-height: 1.1; }
+.fg-promo-title { font-size: 19px; font-weight: 800; color: #ffd95e; letter-spacing: 1px; margin: 4px 0 6px; }
+.fg-promo-text { font-size: 13.5px; color: #e8e2d0; line-height: 1.45; min-height: 40px; }
+.fg-promo-cta { margin-top: 10px; padding: 9px 22px; font-size: 14px; }
+.fg-promo-dots { margin-top: 12px; display: flex; gap: 7px; justify-content: center; }
+.fg-promo-dots .dot { width: 8px; height: 8px; border-radius: 50%; background: #ffffff30; border: none; padding: 0; cursor: pointer; }
+.fg-promo-dots .dot.on { background: #d4af37; }
 .fg-wait-clock { font-size: 54px; }
 .fg-wait-time { font-size: 64px; font-weight: 900; color: #fff; font-variant-numeric: tabular-nums; line-height: 1.05; }
 .fg-wait-label { color: var(--gold-light); font-size: 14px; margin: 4px 0 16px; }

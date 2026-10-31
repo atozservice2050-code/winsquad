@@ -120,6 +120,7 @@ function openWait(game) {
   $('fg-wait').hidden = false;
   renderWaitTime();
   startWaitTick();
+  startPromo();
 }
 function finishWait() {
   stopWaitTick();
@@ -127,7 +128,49 @@ function finishWait() {
   $('fg-wait-close').hidden = false;
   try { sounds.alarm(); } catch (_) {}
 }
-function pauseWait() { stopWaitTick(); $('fg-wait').hidden = true; }
+function pauseWait() { stopWaitTick(); stopPromo(); $('fg-wait').hidden = true; }
+
+/* ---------------- Promo slides on the wait screen ----------------
+   WinSquad's own promos rotate while the player waits. Tapping a CTA
+   pauses the wait (its remaining time is already saved) and opens the
+   target screen; the wait resumes when the player re-enters the game. */
+const PROMOS = [
+  { emoji: '👑', title: 'REFER & EARN', text: 'Earn Rs 500 for every friend who joins with your code — your friend gets Rs 100!', cta: 'Invite Friends', view: 'rewards' },
+  { emoji: '🎰', title: 'ROULETTE IS LIVE', text: 'Fast rounds, non-stop action — Roulette is spinning right now!', cta: 'Play Roulette', view: 'roulette' },
+  { emoji: '👥', title: 'PRIVATE TABLE', text: 'Create your own private table and play only with your friends.', cta: 'Create Table', view: 'private' },
+  { emoji: '💰', title: 'BONUS WALLET', text: 'Free game rewards land in your Bonus — play to unlock them into real cash.', cta: 'Open Wallet', view: 'wallet' },
+  { emoji: '🎲', title: 'MORE GAMES LIVE', text: 'Coin Flip · Dragon Tiger · Andar Bahar · Dice — all live, all fast!', cta: 'See Games', view: 'home' },
+];
+let promoIdx = 0;
+let promoTimer = null;
+function renderPromo() {
+  const p = PROMOS[promoIdx];
+  if (!$('fg-promo')) return;
+  $('fg-promo-emoji').textContent = p.emoji;
+  $('fg-promo-title').textContent = p.title;
+  $('fg-promo-text').textContent = p.text;
+  $('fg-promo-cta').textContent = p.cta;
+  const dots = $('fg-promo-dots');
+  dots.innerHTML = '';
+  PROMOS.forEach((_, i) => {
+    const d = document.createElement('button');
+    d.className = 'dot' + (i === promoIdx ? ' on' : '');
+    d.addEventListener('click', () => { promoIdx = i; renderPromo(); restartPromoTimer(); });
+    dots.appendChild(d);
+  });
+}
+function nextPromo() {
+  const card = $('fg-promo');
+  if (!card) return;
+  card.classList.add('fade');
+  setTimeout(() => { promoIdx = (promoIdx + 1) % PROMOS.length; renderPromo(); card.classList.remove('fade'); }, 300);
+}
+function restartPromoTimer() {
+  if (promoTimer) clearInterval(promoTimer);
+  promoTimer = setInterval(nextPromo, 4000);
+}
+function startPromo() { renderPromo(); restartPromoTimer(); }
+function stopPromo() { if (promoTimer) { clearInterval(promoTimer); promoTimer = null; } }
 
 /* Full-screen burst visual (bomb explosion / crash) shown with the
    losing message BEFORE the waiting screen covers the board. */
@@ -596,7 +639,14 @@ export function initFreeGames(showView) {
   $('fg-wait-pause').addEventListener('click', () => { pauseWait(); onBackFromGame(); });
   $('fg-wait-close').addEventListener('click', () => {
     $('fg-wait').hidden = true;
+    stopPromo();
     try { sounds.click(); } catch (_) {}
+  });
+  $('fg-promo-cta').addEventListener('click', () => {
+    const p = PROMOS[promoIdx];
+    try { sounds.click(); } catch (_) {}
+    pauseWait();
+    if (showViewFn && p.view) showViewFn(p.view);
   });
   $('fg-win-next-btn').addEventListener('click', () => {
     $('fg-win').hidden = true;
