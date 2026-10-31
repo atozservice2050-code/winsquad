@@ -195,7 +195,11 @@ function roundBids() {
   return bids.filter(b => Number(b.round_no ?? rno) === Number(rno));
 }
 function seatBid(seat) {
-  const b = roundBids().find(x => x.user_id === seat.user_id || x.seat_id === seat.id);
+  // Match ONLY by user_id. (private_bids has no seat_id and
+  // private_seats has no id — comparing those compared
+  // undefined === undefined, which matched the FIRST bid for
+  // every seat, so all seats showed the first bidder's amount.)
+  const b = roundBids().find(x => x.user_id === seat.user_id);
   return b ? Number(b.amount) : null;
 }
 
@@ -306,7 +310,7 @@ function renderResults() {
   box.hidden = false;
 }
 function nameForBid(b) {
-  const seat = seats.find(s => s.user_id === b.user_id || s.id === b.seat_id);
+  const seat = seats.find(s => s.user_id === b.user_id);
   if (seat) return seatName(seat);
   if (b.user_id === userId) return myName;
   return seatNames[b.user_id] || 'Player';
