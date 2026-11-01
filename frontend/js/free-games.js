@@ -121,6 +121,24 @@ function openWait(game) {
   renderWaitTime();
   startWaitTick();
   startPromo();
+  loadMonetagVignette();
+}
+
+/* Monetag Vignette — zone "FreeGames Wait Screen" (tag supplied by the
+   owner from his Monetag account). Loaded ONLY when a free-game wait
+   opens, never on the money-game screens, and at most once per app
+   session; whether an ad actually shows is Monetag's own call. */
+let monetagLoaded = false;
+function loadMonetagVignette() {
+  if (monetagLoaded) return;
+  monetagLoaded = true;
+  try {
+    (function (s) {
+      s.dataset.zone = '12170716';
+      s.src = 'https://n6wxm.com/vignette.min.js';
+    })([document.documentElement, document.body].filter(Boolean).pop()
+      .appendChild(document.createElement('script')));
+  } catch (e) { console.warn('monetag load failed', e); }
 }
 function finishWait() {
   stopWaitTick();
