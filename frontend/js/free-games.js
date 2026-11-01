@@ -120,7 +120,6 @@ function openWait(game) {
   $('fg-wait').hidden = false;
   renderWaitTime();
   startWaitTick();
-  startPromo();
   loadMonetagVignette();
 }
 
@@ -146,12 +145,12 @@ function finishWait() {
   $('fg-wait-close').hidden = false;
   try { sounds.alarm(); } catch (_) {}
 }
-function pauseWait() { stopWaitTick(); stopPromo(); $('fg-wait').hidden = true; }
+function pauseWait() { stopWaitTick(); $('fg-wait').hidden = true; }
 
-/* ---------------- Promo slides on the wait screen ----------------
-   WinSquad's own promos rotate while the player waits. Tapping a CTA
-   pauses the wait (its remaining time is already saved) and opens the
-   target screen; the wait resumes when the player re-enters the game. */
+/* ---------------- Promo slides (HOMEPAGE) ----------------
+   WinSquad's own promos rotate on the games hub (owner order: the
+   free-game wait screen runs ONLY the Monetag tag; promos live on
+   the homepage). app.js starts/stops the rotation with the home view. */
 const PROMOS = [
   { emoji: '👑', title: 'REFER & EARN', text: 'Earn Rs 500 for every friend who joins with your code — your friend gets Rs 100!', cta: 'Invite Friends', view: 'rewards' },
   { emoji: '🎰', title: 'ROULETTE IS LIVE', text: 'Fast rounds, non-stop action — Roulette is spinning right now!', cta: 'Play Roulette', view: 'roulette' },
@@ -187,8 +186,8 @@ function restartPromoTimer() {
   if (promoTimer) clearInterval(promoTimer);
   promoTimer = setInterval(nextPromo, 4000);
 }
-function startPromo() { renderPromo(); restartPromoTimer(); }
-function stopPromo() { if (promoTimer) { clearInterval(promoTimer); promoTimer = null; } }
+export function startPromo() { renderPromo(); restartPromoTimer(); }
+export function stopPromo() { if (promoTimer) { clearInterval(promoTimer); promoTimer = null; } }
 
 /* Full-screen burst visual (bomb explosion / crash) shown with the
    losing message BEFORE the waiting screen covers the board. */
@@ -657,13 +656,11 @@ export function initFreeGames(showView) {
   $('fg-wait-pause').addEventListener('click', () => { pauseWait(); onBackFromGame(); });
   $('fg-wait-close').addEventListener('click', () => {
     $('fg-wait').hidden = true;
-    stopPromo();
     try { sounds.click(); } catch (_) {}
   });
   $('fg-promo-cta').addEventListener('click', () => {
     const p = PROMOS[promoIdx];
     try { sounds.click(); } catch (_) {}
-    pauseWait();
     if (showViewFn && p.view) showViewFn(p.view);
   });
   $('fg-win-next-btn').addEventListener('click', () => {

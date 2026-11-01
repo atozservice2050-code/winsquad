@@ -2342,3 +2342,6 @@ button { font-family: inherit; cursor: pointer; border: none; border-radius: 12p
    while the player is within their 1-minute reconnect grace. */
 .seat-offline { opacity: .55; filter: grayscale(.7); }
 .seat-status { color: #ffb340; font-size: 11px; font-weight: 700; margin-top: 2px; }
+
+/* Homepage promo card (moved from the wait overlay 2026-11-02) */
+.home-promo { margin: 10px 0 14px; }

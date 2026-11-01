@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <meta name="theme-color" content="#0a0a14" />
   <title>WinSquad — Play together. Win together.</title>
-  <link rel="stylesheet" href="css/style.css?v=55" />
+  <link rel="stylesheet" href="css/style.css?v=56" />
   <!-- Runtime config: inline fallback (public anon key by design).
        js/env.js is preferred when present (generated at build time). -->
   <script>
@@ -149,6 +149,14 @@
           <button class="dl-bar-close" id="dl-bar-close" type="button">✕</button>
         </div>
         <div class="hub-header">
+          <div class="fg-promo home-promo" id="fg-promo">
+            <div class="fg-promo-tag">⭐ WinSquad</div>
+            <div class="fg-promo-emoji" id="fg-promo-emoji">👑</div>
+            <div class="fg-promo-title" id="fg-promo-title">REFER &amp; EARN</div>
+            <div class="fg-promo-text" id="fg-promo-text">Earn Rs 500 for every friend who joins with your code — your friend gets Rs 100!</div>
+            <button class="btn-gold fg-promo-cta" id="fg-promo-cta">Invite Friends</button>
+            <div class="fg-promo-dots" id="fg-promo-dots"></div>
+          </div>
           <div class="hub-title">🎮 <span class="gold">ALL GAMES</span></div>
           <p class="hub-sub">Choose your game. Roulette is live now!</p>
         </div>
@@ -320,18 +328,10 @@
         </div>
       </section>
 
-      <!-- ============ FREE GAMES: WAITING overlay (ad slot) ============ -->
+      <!-- ============ FREE GAMES: WAITING overlay (Monetag tag slot) ============ -->
       <div id="fg-wait" class="fg-overlay" hidden>
         <button id="fg-wait-pause" class="btn-ghost small fg-wait-pause">←</button>
         <div class="fg-wait-box">
-          <div class="fg-promo" id="fg-promo">
-            <div class="fg-promo-tag">⭐ WinSquad</div>
-            <div class="fg-promo-emoji" id="fg-promo-emoji">👑</div>
-            <div class="fg-promo-title" id="fg-promo-title">REFER &amp; EARN</div>
-            <div class="fg-promo-text" id="fg-promo-text">Earn Rs 500 for every friend who joins with your code — your friend gets Rs 100!</div>
-            <button class="btn-gold fg-promo-cta" id="fg-promo-cta">Invite Friends</button>
-            <div class="fg-promo-dots" id="fg-promo-dots"></div>
-          </div>
           <div class="fg-wait-clock">⌚</div>
           <div class="fg-wait-time" id="fg-wait-time">15</div>
           <div class="fg-wait-label" id="fg-wait-label">Waiting…</div>
@@ -1295,6 +1295,6 @@
     </div>
   </div>
 
-  <script type="module" src="js/app.js?v=62"></script>
+  <script type="module" src="js/app.js?v=63"></script>
 </body>
 </html>

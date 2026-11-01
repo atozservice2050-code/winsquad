@@ -21,7 +21,7 @@ import { initCashvault, setUser as setCashvaultUser, destroyCashvault } from './
 import { initDice, setUser as setDiceUser, destroyDice } from './dice.js';
 import { initDisclaimer, maybeShowDisclaimer } from './disclaimer.js';
 import { initMissions, refreshMissions, setUser as setMissionsUser, recordMissionEvent } from './missions.js';
-import { initFreeGames, refreshFreeHub, setUser as setFreeUser } from './free-games.js?v=50';
+import { initFreeGames, refreshFreeHub, startPromo as fgStartPromo, stopPromo as fgStopPromo, setUser as setFreeUser } from './free-games.js?v=51';
 import { restoreSession, initSessionBackup } from './session-backup.js';
 
 const VIEWS = ['auth', 'setup', 'resetpw', 'home', 'arena', 'private', 'wallet', 'rewards', 'missions', 'profile', 'coinflip', 'andarbahar', 'dt', 'roulette', 'cashvault', 'dice', 'freehub', 'mines', 'memory', 'flappy'];
@@ -112,6 +112,9 @@ function showView(name) {
     t.classList.toggle('active', t.dataset.view === activeTab));
 
   window.scrollTo(0, 0);
+
+  // Homepage promo rotation runs only while the hub is on screen.
+  try { if (name === 'home') fgStartPromo(); else fgStopPromo(); } catch (e) {}
 
   // Lazy init + refresh per view
   if (name === 'arena' && !initialized.arena) { initArena(); initialized.arena = true; }
