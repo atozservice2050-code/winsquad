@@ -38,7 +38,7 @@ let resultPoppedFor = 0;     // highest round no. already shown as a pop-up
 let highlightMap = {};       // user_id -> 'win' | 'lose' after a resolve
 let highlightUntil = 0;      // highlight expiry timestamp (ms)
 let arrowDeg = 0;            // accumulated needle rotation (spins keep going forward)
-let spinTimer = null;        // pending reveal after the 5s needle spin
+let spinTimer = null;        // pending reveal after the 10s needle spin
 let localSpinRound = null;   // round THIS client spun via the pot click
 let spinInFlight = false;    // a pot-click spin is currently running
 let curSpin = { ready: false, spinner: null }; // spin state at last render
@@ -359,7 +359,7 @@ function onRoundResolved(r) {
     if (mine) showPrivateResult(rb, loser, mine);
   };
   if (loserIdx < 0) { reveal(); return; }
-  // Game show moment: the clock needle spins for 5 seconds like a
+  // Game show moment: the clock needle spins for 10 seconds like a
   // roller and stops on the loser — the player who bid the highest.
   const actEl = $('private-activity');
   if (actEl) actEl.textContent = '🎯 Spinning the needle…';
@@ -376,7 +376,7 @@ function spinArrowTo(seatIdx, done) {
   const delta = ((target - arrowDeg) % 360 + 360) % 360;
   arrowDeg = arrowDeg + 360 * 5 + delta;
   needle.style.transform = 'rotate(' + arrowDeg + 'deg)';
-  spinTimer = setTimeout(done, 5000);
+  spinTimer = setTimeout(done, 10000);
 }
 
 /* ------------- pot click: the rotation spinner starts the round ------------ */
