@@ -123,10 +123,13 @@ function openWait(game) {
   loadMonetagVignette();
 }
 
-/* Monetag Vignette — zone "FreeGames Wait Screen" (tag supplied by the
-   owner from his Monetag account). Loaded ONLY when a free-game wait
-   opens, never on the money-game screens, and at most once per app
-   session; whether an ad actually shows is Monetag's own call. */
+/* Monetag Vignette — zone 12170716 "Superior tag" (tag supplied by the
+   owner from his Monetag account; zone identity verified 2026-11-04).
+   Loaded when the HOME view opens (owner order 2026-11-04: ads also on
+   the home screen, where the WinSquad promo carousel runs) and when a
+   free-game wait opens; never first-loaded on the money-game screens,
+   and at most once per app session; whether an ad actually shows is
+   Monetag's own call. */
 let monetagLoaded = false;
 function loadMonetagVignette() {
   if (monetagLoaded) return;
@@ -186,7 +189,7 @@ function restartPromoTimer() {
   if (promoTimer) clearInterval(promoTimer);
   promoTimer = setInterval(nextPromo, 4000);
 }
-export function startPromo() { renderPromo(); restartPromoTimer(); }
+export function startPromo() { renderPromo(); restartPromoTimer(); try { loadMonetagVignette(); } catch (e) {} }
 export function stopPromo() { if (promoTimer) { clearInterval(promoTimer); promoTimer = null; } }
 
 /* Full-screen burst visual (bomb explosion / crash) shown with the
