@@ -250,7 +250,11 @@ function renderTable() {
       const off = seatOffline(seat);
       div.className = 'seat filled' + (seat.user_id === userId ? ' you' : '') + hl + turn + (off ? ' seat-offline' : '');
       div.innerHTML = '<div class="seat-emoji">' + (off ? '📵' : '🤑') + '</div><div class="seat-name"></div>' +
-        '<div class="seat-bid">' + (bid != null ? 'Bid: Rs ' + fmtRs(bid) : 'thinking…') + '</div>' +
+        // Owner order 2026-11-04: a player sees only his OWN bid amount.
+        // Other seats show "Bid placed" with no amount until the reveal.
+        '<div class="seat-bid">' + (bid != null
+          ? (seat.user_id === userId ? 'Bid: Rs ' + fmtRs(bid) : 'Bid placed ✓')
+          : 'thinking…') + '</div>' +
         (off ? '<div class="seat-status">⚠ Connection error</div>' : '');
       div.querySelector('.seat-name').textContent = seatName(seat);
     }
@@ -482,7 +486,9 @@ function renderStage() {
       : '🎯 All bids in — ' + seatName(curSpin.spinner) + ' will spin the pot…';
   } else if (rb.length) {
     const last = [...rb].sort((a, b) => new Date(a.placed_at) - new Date(b.placed_at)).at(-1);
-    actEl.textContent = '⚡ ' + nameForBid(last) + ' bid Rs ' + fmtRs(last.amount);
+    actEl.textContent = last.user_id === userId
+      ? '⚡ You bid Rs ' + fmtRs(last.amount)
+      : '⚡ ' + nameForBid(last) + ' placed a bid ✓';
   } else if (seats.length) {
     actEl.textContent = seats.length + ' player' + (seats.length === 1 ? '' : 's') + ' at the table — waiting for the first bid…';
   } else {
