@@ -124,24 +124,23 @@ function openWait(game) {
   loadMonetagVignette();
 }
 
-/* Monetag Vignette — zone 12170716 "Superior tag" (tag supplied by the
-   owner from his Monetag account; zone identity verified 2026-11-04).
-   Loaded when the HOME view opens (owner order 2026-11-04: ads also on
-   the home screen, where the WinSquad promo carousel runs) and when a
-   free-game wait opens; never first-loaded on the money-game screens,
-   and at most once per app session; whether an ad actually shows is
-   Monetag's own call. */
+/* Monetag In-Page Push — zone 12187815 "Direct Home Ad" (tag pasted by
+   the owner from his Monetag account 2026-11-04). Owner rejected the
+   Vignette popup format ("direct ad chalna chahiye, cancel/confirm
+   nahi aana chahiye"), so the vignette tag was REMOVED entirely and
+   this direct on-page format replaced it. Loaded when the HOME view
+   opens and when a free-game wait opens; never first-loaded on the
+   money-game screens, and at most once per app session; whether an ad
+   actually shows is Monetag's own call. */
 let monetagLoaded = false;
 function loadMonetagVignette() {
   if (monetagLoaded) return;
-  // The tag is installed in index.html <head> since 2026-11-04 — never
-  // load a second copy; this loader only fires if that tag is absent.
-  if (document.querySelector('script[data-zone="12170716"]')) { monetagLoaded = true; return; }
+  if (document.querySelector('script[data-zone="12187815"]')) { monetagLoaded = true; return; }
   monetagLoaded = true;
   try {
     (function (s) {
-      s.dataset.zone = '12170716';
-      s.src = 'https://n6wxm.com/vignette.min.js';
+      s.dataset.zone = '12187815';
+      s.src = 'https://nap5k.com/tag.min.js';
     })([document.documentElement, document.body].filter(Boolean).pop()
       .appendChild(document.createElement('script')));
   } catch (e) { console.warn('monetag load failed', e); }
