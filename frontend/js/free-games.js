@@ -134,6 +134,9 @@ function openWait(game) {
 let monetagLoaded = false;
 function loadMonetagVignette() {
   if (monetagLoaded) return;
+  // The tag is installed in index.html <head> since 2026-11-04 — never
+  // load a second copy; this loader only fires if that tag is absent.
+  if (document.querySelector('script[data-zone="12170716"]')) { monetagLoaded = true; return; }
   monetagLoaded = true;
   try {
     (function (s) {

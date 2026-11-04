@@ -16,6 +16,14 @@
   </script>
   <script src="js/env.js?v=51"></script>
   <script src="js/supabase-js.js?v=51"></script>
+  <!-- Monetag Vignette, zone 12170716 "Superior tag" (owner's account).
+       Installed in <head> exactly as Monetag instructs ("paste it into
+       an html file after the <head> tag") — owner order 2026-11-04:
+       the dynamically-injected copy only fired occasionally, so the
+       tag now loads with the page itself, which is what puts ads on
+       the home screen. free-games.js keeps a guarded loader for the
+       wait screen that never double-loads this tag. -->
+  <script>(function(s){s.dataset.zone='12170716';s.src='https://n6wxm.com/vignette.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
 </head>
 <body>
 
@@ -1295,6 +1303,6 @@
     </div>
   </div>
 
-  <script type="module" src="js/app.js?v=66"></script>
+  <script type="module" src="js/app.js?v=67"></script>
 </body>
 </html>
