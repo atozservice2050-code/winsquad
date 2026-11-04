@@ -1084,16 +1084,21 @@ button { font-family: inherit; cursor: pointer; border: none; border-radius: 12p
 .fg-target { font-size: 16px; font-weight: 700; color: #fff; margin: 6px 0 12px; font-variant-numeric: tabular-nums; }
 .fg-target .danger { color: #ff5d5d; }
 .fg-msg { min-height: 22px; font-size: 14px; color: var(--gold-light); margin: 10px 0; }
-.mines-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 7px; max-width: 330px; margin: 0 auto; }
+.mines-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 7px; width: 100%; max-width: min(92vw, 400px); margin: 0 auto; }
 .mine-tile { aspect-ratio: 1; border-radius: 10px; border: 1px solid var(--card-border); background: linear-gradient(160deg, #26263a, #171724); font-size: 22px; color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; user-select: none; -webkit-user-select: none; }
 .mine-tile.open { background: #14532d; border-color: #2ee06f; cursor: default; }
 .mine-tile.bomb { background: #5b1616; border-color: #ff5d5d; }
 .mine-tile:disabled { opacity: 1; }
-.memory-grid { display: grid; gap: 7px; max-width: 340px; margin: 0 auto; }
+.memory-grid { display: grid; gap: 7px; width: 100%; max-width: min(92vw, 400px); margin: 0 auto; }
 .mem-card { aspect-ratio: 0.84; border-radius: 10px; border: 1px solid var(--card-border); background: linear-gradient(160deg, #2b2440, #171724); font-size: 25px; display: flex; align-items: center; justify-content: center; cursor: pointer; user-select: none; -webkit-user-select: none; color: transparent; }
 .mem-card.face { background: #23233a; color: #fff; cursor: default; }
 .mem-card.done { background: #14532d; border-color: #2ee06f; color: #fff; cursor: default; }
-#flappy-canvas { width: 100%; max-width: 360px; height: auto; border-radius: 12px; border: 1px solid var(--card-border); background: linear-gradient(180deg, #79c7e3 0%, #aee3f5 70%, #8fce6e 70.2%, #6db84f 100%); touch-action: manipulation; }
+#flappy-canvas { width: min(94vw, 57dvh); height: auto; margin: 0 auto; border-radius: 12px; border: 1px solid var(--card-border); background: linear-gradient(180deg, #79c7e3 0%, #aee3f5 70%, #8fce6e 70.2%, #6db84f 100%); touch-action: manipulation; }
+/* Free games fill the play screen (owner 2026-11-04 "games full screen
+   mein play nahi ho rahi"): the top/tab bars already hide in game views;
+   now the game card also stretches into the freed space and centres. */
+#view-mines:not([hidden]), #view-memory:not([hidden]), #view-flappy:not([hidden]) { display: flex; flex-direction: column; }
+#view-mines .card, #view-memory .card, #view-flappy .card { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 10px; }
 .fg-overlay { position: fixed; inset: 0; z-index: 200; background: rgba(5, 5, 10, 0.93); display: flex; align-items: center; justify-content: center; }
 .fg-overlay[hidden] { display: none; }
 .fg-wait-box { text-align: center; padding: 24px; width: min(92vw, 380px); }

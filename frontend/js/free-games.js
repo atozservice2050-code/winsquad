@@ -548,10 +548,17 @@ function flDraw() {
     ctx.fillRect(p.x - 3, p.top - 18, 70, 18);
     ctx.fillRect(p.x - 3, p.top + fl.cfg.gap, 70, 18);
   });
-  // bird
+  // bird — 🐤 faces LEFT by default, so mirror it: the face must point
+  // the way it travels (right), with a small tilt from vertical speed
+  // (owner order 2026-11-04).
+  ctx.save();
+  ctx.translate(FL_X, fl.y + 10);
+  ctx.rotate(Math.max(-0.45, Math.min(0.65, (fl.vy || 0) * 0.055)));
+  ctx.scale(-1, 1);
   ctx.font = '30px serif';
   ctx.textAlign = 'center';
-  ctx.fillText('🐤', FL_X, fl.y + 10);
+  ctx.fillText('🐤', 0, 0);
+  ctx.restore();
   // waiting-for-first-tap hint
   if (fl.ready) {
     ctx.font = 'bold 24px system-ui, sans-serif';
