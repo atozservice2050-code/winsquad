@@ -304,11 +304,18 @@ async function placeBet() {
   unlockAudio();
   if (!round?.id) { toast('Round is loading — wait a second…', true); return; }
   if (!choice) { toast('Pick HEADS or TAILS first! 🪙', true); return; }
-  // Same rule as all games: min 3 real players
+  // Same rule as all games: min 3 real players ONLINE. Counted from
+  // presence (public_profiles.last_seen_at, 90s window - the same count
+  // the admin portal uses). The old gate counted this round's bids via
+  // the bids table, whose RLS only ever returns the player's OWN bids,
+  // so it could never pass and blocked every bid. If the count cannot
+  // be read, allow the bid - the server RPC still validates the rest.
   try {
-    const { data: bidRows } = await supabase.from('cf_bids').select('user_id').eq('round_id', round.id);
-    const uniquePlayers = new Set((bidRows || []).map(b => b.user_id)).size;
-    if (uniquePlayers < 2) { // <2 existing + you = <3 total
+    const since = new Date(Date.now() - 90000).toISOString();
+    const { count, error } = await supabase.from('public_profiles')
+      .select('id', { count: 'exact', head: true })
+      .gte('last_seen_at', since);
+    if (!error && typeof count === 'number' && count < 3) {
       toast('Round is full! Place your bid in the next round.', true);
       return;
     }

@@ -452,12 +452,21 @@ function currentStake() {
 async function placeBid(isFree) {
   unlockAudio();
   if (!round?.id) { toast('Round is loading — wait a second…', true); return; }
-  // Don't allow bids when fewer than 3 real players are online.
-  const players = Number(stats?.player_count ?? 0);
-  if (players < 3) {
-    toast('Round is full! Place your bid in the next round.', true);
-    return;
-  }
+  // Don't allow bids when fewer than 3 real players are ONLINE -
+  // counted from presence (public_profiles.last_seen_at, 90s window),
+  // same as all games. The old check used this round's bidder count,
+  // which can only rise BY bidding, so the first bidders of every
+  // round were always blocked. Unreadable count = allow the bid.
+  try {
+    const since = new Date(Date.now() - 90000).toISOString();
+    const { count, error } = await supabase.from('public_profiles')
+      .select('id', { count: 'exact', head: true })
+      .gte('last_seen_at', since);
+    if (!error && typeof count === 'number' && count < 3) {
+      toast('Round is full! Place your bid in the next round.', true);
+      return;
+    }
+  } catch (e) { /* allow bid if check fails */ }
   let amount;
   if (isFree) {
     amount = 10;

@@ -117,6 +117,7 @@ function openWait(game) {
   waitGame = game;
   $('fg-wait-label').textContent = GAME_LABEL[game] + ' — waiting time after a loss. Wait for the clock to finish, then play again.';
   $('fg-wait-close').hidden = true;
+  $('fg-wait-close').classList.remove('fg-blink');
   $('fg-wait').hidden = false;
   renderWaitTime();
   startWaitTick();
@@ -145,7 +146,13 @@ function loadMonetagVignette() {
 function finishWait() {
   stopWaitTick();
   $('fg-wait-time').textContent = '0';
+  // Clock finished: the Close / Play-again button appears AND blinks so
+  // the player spots it at once — including players returning from the
+  // Monetag ad, which overlays this screen while the clock runs. The
+  // wait state itself is never reset by the ad: the game resumes from
+  // exactly the point where the ad started (owner spec 2026-11-04).
   $('fg-wait-close').hidden = false;
+  $('fg-wait-close').classList.add('fg-blink');
   try { sounds.alarm(); } catch (_) {}
 }
 function pauseWait() { stopWaitTick(); $('fg-wait').hidden = true; }

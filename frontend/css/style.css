@@ -2345,3 +2345,7 @@ button { font-family: inherit; cursor: pointer; border: none; border-radius: 12p
 
 /* Homepage promo card (moved from the wait overlay 2026-11-02) */
 .home-promo { margin: 10px 0 14px; }
+
+/* Free-games wait screen: Close / Play-again blinks once the clock ends */
+@keyframes fgBlink { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: .55; transform: scale(1.05); } }
+.fg-blink { animation: fgBlink .8s ease-in-out infinite; }
