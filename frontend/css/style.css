@@ -1100,6 +1100,10 @@ button { font-family: inherit; cursor: pointer; border: none; border-radius: 12p
 #view-mines:not([hidden]), #view-memory:not([hidden]), #view-flappy:not([hidden]) { display: flex; flex-direction: column; }
 #view-mines .card, #view-memory .card, #view-flappy .card { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 10px; }
 .fg-overlay { position: fixed; inset: 0; z-index: 200; background: rgba(5, 5, 10, 0.93); display: flex; align-items: center; justify-content: center; }
+/* Wait overlay leaves the top strip uncovered so Monetag's In-Page Push
+   units (which dock at the top of the page) stay visible during the
+   wait instead of being hidden behind the dark overlay. */
+#fg-wait { top: 130px; }
 .fg-overlay[hidden] { display: none; }
 .fg-wait-box { text-align: center; padding: 24px; width: min(92vw, 380px); }
 .fg-wait-ad { border: 1px dashed var(--card-border); border-radius: 12px; padding: 26px 10px; color: #9a9ab0; font-size: 13px; letter-spacing: 2px; margin-bottom: 16px; background: #ffffff08; }

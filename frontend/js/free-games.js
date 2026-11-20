@@ -10,10 +10,13 @@
      loss, +15s per further loss, CAPPED at 90s max (per game).
      The whole cycle RESETS 15 minutes after the last loss (an
      unfinished wait is cleared; next loss starts again at 15s),
-     and also resets daily. The countdown PAUSES when the player leaves and
-     RESUMES when they open the same game again; state is kept
-     in localStorage so it survives app restarts. The close (X)
-     button appears only when the clock reaches 0.
+     and also resets daily. WALL-CLOCK countdown (owner order 2026-11-21):
+     the clock runs in real time from a stored deadline, so it NEVER
+     stops — not when the player taps an ad, not when the page reloads,
+     not when the app restarts. Reopening the game (or relaunching the
+     app) shows the wait overlay again on the SAME screen with the
+     clock still running. State is kept in localStorage so it survives
+     restarts. The close (X) button appears only when the clock reaches 0.
    ============================================================ */
 import { supabase, unwrapRow } from './supabase-client.js';
 import { $, toast, fmtRs, unlockAudio, sounds } from './util.js?v=48';
@@ -77,7 +80,7 @@ function pktDay() {
 function waitKey(game) { return 'fgwait_' + (userId || 'anon') + '_' + game; }
 const WAIT_RESET_MS = 15 * 60 * 1000; // wait cycle resets 15 min after the last loss
 function loadWait(game) {
-  const fresh = { day: pktDay(), losses: 0, remain: 0, lastLoss: 0 };
+  const fresh = { day: pktDay(), losses: 0, remain: 0, lastLoss: 0, endsAt: 0 };
   try {
     const s = JSON.parse(localStorage.getItem(waitKey(game)));
     if (!s || s.day !== pktDay()) return fresh;
@@ -85,7 +88,13 @@ function loadWait(game) {
     // 15 minutes passed since the last loss -> the ad/wait screen resets:
     // any unfinished wait is cleared and the next loss starts again at 15s.
     if (lastLoss && Date.now() - lastLoss > WAIT_RESET_MS) return fresh;
-    return { day: s.day, losses: Number(s.losses) || 0, remain: Number(s.remain) || 0, lastLoss };
+    const endsAt = Number(s.endsAt) || 0;
+    // WALL-CLOCK wait (owner order 2026-11-21): remain is computed from
+    // the deadline on every read, never ticked down — so the countdown
+    // keeps running in real time even if the page was closed or the
+    // player went to an ad.
+    const remain = endsAt ? Math.max(0, Math.ceil((endsAt - Date.now()) / 1000)) : (Number(s.remain) || 0);
+    return { day: s.day, losses: Number(s.losses) || 0, remain, lastLoss, endsAt };
   } catch (_) { return fresh; }
 }
 function saveWait(game, s) {
@@ -102,18 +111,21 @@ function renderWaitTime() {
 function stopWaitTick() { if (waitTimer) { clearInterval(waitTimer); waitTimer = null; } }
 function startWaitTick() {
   stopWaitTick();
+  // The tick only RENDERS: remain comes from the wall-clock deadline in
+  // loadWait(), so the countdown keeps running even while this page is
+  // closed or the player is on an ad.
   waitTimer = setInterval(() => {
     if (!waitGame) return;
-    const s = loadWait(waitGame);
-    s.remain = Math.max(0, s.remain - 1);
-    saveWait(waitGame, s);
     renderWaitTime();
-    if (s.remain <= 0) finishWait();
+    if (loadWait(waitGame).remain <= 0) finishWait();
   }, 1000);
 }
 function openWait(game) {
   const s = loadWait(game);
   if (s.remain <= 0) return;
+  // Old saves without a deadline get one anchored now, so the clock
+  // keeps running in real time from here on.
+  if (!s.endsAt) { s.endsAt = Date.now() + s.remain * 1000; saveWait(game, s); }
   waitGame = game;
   $('fg-wait-label').textContent = GAME_LABEL[game] + ' — waiting time after a loss. Wait for the clock to finish, then play again.';
   $('fg-wait-close').hidden = true;
@@ -257,6 +269,7 @@ function startWaitAfterLoss(game) {
   s.losses += 1;
   s.remain = Math.min(15 * s.losses, 90); // escalation caps at 90 seconds max
   s.lastLoss = Date.now();
+  s.endsAt = Date.now() + s.remain * 1000; // wall-clock deadline: never pauses
   saveWait(game, s);
   openWait(game);
 }
@@ -297,6 +310,17 @@ function openGame(game) {
   // A paused wait for this game resumes before the game can be played.
   if (loadWait(game).remain > 0) openWait(game);
 }
+/* Reopen a pending wait after a reload/app restart (owner order
+   2026-11-21): returning from an ad must land the player back on the
+   SAME screen with the clock still running — never a fresh board with
+   the wait silently hidden. Called from enterApp when the restored
+   view is a free game. */
+export function resumeWaitFor(game) {
+  if (!GAME_LABEL[game]) return;
+  currentGame = game;
+  if (loadWait(game).remain > 0) openWait(game);
+}
+
 function onBackFromGame() {
   if (currentGame) stopActivity(currentGame);
   if (!$('fg-wait').hidden) pauseWait();

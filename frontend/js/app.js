@@ -21,7 +21,7 @@ import { initCashvault, setUser as setCashvaultUser, destroyCashvault } from './
 import { initDice, setUser as setDiceUser, destroyDice } from './dice.js?v=64';
 import { initDisclaimer, maybeShowDisclaimer } from './disclaimer.js';
 import { initMissions, refreshMissions, setUser as setMissionsUser, recordMissionEvent } from './missions.js';
-import { initFreeGames, refreshFreeHub, startPromo as fgStartPromo, stopPromo as fgStopPromo, setUser as setFreeUser } from './free-games.js?v=56';
+import { initFreeGames, refreshFreeHub, resumeWaitFor, startPromo as fgStartPromo, stopPromo as fgStopPromo, setUser as setFreeUser } from './free-games.js?v=57';
 import { restoreSession, initSessionBackup } from './session-backup.js';
 
 const VIEWS = ['auth', 'setup', 'resetpw', 'home', 'arena', 'private', 'wallet', 'rewards', 'missions', 'profile', 'coinflip', 'andarbahar', 'dt', 'roulette', 'cashvault', 'dice', 'freehub', 'mines', 'memory', 'flappy'];
@@ -199,6 +199,10 @@ function enterApp(profile, phone) {
     if (lv && VIEWS.includes(lv) && !NO_RESTORE_VIEWS.includes(lv)) startView = lv;
   } catch (e) {}
   showView(startView);
+  // If the restored view is a free game with a wait still running (e.g.
+  // the player came back from an ad), reopen the wait overlay on the
+  // SAME screen with the clock still running (owner order 2026-11-21).
+  try { if (['mines', 'memory', 'flappy'].includes(startView)) resumeWaitFor(startView); } catch (e) {}
   try { history.replaceState({ view: startView }, ''); } catch (e) {}
   // Disclaimer: shown once on first login.
   try { maybeShowDisclaimer(); } catch (e) {}
