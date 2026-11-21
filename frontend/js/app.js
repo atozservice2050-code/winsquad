@@ -141,7 +141,7 @@ function showView(name) {
 /* Push notifications (APK v2+): the native shell exposes
    window.WinSquadPush; register this device's FCM token against the
    signed-in user, and nag users on an outdated shell to update. */
-const LATEST_APK_VERSION = 4;
+const LATEST_APK_VERSION = 6;
 function initPushBridge() {
   const bridge = window.WinSquadPush;
   if (!bridge) return; // plain web browser — no native push
