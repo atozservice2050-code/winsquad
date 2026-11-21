@@ -15,13 +15,13 @@
 // downloaded at runtime with the service-role key, so the key never
 // transits any chat, form or log.
 //
-// FCM v1 has no multicast endpoint: sends go through the FCM batch
-// endpoint (https://fcm.googleapis.com/batch), one HTTP request per
-// max-500-token chunk. Each sub-request is one token's message; the
-// batch response is parsed per part so failures are counted by reason.
-// Chunks are sent sequentially (one batch request at a time) — with the
-// current player base this is a single request; revisit if tokens ever
-// exceed a few thousand.
+// FCM v1 has no multicast endpoint, so each token is sent individually
+// through the v1 send endpoint (the same pattern push-on-presence uses).
+// The FCM batch endpoint (https://fcm.googleapis.com/batch) was tried
+// first but returns 404 for this project — verified 2026-11-21 with a
+// valid access token, so it is not used. Sends run in small parallel
+// groups so a large player base still finishes quickly; revisit if
+// tokens ever exceed a few thousand.
 //
 // Safe test paths (never a blind send to all players):
 //   dry run: POST {"dry_run": true, "slot": "daily"} -> token count +
@@ -172,12 +172,12 @@ function buildMessage(token: string, title: string, body: string): any {
   };
 }
 
-// Send one chunk (<= 500 tokens) through the FCM batch endpoint:
-// one HTTP request carrying up to 500 sub-requests. The multipart
-// response is parsed per part; failures are counted by FCM reason
-// (e.g. UNREGISTERED for uninstalled apps). Tokens are never echoed
-// back in any response.
-async function sendBatch(
+// Send one chunk (<= 500 tokens) through the FCM HTTP v1 send endpoint,
+// one request per token (same pattern as push-on-presence). Requests run
+// in small parallel groups; failures are counted by FCM reason
+// (e.g. NOT_FOUND for uninstalled apps). Tokens are never echoed back
+// in any response.
+async function sendChunk(
   access: string,
   projectId: string,
   tokens: string[],
@@ -188,72 +188,45 @@ async function sendBatch(
   failed: number;
   failedByReason: Record<string, number>;
 }> {
-  const boundary = "winsquad_batch_boundary";
-  const parts: string[] = [];
-  for (const token of tokens) {
-    const msg = JSON.stringify(buildMessage(token, title, body));
-    parts.push(
-      `--${boundary}\r\n` +
-        "Content-Type: application/http\r\n" +
-        "Content-Transfer-Encoding: binary\r\n" +
-        "\r\n" +
-        `POST /v1/projects/${projectId}/messages:send\r\n` +
-        "Content-Type: application/json\r\n" +
-        "Accept: application/json\r\n" +
-        "\r\n" +
-        msg,
-    );
-  }
-  const payload = parts.join("\r\n") + `\r\n--${boundary}--\r\n`;
-  const res = await fetch("https://fcm.googleapis.com/batch", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${access}`,
-      "Content-Type": `multipart/mixed; boundary=${boundary}`,
-    },
-    body: payload,
-  });
-  const text = await res.text();
   const result: {
     sent: number;
     failed: number;
     failedByReason: Record<string, number>;
   } = { sent: 0, failed: 0, failedByReason: {} };
-  if (!res.ok) {
-    result.failed = tokens.length;
-    result.failedByReason[`batch_http_${res.status}`] = tokens.length;
-    return result;
-  }
-  // The batch response is multipart/mixed; each part holds one
-  // sub-response (status line + headers + JSON body).
-  const respBoundary =
-    (res.headers.get("content-type") || "")
-      .split("boundary=")[1]
-      ?.replace(/["']/g, "")
-      .trim() || boundary;
-  const chunks = text
-    .split(`--${respBoundary}`)
-    .filter((c) => c.includes("HTTP/"));
-  for (const chunk of chunks) {
-    const m = chunk.match(/HTTP\/\d+(?:\.\d+)?\s+(\d{3})/);
-    const status = m ? parseInt(m[1], 10) : 0;
-    if (status >= 200 && status < 300) {
-      result.sent++;
-    } else {
-      result.failed++;
-      const em = chunk.match(/"status"\s*:\s*"([A-Z_]+)"/);
-      const reason = em ? em[1] : `http_${status || "unknown"}`;
-      result.failedByReason[reason] =
-        (result.failedByReason[reason] || 0) + 1;
+  const CONCURRENCY = 10;
+  for (let i = 0; i < tokens.length; i += CONCURRENCY) {
+    const group = tokens.slice(i, i + CONCURRENCY);
+    const outcomes = await Promise.all(
+      group.map(async (token) => {
+        try {
+          const res = await fetch(
+            `https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`,
+            {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${access}`,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify(buildMessage(token, title, body)),
+            },
+          );
+          if (res.ok) return "ok";
+          const err = await res.json().catch(() => null);
+          const status = (err as any)?.error?.status as string | undefined;
+          return status || `http_${res.status}`;
+        } catch {
+          return "fetch_error";
+        }
+      }),
+    );
+    for (const o of outcomes) {
+      if (o === "ok") {
+        result.sent++;
+      } else {
+        result.failed++;
+        result.failedByReason[o] = (result.failedByReason[o] || 0) + 1;
+      }
     }
-  }
-  // If parsing found fewer parts than tokens, the remainder is unknown.
-  const accounted = result.sent + result.failed;
-  if (accounted < tokens.length) {
-    const missing = tokens.length - accounted;
-    result.failed += missing;
-    result.failedByReason["unparsed_response"] =
-      (result.failedByReason["unparsed_response"] || 0) + missing;
   }
   return result;
 }
@@ -312,7 +285,7 @@ Deno.serve(async (req) => {
     const failedByReason: Record<string, number> = {};
     for (let i = 0; i < tokens.length; i += 500) {
       const chunk = tokens.slice(i, i + 500);
-      const r = await sendBatch(access, sa.project_id, chunk, msg.title, msg.body);
+      const r = await sendChunk(access, sa.project_id, chunk, msg.title, msg.body);
       sent += r.sent;
       failed += r.failed;
       for (const [k, v] of Object.entries(r.failedByReason)) {
