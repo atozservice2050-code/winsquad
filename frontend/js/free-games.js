@@ -157,6 +157,24 @@ function loadMonetagVignette() {
       .appendChild(document.createElement('script')));
   } catch (e) { console.warn('monetag load failed', e); }
 }
+/* Monetag OnClick (Popunder) — zone 12312927 "Loud tag" (tag pasted by
+   the owner 2026-11-21, verified OnClick (Popunder) in Monetag). Owner
+   order: after a LOSS the ad must open by itself in Chrome. In-Page
+   Push cannot open a new tab on its own, so this popunder is loaded
+   FRESH on EVERY loss: the tag fires once per load, on the player's
+   next tap after the loss, opening the ad in a new tab (Chrome on the
+   phone via APK v5's external-browser handling). The wait clock keeps
+   running meanwhile (wall-clock), so returning shows the same clock. */
+function loadPopunderOnLoss() {
+  try {
+    document.querySelectorAll('script[data-zone="12312927"]').forEach(el => el.remove());
+    const s = document.createElement('script');
+    s.dataset.zone = '12312927';
+    s.src = 'https://al5sm.com/tag.min.js';
+    (document.body || document.documentElement).appendChild(s);
+  } catch (e) { console.warn('popunder load failed', e); }
+}
+
 function finishWait() {
   stopWaitTick();
   $('fg-wait-time').textContent = '0';
@@ -271,6 +289,7 @@ function startWaitAfterLoss(game) {
   s.lastLoss = Date.now();
   s.endsAt = Date.now() + s.remain * 1000; // wall-clock deadline: never pauses
   saveWait(game, s);
+  loadPopunderOnLoss(); // ad opens in Chrome on the next tap after the loss
   openWait(game);
 }
 
